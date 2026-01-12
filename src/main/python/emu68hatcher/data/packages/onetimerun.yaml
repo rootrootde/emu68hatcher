@@ -1,0 +1,25 @@
+name: onetimerun
+friendly_name: OneTimeRun
+group: System
+description: 'First-boot scripts for one-time initialization tasks'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: local
+install:
+# OneTimeRun scripts go to S/OneTimeRun/
+- from: System/OneTimeRun/*
+  to: S/OneTimeRun/
+# OneTimeRunWB scripts (run after Workbench loads) go to S/OneTimeRunWB/
+- from: System/OneTimeRunWB/*
+  to: S/OneTimeRunWB/
+# OneTimeRunWB with icon goes to WBStartup/
+- from: System/WBStartup/OnetimeRunWB
+  to: WBStartup/
+- from: System/WBStartup/OnetimeRunWB.info
+  to: WBStartup/

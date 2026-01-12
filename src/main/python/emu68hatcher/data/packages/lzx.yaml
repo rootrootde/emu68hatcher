@@ -1,0 +1,22 @@
+name: lzx
+friendly_name: LZX
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/arc/lzx121r1.lha
+  hash: 13A4E1947DBFBBA7728B2DCBAF690FE9
+  filename: lzx121r1.lha
+install:
+- from: LZX_68040r
+  to: C/
+  rename: LZX
+- from: LZX.Keyfile
+  to: L/

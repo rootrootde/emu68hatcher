@@ -1,0 +1,8 @@
+name: os_install_locale_ru_russian
+friendly_name: Russian (RU) Locale Files
+group: Locale
+description: Alternative language and keyboard files for non-English speaking countries.
+versions:
+- '3.2'
+- 3.2.2.1
+- 3.2.3

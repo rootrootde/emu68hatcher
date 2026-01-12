@@ -1,0 +1,19 @@
+name: unzip
+friendly_name: Unzip
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/arc/UnZIP552.lha
+  hash: A657AA4A7E323D504FBB0B7443292EE6
+  filename: Unzip552.lha
+install:
+- from: UnZip*/Unzip
+  to: C/

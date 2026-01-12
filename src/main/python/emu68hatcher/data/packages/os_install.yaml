@@ -1,0 +1,19 @@
+name: os_install
+friendly_name: OS Install
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+mandatory: true
+install:
+- from: OS-VERSION3.9/WORKBENCH3.5/Storage/Monitors/NTSC
+  to: Devs/Monitors/
+- from: OS-VERSION3.9/WORKBENCH3.5/Storage/Monitors/NTSC.info
+  to: Devs/Monitors/
+- from: OS-VERSION3.9/WORKBENCH3.5/Storage/Monitors/PAL
+  to: Devs/Monitors/
+- from: OS-VERSION3.9/WORKBENCH3.5/Storage/Monitors/PAL.info
+  to: Devs/Monitors/

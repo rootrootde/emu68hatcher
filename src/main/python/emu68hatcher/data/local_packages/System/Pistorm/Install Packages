@@ -1,0 +1,24 @@
+FailAt 21
+C:Assign >NIL: EXISTS EMU68BOOT:
+IF NOT WARN
+   IF EXISTS EMU68BOOT:INSTALL
+       C:Dir EMU68BOOT:INSTALL/#? >NIL:
+       IF NOT FAIL
+           C:Echo "Packages found. Installing..."
+           C:Echo ""
+           C:Echo >RAM:InstallPackages "FailAt 21"
+           C:List >>RAM:InstallPackages EMU68BOOT:INSTALL PAT=(#?.lha) LFORMAT="C:Echo *"Installing Package: %n*"*nC:Echo *"*"*nlha -q -Qa -x0 e *"%p%n*" InstallScript RAM:*nC:Execute RAM:InstallScript*n" ALL FILES
+           C:Execute RAM:InstallPackages
+           C:Delete >NIL: RAM:InstallPackages
+           C:Echo ""
+           C:Ask "Packages installed! Press any key."
+       ELSE
+           C:Ask "No Packages found to install! Press any key."
+       ENDIF
+   ELSE
+      C:Ask "Install folder not found! Press any key."
+   ENDIF
+ELSE
+   C:Ask "EMU68BOOT: volume not available! Press any key."
+ENDIF
+FailAt 10

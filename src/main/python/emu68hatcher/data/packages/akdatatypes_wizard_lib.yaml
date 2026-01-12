@@ -1,0 +1,16 @@
+name: akdatatypes_wizard_lib
+friendly_name: akDatatypes - Wizard Lib
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/libs/WizardLibrary.lha
+  hash: 44e5084e9cb644940fda9d172d87d91d
+  filename: WizardLibrary.lha
+install:
+- from: wizard.library
+  to: Libs/

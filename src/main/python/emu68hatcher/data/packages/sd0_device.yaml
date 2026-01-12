@@ -1,0 +1,20 @@
+name: sd0_device
+friendly_name: SD0 Device
+group: System
+description: 'DOSDrivers for mounting FAT32 boot partition on Pi3/Pi4'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: local
+install:
+# Install SD0pi3 and SD0pi4 to Storage (not Devs!) to avoid auto-mount by BindDrivers.
+# Pi4vsPi3_Pistorm OneTimeRun script will move the correct one to Devs:DOSDrivers/SD0
+- from: System/Devs/DosDrivers/SD0pi3
+  to: Storage/DOSDrivers/
+- from: System/Devs/DosDrivers/SD0pi4
+  to: Storage/DOSDrivers/

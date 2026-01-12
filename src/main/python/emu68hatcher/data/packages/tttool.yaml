@@ -1,0 +1,19 @@
+name: tttool
+friendly_name: TTTool
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/batch/TTTool.lha
+  hash: F99CEB1C9FBEE3D8FB97EA2DE1F6D452
+  filename: TTTool.lha
+install:
+- from: TTTool*/TTTool
+  to: C/

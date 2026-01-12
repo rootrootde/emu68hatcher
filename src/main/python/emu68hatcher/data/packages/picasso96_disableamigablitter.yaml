@@ -1,0 +1,17 @@
+name: picasso96_disableamigablitter
+friendly_name: Picasso96
+group: RTG
+description: Shareware version of P96 used for RTG (Retargatable Graphics)
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: true
+download:
+  source: local
+  path: System/Prefs/Env-Archive/Picasso96/DisableAmigaBlitter
+install:
+- from: System/Prefs/Env-Archive/Picasso96/DisableAmigaBlitter
+  to: Prefs/Env-Archive/Picasso96/

@@ -1,0 +1,33 @@
+name: amissl
+friendly_name: AMISSL
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/libs/AmiSSL-v5-OS3.lha
+  hash: 0DE597D30403BDBEBA470F5E966E122E
+  filename: AmiSSL.lha
+install:
+- from: AmiSSL/Libs/AmigaOS3/amisslmaster.library
+  to: Programs/AMISSL/Libs/
+- from: AmiSSL/Libs/AmigaOS3/AmiSSL/68020-40/amissl_v*.library
+  to: Programs/AMISSL/Libs/AmiSSL/
+- from: AmiSSL/Doc/*
+  to: Programs/AMISSL/
+- from: AmiSSL/Certs/*
+  to: Programs/AMISSL/Certs/
+- from: AmiSSL/C/CA.pl
+  to: Programs/AMISSL/
+- from: AmiSSL/C/tsget.pl
+  to: Programs/AMISSL/
+- from: AmiSSL/C/openssl.cnf
+  to: Programs/AMISSL/
+- from: AmiSSL/C/AmigaOS3/OpenSSL
+  to: Programs/AMISSL/

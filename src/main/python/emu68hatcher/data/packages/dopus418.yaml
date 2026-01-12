@@ -1,0 +1,46 @@
+name: dopus418
+friendly_name: DirectoryOpus
+group: Applications
+description: File Manager (4.18)
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: true
+download:
+  source: aminet
+  path: util/dopus/DirectoryOpus-4.18.22.lha
+  filename: DirectoryOpus-4.18.22.lha
+install:
+- from: DOpus4.info
+  to: Programs/
+  rename: DOpus.info
+- from: DOpus4/DirectoryOpus
+  to: Programs/DOpus/
+- from: DOpus4/DirectoryOpus.info
+  to: Programs/DOpus/
+- from: DOpus4/Libs/*
+  to: Programs/DOpus/Libs/
+- from: DOpus4/Libs/dopus.library
+  to: Libs/
+- from: DOpus4/Modules/*
+  to: Programs/DOpus/modules/
+- from: DOpus4/C/*
+  to: Programs/DOpus/c/
+- from: DOpus4/S/*
+  to: Programs/DOpus/s/
+- from: DOpus4/Docs/*
+  to: Programs/DOpus/Docs/
+- from: DOpus4/Docs.info
+  to: Programs/DOpus/
+- from: DOpus4/catalogs/*
+  to: Programs/DOpus/catalogs/
+  recursive: true
+- from: DOpus4/History/*
+  to: Programs/DOpus/History/
+- from: DOpus4/DOpus4.readme
+  to: Programs/DOpus/
+- from: DOpus4/DOpus4.readme.info
+  to: Programs/DOpus/

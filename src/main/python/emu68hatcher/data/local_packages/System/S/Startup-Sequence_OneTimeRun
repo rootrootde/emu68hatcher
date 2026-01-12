@@ -1,0 +1,169 @@
+FailAt 21
+; NOTE: SYS:C/SysVars is deliberately NOT called here. SysVars opens
+; bsdsocket.library to read its version, which burns the one-shot open
+; allowed by the Roadshow demo. Any later open from "Go Online" then trips
+; the "demo expired" popup regardless of elapsed time. PiStorm vs UAE is
+; detected below by probing brcm-emmc.device and brcm-sdhc.device, and
+; $KICKVER is set by the ROM itself, so SysVars isn't needed.
+IF NOT $UAEMAJOR GT 0
+   C:Version brcm-emmc.device >NIL:
+   IF NOT FAIL
+      C:SetEnv System "PiStorm"
+      C:SetEnv RpiType "RPi4"
+      SYS:C/EMU68INFO variant >ENV:PistormVariant
+   ELSE
+      C:Version brcm-sdhc.device >NIL:
+      IF NOT FAIL
+         C:SetEnv System "PiStorm"
+         C:SetEnv RpiType "RPi3"
+         SYS:C/EMU68INFO variant >ENV:PistormVariant
+      ELSE
+         C:SetEnv SYSTEM "UAE"
+      ENDIF
+   ENDIF
+ELSE
+   C:SetEnv SYSTEM "UAE"
+ENDIF
+IF $KICKVER EQ 47
+   C:SetEnv KickstartVersion 3.2
+ELSE
+   C:Version Workbench.Library 45 >NIL:
+   IF NOT WARN
+      C:SetEnv KickstartVersion 3.9
+   ELSE
+      C:Version exec.library VERSION 40 >NIL:
+      IF NOT WARN
+         C:SetEnv KickstartVersion 3.1
+      ENDIF
+   ENDIF
+ENDIF
+
+; === First boot setup wizard ===
+IF $FIRSTTIMEBOOT EQ "TRUE"
+   C:Echo ""
+   C:Echo "============================================"
+   C:Echo "   Emu68 Hatcher - First Boot Setup"
+   C:Echo "============================================"
+   C:Echo ""
+   IF $System EQ "PiStorm"
+      C:Echo "Detected: PiStorm on $RpiType"
+   ELSE
+      C:Echo "Detected: UAE emulator"
+   ENDIF
+   C:Echo ""
+ENDIF
+
+IF NOT EXISTS S:OneTimeRun.done
+   IF $FIRSTTIMEBOOT EQ "TRUE"
+      C:Echo "Step 1/4: Configuring hardware..."
+   ENDIF
+   C:CE >NIL: S:OneTimeRun
+   IF WARN
+      C:Echo >T:RunTimeScript "FailAt 21"
+      IF $SYSTEM EQ "UAE"
+         C:List >>T:RunTimeScript S:OneTimeRun PAT=~(#?.info|#?_pistorm) LFORMAT="C:Echo *"  - %n*"*nC:Execute *"%p%n*"*nC:Delete *"%p%n*"*n" ALL FILES
+      ELSE
+         C:List >>T:RunTimeScript S:OneTimeRun PAT=~(#?.info|) LFORMAT="C:Echo *"  - %n*"*nC:Execute *"%p%n*"*nC:Delete *"%p%n*"*n" ALL FILES
+      ENDIF
+      C:Execute T:RunTimeScript
+      FailAt 21
+      C:Delete >NIL: T:RunTimeScript
+   ENDIF
+   C:Echo >S:OneTimeRun.done "TRUE"
+   IF $FIRSTTIMEBOOT EQ "TRUE"
+      C:Echo ""
+   ENDIF
+ENDIF
+
+IF $FIRSTTIMEBOOT EQ "TRUE"
+   C:Echo "Step 2/4: Setting up display driver..."
+   C:Echo ""
+ENDIF
+
+; Display driver setup happens here (UAEGFX injection follows this block)
+C:SetEnv HATCHERFIRSTBOOT $FIRSTTIMEBOOT
+
+; Mark first boot done early (before potential reboot)
+IF $FIRSTTIMEBOOT EQ "TRUE"
+   C:Echo "FALSE" > SYS:PREFS/ENV-ARCHIVE/FIRSTTIMEBOOT
+ENDIF
+IF $REBOOT EQ "TRUE"
+   C:Echo "FALSE" > SYS:PREFS/ENV-ARCHIVE/REBOOT
+   C:Echo "The Amiga will REBOOT in 3 seconds!"
+   C:DiskChange SDH0:
+   C:Wait 3
+   C:Reboot
+ENDIF
+
+; Assign EMU68BOOT: to SD0: (SD0 is mounted by the stock Startup-Sequence's
+; Mount DEVS:DOSDrivers/~(#?.info) line, or by BindDrivers on second+ boots)
+IF NOT $SYSTEM EQ "UAE"
+   C:Assign >NIL: EXISTS SD0:
+   IF NOT WARN
+      C:Assign >NIL: EMU68BOOT: SD0:
+   ENDIF
+ELSE
+   C:MakeDir >NIL: RAM:EMU68BOOT
+   C:Assign >NIL: EMU68BOOT: RAM:EMU68BOOT
+ENDIF
+
+IF $HATCHERFIRSTBOOT EQ "TRUE"
+   C:Echo "Step 3/4: Mounting boot partition..."
+   C:Echo ""
+
+   ; --- Run OneTimeRunWB scripts (Locale, Cmdline) before LoadWB ---
+   C:Echo "Step 4/4: Regional settings"
+   C:Echo ""
+
+   ; Restore cmdline.txt backup (PiStorm only)
+   IF NOT $SYSTEM EQ "UAE"
+      C:Assign >NIL: EXISTS EMU68BOOT:
+      IF NOT WARN
+         IF EXISTS EMU68BOOT:cmdlineBAK.txt
+            C:Delete EMU68BOOT:cmdline.txt QUIET
+            C:Rename FROM EMU68BOOT:cmdlineBAK.txt TO EMU68BOOT:cmdline.txt
+         ENDIF
+      ENDIF
+   ENDIF
+
+   ; Locale preferences
+   C:Echo "The Locale preferences window will open next."
+   C:Echo "Choose your regional settings, then click Save."
+   C:Echo ""
+   C:Ask "Press RETURN to continue..."
+   IF $KickstartVersion EQ 3.9
+      C:AddDataTypes REFRESH QUIET
+   ENDIF
+   SYS:Prefs/Locale
+
+   ; Clean up OneTimeRunWB scripts (no longer needed from WBStartup)
+   C:Delete >NIL: S:OneTimeRunWB/#? ALL QUIET FORCE
+   C:Delete >NIL: S:OneTimeRunWB QUIET FORCE
+
+   ; Re-enable disabled WBStartup items
+   IF EXISTS SYS:WBStartup/Disabled
+      C:Copy >NIL: "SYS:WBStartup/Disabled/#?" TO "SYS:WBStartup/" ALL FORCE CLONE
+      C:Delete >NIL: "SYS:WBStartup/Disabled" ALL FORCE
+   ENDIF
+
+   ; Schedule OnetimeRunWB self-deletion (runs on next boot via OneTimeRun)
+   C:Echo "DELETE >NIL: SYS:WBStartup/OneTimeRunWB.info ALL FORCE *nDELETE >NIL: SYS:WBStartup/OneTimeRunWB ALL FORCE" > S:OneTimeRun/DeleteOneTimeRunWB
+
+   ; Set flags for second boot
+   C:Echo "FALSE" > SYS:PREFS/ENV-ARCHIVE/FIRSTTIMEBOOTWB
+   C:Echo "TRUE" > SYS:PREFS/ENV-ARCHIVE/SCREENMODESETUP
+
+   C:Echo ""
+   C:Echo "Setup will now reboot to apply changes."
+   C:Echo "One more brief setup step after reboot (display settings)."
+   C:Echo ""
+   C:Ask "Press RETURN to reboot..."
+   C:DiskChange SDH0:
+   IF $System EQ "UAE"
+      C:Reboot
+   ELSE
+      C:EMU68INFO HARDRESET
+   ENDIF
+ENDIF
+
+FailAt 21

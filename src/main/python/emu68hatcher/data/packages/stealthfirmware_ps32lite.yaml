@@ -1,0 +1,14 @@
+name: stealthfirmware_ps32lite
+friendly_name: Stealthfirmware - PS32lite
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: local
+  path: Emu68Boot/ps32lite-stealth-firmware.gz

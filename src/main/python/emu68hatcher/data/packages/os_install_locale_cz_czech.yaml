@@ -1,0 +1,6 @@
+name: os_install_locale_cz_czech
+friendly_name: Czech (CZ) Locale Files
+group: Locale
+description: Alternative language and keyboard files for non-English speaking countries.
+versions:
+- 3.2.3

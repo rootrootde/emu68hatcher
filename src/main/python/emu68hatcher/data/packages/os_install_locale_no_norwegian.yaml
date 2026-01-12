@@ -1,0 +1,8 @@
+name: os_install_locale_no_norwegian
+friendly_name: Norwegian (NO) Locale Files
+group: Locale
+description: Alternative language and keyboard files for non-English speaking countries.
+versions:
+- '3.2'
+- 3.2.2.1
+- 3.2.3

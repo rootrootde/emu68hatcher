@@ -1,0 +1,20 @@
+name: akdatatypes_jfif
+friendly_name: akDatatypes - JFIF
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/dtype/akJFIF-dt.lha
+  hash: 7b5fcb7a557c87faaf529110f912f909
+  filename: akJFIF-dt.lha
+install:
+- from: akJFIF-Datatype/Classes/DataTypes/akJFIF.datatype
+  to: Classes/DataTypes/
+- from: akJFIF-Datatype/devs/Datatypes/*
+  to: Devs/DataTypes/
+- from: akJFIF-Datatype/Prefs/Datatypes/*
+  to: Prefs/akDatatypes/

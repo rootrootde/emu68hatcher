@@ -1,0 +1,19 @@
+name: changebootpri
+friendly_name: ChangeBootPri
+group: Utilities
+description: Used to change HD parameters like boot priorities from the commandline
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+download:
+  source: web
+  url: http://thomas-rapp.hier-im-netz.de/downloads/changebootpri.lha
+  backup_url: https://www.dropbox.com/scl/fi/4yshk7tps45qopyfl9byn/changebootpri.lha?rlkey=thlpam1sr69gwew7keiae537o&st=8c2cl8cc&dl=1
+  hash: 0759E839F03608D70CB6BD8486DEB382
+  filename: changebootpri.lha
+install:
+- from: changebootpri
+  to: C/

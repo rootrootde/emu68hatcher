@@ -1,0 +1,19 @@
+name: ce
+friendly_name: CE
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/cli/CE14.lha
+  hash: 5A3B871F77E2B2804EDC80D507C01233
+  filename: CE14.lha
+install:
+- from: ce
+  to: C/

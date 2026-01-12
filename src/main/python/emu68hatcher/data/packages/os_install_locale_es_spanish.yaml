@@ -1,0 +1,9 @@
+name: os_install_locale_es_spanish
+friendly_name: Spanish (ES) Locale Files
+group: Locale
+description: Alternative language and keyboard files for non-English speaking countries.
+versions:
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+default: true

@@ -1,0 +1,23 @@
+name: hippoplayerupdate
+friendly_name: HippoPlayer
+group: Applications
+description: Popular audio player
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: true
+download:
+  source: aminet
+  path: mus/play/hippoplayerupdate.lha
+  # hash removed - Aminet file appears broken/empty as of March 2026
+  filename: hippoplayerupdate.lha
+install:
+- from: HiP
+  to: Programs/HippoPlayer/
+- from: HippoPlayer.group
+  to: S/
+- from: playsid.library
+  to: Libs/

@@ -1,0 +1,19 @@
+- package_name: PFS3AIO
+  source: Web
+  source_location: "http://aminet.net/disk/misc/pfs3aio.lha"
+  file_download_name: pfs3aio.lha
+  hash: 7AED5D42E9977C1DF3B2B51244D00644
+  files_to_install: Pfs3aio
+  file_hash: 2912D39E917903CA5D3CC9E9BDB6FB33
+
+- package_name: HST-Imager
+  source: Github
+  source_location: "https://api.github.com/repos/henrikstengaard/hst-imager/releases"
+  file_download_name: HSTImager.zip
+  files_to_install: hst.imager
+
+- package_name: HST-Amiga
+  source: Github
+  source_location: "https://api.github.com/repos/henrikstengaard/hst-amiga/releases"
+  file_download_name: HSTAmiga.zip
+  files_to_install: hst.amiga

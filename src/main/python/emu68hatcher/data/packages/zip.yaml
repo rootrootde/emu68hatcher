@@ -1,0 +1,19 @@
+name: zip
+friendly_name: ZIP
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/arc/ZIP232.lha
+  hash: 089E815D495A5A3B374C0E6BF0E80E58
+  filename: Zip232.lha
+install:
+- from: Zip*/Zip
+  to: C/

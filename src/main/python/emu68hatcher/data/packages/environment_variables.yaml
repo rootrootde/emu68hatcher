@@ -1,0 +1,27 @@
+# Consolidated environment variables and startup config files
+# Replaces: environment_variable_firsttimeboot, environment_variable_firsttimebootwb,
+#           environment_variable_reboot, setdst_dat_file
+name: environment_variables
+friendly_name: Environment Variables
+group: System
+description: 'Boot-time environment variables and DST configuration'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: local
+install:
+# Environment variables for boot detection
+- from: System/Prefs/Env-Archive/FIRSTTIMEBOOT
+  to: Prefs/Env-Archive/
+- from: System/Prefs/Env-Archive/FIRSTTIMEBOOTWB
+  to: Prefs/Env-Archive/
+- from: System/Prefs/Env-Archive/REBOOT
+  to: Prefs/Env-Archive/
+# DST.Dat for SetDST daylight savings config
+- from: System/S/DST.dat
+  to: S/

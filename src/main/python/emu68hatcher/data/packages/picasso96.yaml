@@ -1,0 +1,52 @@
+name: picasso96
+friendly_name: Picasso96
+group: RTG
+description: Shareware version of P96 used for RTG (Retargatable Graphics)
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: true
+download:
+  source: aminet
+  path: driver/video/Picasso96.lha
+  hash: 16287F92CE6DDEA23F5456CEB4525189
+  filename: Picasso96.lha
+install:
+- from: Picasso96Install/Classes/DataTypes/picture.datatype
+  to: Classes/DataTypes/
+# Videocore must be in Devs:Monitors/ - on PiStorm, it IS the display driver.
+# Without it loaded by BindDrivers, there's no video output at all.
+# uaegfx goes to Storage (moved to Devs by UAEGFX script in UAE mode).
+- from: Picasso96Install/Devs/Monitors/Picasso96.info
+  to: Devs/Monitors/
+  rename: Videocore.info
+- from: Picasso96Install/Devs/Monitors/Picasso96
+  to: Devs/Monitors/
+  rename: Videocore
+- from: Picasso96Install/Devs/Monitors/Picasso96.info
+  to: Storage/Monitors/
+  rename: uaegfx.info
+- from: Picasso96Install/Devs/Monitors/Picasso96
+  to: Storage/Monitors/
+  rename: uaegfx
+- from: Picasso96Install/Libs/*
+  to: Libs/
+- from: Picasso96Install/Prefs/Picasso96Mode
+  to: Prefs/
+- from: Picasso96Install/Prefs/Picasso96Mode.info
+  to: Prefs/
+- from: Picasso96Install/Prefs/PVS
+  to: Prefs/
+- from: Picasso96Install/Prefs/PVS.info
+  to: Prefs/
+- from: Picasso96Install/Prefs/PVS.guide
+  to: Programs/Picasso96/
+- from: Picasso96Install/Prefs/PVS.guide.info
+  to: Programs/Picasso96/
+- from: Picasso96Install/Picasso96/*
+  to: Programs/Picasso96/
+- from: Picasso96Install/Picasso96.info
+  to: Programs/

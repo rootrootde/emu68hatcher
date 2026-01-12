@@ -1,0 +1,9 @@
+name: os_install_locale_uk_english
+friendly_name: English (UK) Locale Files
+group: Locale
+description: Alternative language and keyboard files for UK English.
+versions:
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+default: true

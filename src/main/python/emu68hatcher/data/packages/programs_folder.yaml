@@ -1,0 +1,11 @@
+name: programs_folder
+friendly_name: Programs Folder
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true

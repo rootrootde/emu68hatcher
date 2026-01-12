@@ -1,0 +1,188 @@
+MinimumInstallerVersion;InstallerVersionLessThan;Sequence;WorkbenchVersion;TypeofCheck;FilesChecked;FileCheckDetails;Hash;InstallMedia;ADF_Name;FriendlyName;ADFSource;ADFDescription
+1.0;9.9;3;3.1;Hash;;;C1C673EBA985E9AB0888C5762CFA3D8F;Disk;Extras3_1;Extras 3.1;Cloanto;Extras 3.1 (Cloanto)
+1.0;9.9;4;3.1;Hash;;;F69233117F2D0145BCFB976DF65A251E;Disk;Extras3_1;Extras 3.1;Cloanto;Extras 3.1 (Cloanto #2)
+1.0;9.9;1;3.1;Hash;;;287AAFEF2DB344F7E7A504AC682D729E;Disk;Extras3_1;Extras 3.1;Commodore;Extras 3.1 (Commodore #1)
+1.0;9.9;2;3.1;Hash;;;E31FA35EA803E0904FD55177934668CD;Disk;Extras3_1;Extras 3.1;Commodore;Extras 3.1 (Commodore #2)
+1.0;9.9;2;3.1;Hash;;;A0946B3892F19ADD33C7E9D09164B2D7;Disk;Extras3_1;Extras 3.1;Commodore;Extras 3.1 (Commodore #3)
+1.0;9.9;2;3.1;Hash;;;4002BDC6209E1EEEF533B4C7CFBC5726;Disk;Extras3_1;Extras 3.1;Commodore;Extras 3.1 (Commodore #4)
+1.0;9.9;6;3.1;Hash;;;3EFE8AECB0E5D3E795454412F0817E18;Disk;Extras3_1;Extras 3.1;Escom;Extras 3.1 (Escom #1)
+1.0;9.9;5;3.1;Hash;;;2D02E4EF01DA3879AFB2DF6618E157FA;Disk;Extras3_1;Extras 3.1;Escom;Extras 3.1 (Escom #2)
+1.0;9.9;6;3.1;Hash;;;86C1BBFC9ABC55762A69570E207509AD;Disk;Extras3_1;Extras 3.1;Escom;Extras 3.1 (Escom #3)
+1.0;9.9;3;3.1;Hash;;;6FAE8B94BDE75497021A044BDBF51ABC;Disk;Fonts3_1;Fonts 3.1;Cloanto;Fonts 3.1 (Cloanto)
+1.0;9.9;4;3.1;Hash;;;3DEA31AF880C974BA3C32ABDF221E507;Disk;Fonts3_1;Fonts 3.1;Cloanto;Fonts 3.1 (Cloanto #2)
+1.0;9.9;1;3.1;Hash;;;38D9BA1365A290B458D9727084ECF04A;Disk;Fonts3_1;Fonts 3.1;Commodore;Fonts 3.1 (Commodore #1)
+1.0;9.9;6;3.1;Hash;;;C3F0DAC18D762BC9AD048E617C8781B3;Disk;Fonts3_1;Fonts 3.1;Escom;Fonts 3.1 (Escom #1)
+1.0;9.9;6;3.1;Hash;;;81A7347D0F1DDD2E80B275CF0311C008;Disk;Fonts3_1;Fonts 3.1;Escom;Fonts 3.1 (Escom #2)
+1.0;9.9;5;3.1;Hash;;;49FC786CFFD18544B76D72059C9FD9E1;Disk;Fonts3_1;Fonts 3.1;Escom;Fonts 3.1 (Escom #3)
+1.0;9.9;3;3.1;Hash;;;C5BE06DAF40D4C3ACE4EAC874D9B48B1;Disk;Install3_1;Install 3.1;Cloanto;Install 3.1 (Cloanto)
+1.0;9.9;4;3.1;Hash;;;B6135339611848F26B426BC2D688899A;Disk;Install3_1;Install 3.1;Cloanto;Install 3.1 (Cloanto #2)
+1.0;9.9;1;3.1;Hash;;;3DE185569A39137BD93FB52C514451FF;Disk;Install3_1;Install 3.1;Commodore;Install 3.1 (Commodore #1)
+1.0;9.9;2;3.1;Hash;;;7E33DF625EA699E8987F05839BC1203D;Disk;Install3_1;Install 3.1;Commodore;Install 3.1 (Commodore #2)
+1.0;9.9;2;3.1;Hash;;;A737196914C34B4792512C0407D01DC8;Disk;Install3_1;Install 3.1;Commodore;Install 3.1 (Commodore #3)
+1.0;9.9;2;3.1;Hash;;;E719F14EB1DDB96A803CEFD8247B3274;Disk;Install3_1;Install 3.1;Commodore;Install 3.1 (Commodore #4)
+1.0;9.9;2;3.1;Hash;;;F92B33882BB809839E94B7324C9A0CD9;Disk;Install3_1;Install 3.1;Commodore;Install 3.1 (Commodore #5)
+1.0;9.9;6;3.1;Hash;;;E862173504862DBA2F43F0FAEF5A9715;Disk;Install3_1;Install 3.1;Escom;Install 3.1 (Escom #1)
+1.0;9.9;5;3.1;Hash;;;D541232932EBBB5682572FF770920703;Disk;Install3_1;Install 3.1;Escom;Install 3.1 (Escom #2)
+1.0;9.9;6;3.1;Hash;;;87D85B40D0DC408A7C800A2085A62BD3;Disk;Install3_1;Install 3.1;Escom;Install 3.1 (Escom #3)
+1.0;9.9;6;3.1;Hash;;;2C48ACF88445ACE751397FB3B43A1F42;Disk;Install3_1;Install 3.1;Escom;Install 3.1 (Escom #4)
+1.0;9.9;3;3.1;Hash;;;B53C9FF336E168643B10C4A9CFFF4276;Disk;Locale3_1;Locale 3.1;Cloanto;Locale 3.1 (Cloanto)
+1.0;9.9;4;3.1;Hash;;;08F87D494EA4B1D30FA71116A6590176;Disk;Locale3_1;Locale 3.1;Cloanto;Locale 3.1 (Cloanto #2)
+1.0;9.9;1;3.1;Hash;;;F96AE483310BFE768202792810774356;Disk;Locale3_1;Locale 3.1;Commodore;Locale 3.1 (Commodore #1)
+1.0;9.9;2;3.1;Hash;;;D124194E27D38CF26931C42F260D2C61;Disk;Locale3_1;Locale 3.1;Commodore;Locale 3.1 (Commodore #2)
+1.0;9.9;2;3.1;Hash;;;D0BBC7D1F6A5EDB826753A850C74305F;Disk;Locale3_1;Locale 3.1;Commodore;Locale 3.1 (Commodore #3)
+1.0;9.9;2;3.1;Hash;;;3A1C0C1320B1D209DB7D29E059A5333E;Disk;Locale3_1;Locale 3.1;Commodore;Locale 3.1 (Commodore #4)
+1.0;9.9;6;3.1;Hash;;;14A9DB231BA264BD226C2CF9FA471A25;Disk;Locale3_1;Locale 3.1;Escom;Locale 3.1 (Escom #1)
+1.0;9.9;6;3.1;Hash;;;126A9FD044F7B357E694620A35CEC5DD;Disk;Locale3_1;Locale 3.1;Escom;Locale 3.1 (Escom #2)
+1.0;9.9;5;3.1;Hash;;;9DAC9E2AC45C0D7FB0C3E7CFC594595E;Disk;Locale3_1;Locale 3.1;Escom;Locale 3.1 (Escom #3)
+1.0;9.9;6;3.1;Hash;;;F4874C52CE56FD0BD9133B1540A2C892;Disk;Locale3_1;Locale 3.1;Escom;Locale 3.1 (Escom #4)
+1.0;9.9;3;3.1;Hash;;;4FA1401AEB814D3ED138F93C54A5CAEF;Disk;Storage3_1;Storage 3.1;Cloanto;Storage 3.1 (Cloanto)
+1.0;9.9;4;3.1;Hash;;;DD218806CF2460789F8D7AC5FFD4D15D;Disk;Storage3_1;Storage 3.1;Cloanto;Storage 3.1 (Cloanto #2)
+1.0;9.9;1;3.1;Hash;;;A223CA45C6BC684C3D2616C925C531D9;Disk;Storage3_1;Storage 3.1;Commodore;Storage 3.1 (Commodore #1)
+1.0;9.9;2;3.1;Hash;;;376A42FF2B4A96D3B4350AA371507ABA;Disk;Storage3_1;Storage 3.1;Commodore;Storage 3.1 (Commodore #2)
+1.0;9.9;2;3.1;Hash;;;3E7B4B677892E3463CF90A6AD03A99E0;Disk;Storage3_1;Storage 3.1;Commodore;Storage 3.1 (Commodore #3)
+1.0;9.9;2;3.1;Hash;;;9A842D2972707C7D95D908E06355E418;Disk;Storage3_1;Storage 3.1;Commodore;Storage 3.1 (Commodore #4)
+1.0;9.9;2;3.1;Hash;;;CA72F1FE62CFFBECD849230CB12C89BB;Disk;Storage3_1;Storage 3.1;Commodore;Storage 3.1 (Commodore #5)
+1.0;9.9;6;3.1;Hash;;;3CC356AB7EFCEB4176C0D646777677B0;Disk;Storage3_1;Storage 3.1;Escom;Storage 3.1 (Escom #1)
+1.0;9.9;5;3.1;Hash;;;A98DC790DC63B92F114512589EF2B983;Disk;Storage3_1;Storage 3.1;Escom;Storage 3.1 (Escom #2)
+1.0;9.9;6;3.1;Hash;;;1F13EDB7C85204E687A7C263806AF9FD;Disk;Storage3_1;Storage 3.1;Escom;Storage 3.1 (Escom #3)
+1.0;9.9;3;3.1;Hash;;;E7B3A83DF665A85E7EC27306A152B171;Disk;Workbench3_1;Workbench 3.1;Cloanto;Workbench 3.1 (Cloanto)
+1.0;9.9;4;3.1;Hash;;;D9F5A43F16BB21C3EFB1CDE85C2DAC39;Disk;Workbench3_1;Workbench 3.1;Cloanto;Workbench 3.1 (Cloanto #2)
+1.0;9.9;1;3.1;Hash;;;1FB61921FCAEBE926D78257FF658431B;Disk;Workbench3_1;Workbench 3.1;Commodore;Workbench 3.1 (Commodore #1)
+1.0;9.9;2;3.1;Hash;;;5C134BFB89B1022C810486F54DBA9976;Disk;Workbench3_1;Workbench 3.1;Commodore;Workbench 3.1 (Commodore #2)
+1.0;9.9;2;3.1;Hash;;;B00F6F4189086943E9C5347A79695BC1;Disk;Workbench3_1;Workbench 3.1;Commodore;Workbench 3.1 (Commodore #3)
+1.0;9.9;2;3.1;Hash;;;DF591E3DF2CE8FF1CDDCDF1AAF5D01DD;Disk;Workbench3_1;Workbench 3.1;Commodore;Workbench 3.1 (Commodore #4)
+1.0;9.9;2;3.1;Hash;;;D98EC6EA56B669AD64FD2F9A985560BD;Disk;Workbench3_1;Workbench 3.1;Commodore;Workbench 3.1 (Commodore #5)
+1.0;9.9;2;3.1;Hash;;;5FE33149F3721926976BF8C165416E57;Disk;Workbench3_1;Workbench 3.1;Commodore;Workbench 3.1 (Commodore #6)
+1.0;9.9;6;3.1;Hash;;;DB8F3FCB10B06ED2292DC190454ECC62;Disk;Workbench3_1;Workbench 3.1;Escom;Workbench 3.1 (Escom #1)
+1.0;9.9;6;3.1;Hash;;;15DE044E692F69920B4143B832F8D112;Disk;Workbench3_1;Workbench 3.1;Escom;Workbench 3.1 (Escom #2)
+1.0;9.9;5;3.1;Hash;;;4A91C7DA8482725D6F8881927D391325;Disk;Workbench3_1;Workbench 3.1;Escom;Workbench 3.1 (Escom #3)
+1.0;9.9;1;3.2;Hash;;;2236629E7C316FF907B7E0CB1EE0AD18;Disk;Backdrops3_2;Backdrops 3.2;Hyperion (3.2 base);Backdrops 3.2
+1.0;9.9;1;3.2;Hash;;;FD11E54B038D5F236248A941125065DB;Disk;Classes3_2;Classes 3.2;Hyperion (3.2 base);Classes 3.2
+1.0;9.9;1;3.2;Hash;;;497D0AA96229A0E7FD2C475163D7462A;Disk;DiskDoctor3_2;DiskDoctor 3.2;Hyperion (3.2 base);DiskDoctor 3.2
+1.0;9.9;1;3.2;Hash;;;4F0C3383A10E62FDEA5E5758A9238223;Disk;Extras3_2;Extras 3.2;Hyperion (3.2 base);Extras 3.2
+1.0;9.9;1;3.2;Hash;;;E03EB0505FB244AAF1C7486F6FE61EDE;Disk;Fonts3_2;Fonts 3.2;Hyperion (3.2 base);Fonts 3.2
+1.0;9.9;1;3.2;Hash;;;26EF4D09CF71B7FDBD9CC68F333B7373;Disk;GlowIcons3_2;GlowIcons 3.2;Hyperion (3.2 base);GlowIcons 3.2
+1.0;9.9;1;3.2;Hash;;;9B03A0C0EE996704449C8A1A318BFAB6;Disk;HDSetup3_2;HDSetup 3.2;Hyperion (3.2 base);HDSetup 3.2
+1.0;9.9;1;3.2;Hash;;;71EDC1249C013D60380D3DB81FD87AE7;Disk;Install3_2;Install 3.2;Hyperion (3.2 base);Install 3.2
+1.0;9.9;1;3.2;Hash;;;B697A03F0620B5E06947B5E9D7B16142;Disk;Locale3_2;Locale 3.2;Hyperion (3.2 base);Locale 3.2
+1.0;9.9;1;3.2;Hash;;;3D36568BCE19234B84FE88AA9629F5BF;Disk;LocaleDE3_2;LocaleDE 3.2;Hyperion (3.2 base);LocaleDE 3.2
+1.0;9.9;1;3.2;Hash;;;3A80E4F6B0D2D95F727DC45F99068AD8;Disk;LocaleDK3_2;LocaleDK 3.2;Hyperion (3.2 base);LocaleDK 3.2
+1.0;9.9;1;3.2;Hash;;;7170C0BC81B7DAEEE39552279DADA58C;Disk;LocaleEN3_2;LocaleEN 3.2;Hyperion (3.2 base);LocaleEN 3.2
+1.0;9.9;1;3.2;Hash;;;5E2EB9ACEF8E7B062D103DB3FD270A27;Disk;LocaleES3_2;LocaleES 3.2;Hyperion (3.2 base);LocaleES 3.2
+1.0;9.9;1;3.2;Hash;;;9F65D321D92D72E17D1F744F47D16323;Disk;LocaleFR3_2;LocaleFR 3.2;Hyperion (3.2 base);LocaleFR 3.2
+1.0;9.9;1;3.2;Hash;;;F93F2CD799AD1356ADF4DB01E20218F1;Disk;LocaleGR3_2;LocaleGR 3.2;Hyperion (3.2 base);LocaleGR 3.2
+1.0;9.9;1;3.2;Hash;;;AD728C377CE3D7F4BD6ADBA8419A81AE;Disk;LocaleIT3_2;LocaleIT 3.2;Hyperion (3.2 base);LocaleIT 3.2
+1.0;9.9;1;3.2;Hash;;;E7B7B5A6583FCA0D302201A1CB0B2829;Disk;LocaleNL3_2;LocaleNL 3.2;Hyperion (3.2 base);LocaleNL 3.2
+1.0;9.9;1;3.2;Hash;;;1A9B83A7385C1AAB8094FC1D72123437;Disk;LocaleNO3_2;LocaleNO 3.2;Hyperion (3.2 base);LocaleNO 3.2
+1.0;9.9;1;3.2;Hash;;;1AAA138753CEC33A55F48D869780B7C8;Disk;LocalePL3_2;LocalePL 3.2;Hyperion (3.2 base);LocalePL 3.2
+1.0;9.9;1;3.2;Hash;;;425BBEB03C74FB275D643644BDD1AF9A;Disk;LocalePT3_2;LocalePT 3.2;Hyperion (3.2 base);LocalePT 3.2
+1.0;9.9;1;3.2;Hash;;;C45409FCA931FC1CE76F6713F27CCD00;Disk;LocaleRU3_2;LocaleRU 3.2;Hyperion (3.2 base);LocaleRU 3.2
+1.0;9.9;1;3.2;Hash;;;A588DBC1EE7BF43E0E79694E10E48669;Disk;LocaleSE3_2;LocaleSE 3.2;Hyperion (3.2 base);LocaleSE 3.2
+1.0;9.9;1;3.2;Hash;;;6F9A623611FD19E084F7BE2106ECFD99;Disk;LocaleTR3_2;LocaleTR 3.2;Hyperion (3.2 base);LocaleTR 3.2
+1.0;9.9;1;3.2;Hash;;;8D88812406CBF373CDB38148096972B9;Disk;LocaleUK3_2;LocaleUK 3.2;Hyperion (3.2 base);LocaleUK 3.2
+1.0;9.9;1;3.2;Hash;;;66C46918B7005167F1B65E444D0B95F7;Disk;MMULibs3_2;MMULibs 3.2;Hyperion (3.2 base);MMULibs 3.2
+1.0;9.9;1;3.2;Hash;;;2D46A2856152256771883F212A4E462D;Disk;ModulesA12003_2;ModulesA1200 3.2;Hyperion (3.2 base);ModulesA1200 3.2
+1.0;9.9;1;3.2;Hash;;;9B18DEA310BF073EF9CAE2A120254D92;Disk;ModulesA20003_2;ModulesA2000 3.2;Hyperion (3.2 base);ModulesA2000 3.2
+1.0;9.9;1;3.2;Hash;;;99FDC21E434C2B2A988BA96B69D46389;Disk;ModulesA30003_2;ModulesA3000 3.2;Hyperion (3.2 base);ModulesA3000 3.2
+1.0;9.9;1;3.2;Hash;;;729DDF87056936D77EE8287F9AD090A7;Disk;ModulesA4000D3_2;ModulesA4000D 3.2;Hyperion (3.2 base);ModulesA4000D 3.2
+1.0;9.9;1;3.2;Hash;;;F8EDDBCA10560582B99A2F4555AD0620;Disk;ModulesA4000T3_2;ModulesA4000T 3.2;Hyperion (3.2 base);ModulesA4000T 3.2
+1.0;9.9;1;3.2;Hash;;;2AF6B84449996440211E9547660B10B6;Disk;ModulesA5003_2;ModulesA500 3.2;Hyperion (3.2 base);ModulesA500 3.2
+1.0;9.9;1;3.2;Hash;;;C6474DF1D52300A4993F13A394701697;Disk;ModulesA6003_2;ModulesA600 3.2;Hyperion (3.2 base);ModulesA600 3.2
+1.0;9.9;1;3.2;Hash;;;00B2C4D420C933894151C43DC3A24155;Disk;ModulesCD323_2;ModulesCD32 3.2;Hyperion (3.2 base);ModulesCD32 3.2
+1.0;9.9;1;3.2;Hash;;;3726FAB6EC5CFC48F7C2368005964D90;Disk;Storage3_2;Storage 3.2;Hyperion (3.2 base);Storage 3.2
+1.0;9.9;1;3.2;Hash;;;5EDF0B7A10409EF992EA351565EF8B6C;Disk;Workbench3_2;Workbench 3.2;Hyperion (3.2 base);Workbench 3.2
+1.0;9.9;2;3.9;Hash;;;3CB96E77D922A4F8EB696E525A240448;CD;AmigaOS3_9;AmigaOS 3.9;Haage and Partners (3.9);AmigaOS 3.9
+1.0;9.9;2;3.9;Hash;;;b0f30837c0f0ce86a9a2ea543c22aa68;CD;AmigaOS3_9;AmigaOS 3.9;Haage and Partners (3.9);AmigaOS 3.9
+1.0;9.9;1;3.9;Hash;;;9cba9d7ea40e24813f7dbdb3d1794056;CD;AmigaOS3_9;AmigaOS 3.9;Haage and Partners (3.9);AmigaOS 3.9
+1.0;9.9;1;3.9;Hash;;;fb5cef9c8f43d6480f6eee1928d30e02;CD;AmigaOS3_9;AmigaOS 3.9;Haage and Partners (3.9);AmigaOS 3.9
+2.0;9.9;1;3.9;FileCheck;OS-Version3.9\Workbench3.5\C\execute,OS-Version3.9\Workbench3.9\Libs\workbench.library,OS-Version3.9\Workbench3.5\L\FastFileSystem,OS-Version3.9\Workbench3.5\S\Startup-Sequence,OS-Version3.9\Workbench3.9\Prefs\screenmode;264986,264986,5;;CD;AmigaOS3_9;AmigaOS 3.9;Haage and Partners (3.9);AmigaOS 3.9
+1.0;9.9;1;3.9;Hash;;;71353D4AEB9AF1F129545618D013A8C8;Archive;AmigaOS3_9BB1;AmigaOS 3.9 BB1 Update;Haage and Partners (3.9);AmigaOS 3.9 BB1 Update
+1.0;9.9;1;3.9;Hash;;;FD45D24BB408203883A4C9A56E968E28;Archive;AmigaOS3_9BB2;AmigaOS 3.9 BB2 Update;Haage and Partners (3.9);AmigaOS 3.9 BB2 Update
+1.0;9.9;1;3.9;Hash;;;4E48F80573554385A6FBC274D8AE328B;Archive;AmigaOS3_9BB34;AmigaOS 3.9 BB3 & BB4 Update;Haage and Partners (3.9);AmigaOS 3.9 BB3 & BB4 Update
+1.0;9.9;2;3.2.2;Hash;;;884bd1b279b19e4d351f321e35a0e776;Disk;Classes3_2_2;Classes 3.2.2;Hyperion (3.2.2 Update);Classes 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;727C5ADCA47611AE1B6ED5155808A054;Disk;Classes3_2_2;Classes 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);Classes 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;b5e88900328258627da1d03000b82c5a;Disk;DiskDoctor3_2_2;DiskDoctor 3.2.2;Hyperion (3.2.2 Update);DiskDoctor 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;10C22B666DD9CB2DFF369CEC28E500BE;Disk;DiskDoctor3_2_2;DiskDoctor 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);DiskDoctor 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;bfe78fe5710f643632ebcab2d8f39358;Disk;LocaleCZ3_2_2;LocaleCZ 3.2.2;Hyperion (3.2.2 Update);LocaleCZ 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;7056763DC073E5C5320C9FEA2E9BD8F6;Disk;LocaleCZ3_2_2;LocaleCZ 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocaleCZ 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;c21563f7fa0844bcb84855ff339a5cbf;Disk;LocaleDE3_2_2;LocaleDE 3.2.2;Hyperion (3.2.2 Update);LocaleDE 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;56FA3189B21EEFFCAF2C9BA385C30671;Disk;LocaleDE3_2_2;LocaleDE 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocaleDE 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;3a1f3bfe138b3556b05791864bd908db;Disk;LocaleDK3_2_2;LocaleDK 3.2.2;Hyperion (3.2.2 Update);LocaleDK 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;F3D9420A0D31EC4C91CC97614EAC2A83;Disk;LocaleDK3_2_2;LocaleDK 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocaleDK 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;965218b79f20579e1a9b82e5ad5293d2;Disk;LocaleEN3_2_2;LocaleEN 3.2.2;Hyperion (3.2.2 Update);LocaleEN 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;BDE7058F25E80EB602AE0176C08E7250;Disk;LocaleEN3_2_2;LocaleEN 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocaleEN 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;476c5028ece378553648892b491d016e;Disk;LocaleES3_2_2;LocaleES 3.2.2;Hyperion (3.2.2 Update);LocaleES 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;6A0786F5D1C5582A7CC0F5C270132FC1;Disk;LocaleES3_2_2;LocaleES 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocaleES 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;7091e70daa56329d68850ec9f1f3e851;Disk;LocaleFR3_2_2;LocaleFR 3.2.2;Hyperion (3.2.2 Update);LocaleFR 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;C832567C3AFB3F77394672FB73FED605;Disk;LocaleFR3_2_2;LocaleFR 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocaleFR 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;f277608a1fdf558be104a2950c737dee;Disk;LocaleGR3_2_2;LocaleGR 3.2.2;Hyperion (3.2.2 Update);LocaleGR 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;4D4436A7A8F7E877493ACA8C0CAB4157;Disk;LocaleGR3_2_2;LocaleGR 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocaleGR 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;2c68842d036c54eafa98a335e19ec1fe;Disk;LocaleIT3_2_2;LocaleIT 3.2.2;Hyperion (3.2.2 Update);LocaleIT 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;2CC003E0FD14635FCE4C131DF636EB60;Disk;LocaleIT3_2_2;LocaleIT 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocaleIT 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;524b92f4ded39d6e16f04d5fb0b2f435;Disk;LocaleNL3_2_2;LocaleNL 3.2.2;Hyperion (3.2.2 Update);LocaleNL 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;D4AB095C78242711234FF809258D4755;Disk;LocaleNL3_2_2;LocaleNL 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocaleNL 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;c94355c792bada78e18dc841a5b4eb50;Disk;LocaleNO3_2_2;LocaleNO 3.2.2;Hyperion (3.2.2 Update);LocaleNO 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;47877472B06C94BD604C7520F53E84E2;Disk;LocaleNO3_2_2;LocaleNO 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocaleNO 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;306c3cb0519abe6707c4c209cdd35189;Disk;LocalePL3_2_2;LocalePL 3.2.2;Hyperion (3.2.2 Update);LocalePL 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;34517E9C943758294CE6F1BA69D5C187;Disk;LocalePL3_2_2;LocalePL 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocalePL 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;3a9f89d6538f070170749d33ec001ae2;Disk;LocalePT3_2_2;LocalePT 3.2.2;Hyperion (3.2.2 Update);LocalePT 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;486191F2D8AB0DA97FE9F04FBE4640BD;Disk;LocalePT3_2_2;LocalePT 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocalePT 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;feef154ac89e967b2f9f2fc9f83482c3;Disk;LocaleRS3_2_2;LocaleRS 3.2.2;Hyperion (3.2.2 Update);LocaleRS 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;E015012A08A84C7C915322D7E3452CB3;Disk;LocaleRS3_2_2;LocaleRS 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocaleRS 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;2f05bd84ca7141196d0976ce83e51178;Disk;LocaleRU3_2_2;LocaleRU 3.2.2;Hyperion (3.2.2 Update);LocaleRU 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;E70C377D579A5171BFEF7B3BC937038C;Disk;LocaleRU3_2_2;LocaleRU 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocaleRU 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;a0c1d3c398e853e4a47afa74524fc3d2;Disk;LocaleSE3_2_2;LocaleSE 3.2.2;Hyperion (3.2.2 Update);LocaleSE 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;DF2D452056D9BA0706839CC7FD94190B;Disk;LocaleSE3_2_2;LocaleSE 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocaleSE 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;10490f2d49a4e6eba3ede9ca77928029;Disk;LocaleTR3_2_2;LocaleTR 3.2.2;Hyperion (3.2.2 Update);LocaleTR 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;CA19A6C8C1B268FBDCE7DF1653257EC5;Disk;LocaleTR3_2_2;LocaleTR 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocaleTR 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;df95cdaefbdf7db9302289bcc20b5865;Disk;LocaleUK3_2_2;LocaleUK 3.2.2;Hyperion (3.2.2 Update);LocaleUK 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;8709488AD6BE922B3C746904D71B7A3F;Disk;LocaleUK3_2_2;LocaleUK 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);LocaleUK 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;ee388739de555821012f8ca75e3e8e6e;Disk;ModulesA12003_2_2;ModulesA1200 3.2.2;Hyperion (3.2.2 Update);ModulesA1200 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;EA8CA10DD6EE55CD123D8E9EB2A034CA;Disk;ModulesA12003_2_2;ModulesA1200 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);ModulesA1200 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;df84fcbae4d1c5466d5b5445e82f0019;Disk;ModulesA20003_2_2;ModulesA2000 3.2.2;Hyperion (3.2.2 Update);ModulesA2000 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;9C5AFD6BF49A7886A09F7494E93921F5;Disk;ModulesA20003_2_2;ModulesA2000 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);ModulesA2000 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;74bec54cf0c6c49f6910dce6c8846e02;Disk;ModulesA30003_2_2;ModulesA3000 3.2.2;Hyperion (3.2.2 Update);ModulesA3000 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;7D0EE5C4D9187074BA98F209BC7411CC;Disk;ModulesA30003_2_2;ModulesA3000 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);ModulesA3000 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;504f9b3166948e7a3537f5e81efa30e7;Disk;ModulesA4000D3_2_2;ModulesA4000D 3.2.2;Hyperion (3.2.2 Update);ModulesA4000D 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;9C307FDE4BF80C92D2CE010E5783F1D1;Disk;ModulesA4000D3_2_2;ModulesA4000D 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);ModulesA4000D 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;b430b4ddb9d30c57cc82374dd2ddd889;Disk;ModulesA4000T3_2_2;ModulesA4000T 3.2.2;Hyperion (3.2.2 Update);ModulesA4000T 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;C7E6EC3220109185D3019FBA30BEDEF9;Disk;ModulesA4000T3_2_2;ModulesA4000T 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);ModulesA4000T 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;1c1d1dbd19023fe47f08ff7bc7c2517b;Disk;ModulesA5003_2_2;ModulesA500 3.2.2;Hyperion (3.2.2 Update);ModulesA500 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;1E3F7F3172D4133F33B12C681542337E;Disk;ModulesA5003_2_2;ModulesA500 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);ModulesA500 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;bd2d32a3a96dc6e2ee945f87b00a7646;Disk;ModulesA6003_2_2;ModulesA600 3.2.2;Hyperion (3.2.2 Update);ModulesA600 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;58AF498BF9611BFA625EA722F82A21FC;Disk;ModulesA6003_2_2;ModulesA600 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);ModulesA600 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;317a1e4e072e05e363a00cd1b05f4a14;Disk;ModulesCD323_2_2;ModulesCD32 3.2.2;Hyperion (3.2.2 Update);ModulesCD32 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;4573B4794B80FA9189DC9FD3AC18EB48;Disk;ModulesCD323_2_2;ModulesCD32 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);ModulesCD32 3.2.2
+1.0;9.9;2;3.2.2;Hash;;;17257b34ff0047df27263a5a9104e190;Disk;Update3_2_2;Update 3.2.2;Hyperion (3.2.2 Update);Update 3.2.2
+1.0;9.9;1;3.2.2;Hash;;;B83E74D6FC87C40EEBC102355BCF1382;Disk;Update3_2_2;Update 3.2.2;Hyperion (3.2.2.1 Hotfix Pack);Update 3.2.2
+1.0;9.9;1;3.2.2.1;Hash;;;9EE0F110645413020D6D18B1E4302122;Disk;Update3_2_2_1;Update 3.2.2.1;Hyperion (3.2.2.1 Hotfix Pack);Update 3.2.2.1
+1.0;9.9;1;3.2.3;Hash;;;56E9010178902A4BF2D8B1BFD791BE0B;Disk;4ColorIcons3_2;4ColorIcons 3.2;Hyperion (3.2.3);4ColorIcons 3.2
+1.0;9.9;1;3.2.3;Hash;;;58AF923F36F1FE0EE16BB62216FBB44E;Disk;Classes3_2_3;Classes 3.2.3;Hyperion (3.2.3);Classes 3.2.3
+1.0;9.9;1;3.2.3;Hash;;;CC19B8ACF0FB41A7ABD79304E224390A;Disk;DiskDoctor3_2_3;DiskDoctor 3.2.3;Hyperion (3.2.3);DiskDoctor 3.2.3
+1.0;9.9;1;3.2.3;Hash;;;1BE9C9A15900EE655564777D185C5929;Disk;Extras3_2_3;Extras 3.2.3;Hyperion (3.2.3);Extras 3.2.3
+1.0;9.9;1;3.2.3;Hash;;;5BE89147576C7953E7BE039406B65910;Disk;LocaleCZ3_2_3;LocaleCZ 3.2.3;Hyperion (3.2.3);Locale 3.2.3-CZ
+1.0;9.9;1;3.2.3;Hash;;;F523DD8F7922761DFC87743E400B51E6;Disk;LocaleDE3_2_3;LocaleDE 3.2.3;Hyperion (3.2.3);Locale 3.2.3-DE
+1.0;9.9;1;3.2.3;Hash;;;2316FDC9F96B087CBD5FF6C0F0D58A5B;Disk;LocaleDK3_2_3;LocaleDK 3.2.3;Hyperion (3.2.3);Locale 3.2.3-DK
+1.0;9.9;1;3.2.3;Hash;;;4355F9FD19A05152289818AB19F7333D;Disk;LocaleEN3_2_3;LocaleEN 3.2.3;Hyperion (3.2.3);Locale 3.2.3-EN
+1.0;9.9;1;3.2.3;Hash;;;929F937FC9837C64E33FA6C90E246DEF;Disk;LocaleES3_2_3;LocaleES 3.2.3;Hyperion (3.2.3);Locale 3.2.3-ES
+1.0;9.9;1;3.2.3;Hash;;;156BC39B8B30141ECC32BCB06F69F1AF;Disk;LocaleFR3_2_3;LocaleFR 3.2.3;Hyperion (3.2.3);Locale 3.2.3-FR
+1.0;9.9;1;3.2.3;Hash;;;655864477A98D59E7D608D92BCA4E645;Disk;LocaleGR3_2_3;LocaleGR 3.2.3;Hyperion (3.2.3);Locale 3.2.3-GR
+1.0;9.9;1;3.2.3;Hash;;;523B818877AEA73A79FCB330C06E2DA9;Disk;LocaleIT3_2_3;LocaleIT 3.2.3;Hyperion (3.2.3);Locale 3.2.3-IT
+1.0;9.9;1;3.2.3;Hash;;;4023662F85856DFE1CB3A89B3A804143;Disk;LocaleNL3_2_3;LocaleNL 3.2.3;Hyperion (3.2.3);Locale 3.2.3-NL
+1.0;9.9;1;3.2.3;Hash;;;607531DB32B4CB60A23F81A03E70E035;Disk;LocaleNO3_2_3;LocaleNO 3.2.3;Hyperion (3.2.3);Locale 3.2.3-NO
+1.0;9.9;1;3.2.3;Hash;;;D1C6B0536C532FA629EA5B7C70511394;Disk;LocalePL3_2_3;LocalePL 3.2.3;Hyperion (3.2.3);Locale 3.2.3-PL
+1.0;9.9;1;3.2.3;Hash;;;9389B8B1C3D73BBF3F694E1F85788CCD;Disk;LocalePT3_2_3;LocalePT 3.2.3;Hyperion (3.2.3);Locale 3.2.3-PT
+1.0;9.9;1;3.2.3;Hash;;;F699A62A04B0076B0C73C51A415B53B3;Disk;LocaleRS3_2_3;LocaleRS 3.2.3;Hyperion (3.2.3);Locale 3.2.3-RS
+1.0;9.9;1;3.2.3;Hash;;;97F54F938FC3FF909EAEAED9656137C7;Disk;LocaleRU3_2_3;LocaleRU 3.2.3;Hyperion (3.2.3);Locale 3.2.3-RU
+1.0;9.9;1;3.2.3;Hash;;;554FC350C906B2B5966D15F1FA43727F;Disk;LocaleSE3_2_3;LocaleSE 3.2.3;Hyperion (3.2.3);Locale 3.2.3-SE
+1.0;9.9;1;3.2.3;Hash;;;AFAB6A82AFCDBA73B5CFFA762311CEB5;Disk;LocaleTR3_2_3;LocaleTR 3.2.3;Hyperion (3.2.3);Locale 3.2.3-TR
+1.0;9.9;1;3.2.3;Hash;;;B44138A4C96C7272F1E3E3F595FA6BAD;Disk;LocaleUK3_2_3;LocaleUK 3.2.3;Hyperion (3.2.3);Locale 3.2.3-UK
+1.0;9.9;1;3.2.3;Hash;;;A44B18AA3AAB9E0474E4B1B958365F28;Disk;ModulesA1200_3_2_3;ModulesA1200_ 3.2.3;Hyperion (3.2.3);ModulesA1200_ 3.2.3
+1.0;9.9;1;3.2.3;Hash;;;51B85621E4D4DF08A8EE0E4746C1923D;Disk;ModulesA2000_3_2_3;ModulesA2000_ 3.2.3;Hyperion (3.2.3);ModulesA2000_ 3.2.3
+1.0;9.9;1;3.2.3;Hash;;;1A385CA1C824D7D82783E71A4BB96460;Disk;ModulesA3000_3_2_3;ModulesA3000_ 3.2.3;Hyperion (3.2.3);ModulesA3000_ 3.2.3
+1.0;9.9;1;3.2.3;Hash;;;38CA3BCB99796BE0D4C59301006A81F6;Disk;ModulesA4000D_3_2_3;ModulesA4000D_ 3.2.3;Hyperion (3.2.3);ModulesA4000D_ 3.2.3
+1.0;9.9;1;3.2.3;Hash;;;91DA051276B26D56F59CC4DE18C1F8AB;Disk;ModulesA4000T_3_2_3;ModulesA4000T_ 3.2.3;Hyperion (3.2.3);ModulesA4000T_ 3.2.3
+1.0;9.9;1;3.2.3;Hash;;;371EF369B13DC7234043B0E95C08AA46;Disk;ModulesA500_3_2_3;ModulesA500_ 3.2.3;Hyperion (3.2.3);ModulesA500_ 3.2.3
+1.0;9.9;1;3.2.3;Hash;;;4B489ADF76A41C72D8850028D298CF48;Disk;ModulesA600_3_2_3;ModulesA600_ 3.2.3;Hyperion (3.2.3);ModulesA600_ 3.2.3
+1.0;9.9;1;3.2.3;Hash;;;3CAFA62831D8E1B617F8A52BFC136EEA;Disk;ModulesCD32_3_2_3;ModulesCD32_ 3.2.3;Hyperion (3.2.3);ModulesCD32_ 3.2.3
+1.0;9.9;1;3.2.3;Hash;;;58AFF9A5C27D8BB0C5D7C43CEEEADD6B;Disk;Update3_2_3;Update 3.2.3;Hyperion (3.2.3);Update 3.2.3

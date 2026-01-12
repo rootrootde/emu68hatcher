@@ -1,0 +1,19 @@
+name: rtb_files_skick
+friendly_name: RTB Files - SKick
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/boot/skick346.lha
+  hash: 745EBF5A39D42E1B352A1FB914CFAB7A
+  filename: skick346.lha
+install:
+- from: Kickstarts/*
+  to: Devs/Kickstarts/

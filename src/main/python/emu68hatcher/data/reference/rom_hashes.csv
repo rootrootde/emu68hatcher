@@ -1,0 +1,12 @@
+MinimumInstallerVersion;InstallerVersionLessThan;IncludeorExclude;ExcludeMessage;Kickstart_Version;Sequence;Hash;FriendlyName;FAT32Name
+1.0;9.9;Include;;3.2.2.1;1;93B2A0F1AF4A6AC373D6DA2CD4F76C3B;Kickstart 3.2.2 A1200 (47.111);A1200.47.111.rom
+1.0;9.9;Include;;3.2;1;cad62a102848e13bf04d8a3b0f8be6ab;Kickstart 3.2 A1200 (47.96);A1200.47.96.rom
+;;;;;;1c76a282cfca1565ad0d46089742ef20;Kickstart 3.2.1 A1200 (47.102);A1200.47.102.rom
+1.0;9.9;Include;;3.1;1;646773759326FBAC3B2311FD8C8793EE;Kickstart 3.1 A1200 (40.068);A1200.40.068.rom
+;;;;;;;Kickstart 3.1 A1200 (40.071);A1200.40.071.rom
+1.0.5.1;9.9;Exclude;Emu68 Imager does not support encrypted AmigaForever ROMs. You will need to either find an unencrypted version or decrypt the ROM. The file found was:;3.1;4;43EFFFAFB382528355BB4CDDE9FA9CE7;Kickstart 3.1 A1200 Encrypted ROM;
+1.0;9.9;Include;;3.1;3;1C953F4337B450B24B108DF19FCCB788;Kickstart 3.x A1200 Cloanto (45.064);A1200.45.064.rom
+1.0;9.9;Include;;3.1;2;14CDA40CC6E39B468195EBC03F335CE1;Kickstart 3.x A1200 Cloanto (45.066);A1200.45.066.rom
+;;;;;;;Kickstart 3.x A1200 Cloanto (45.061);A1200.45.061.rom
+1.0;9.9;Include;;3.2.3;1;63B9A74484FAF5DC74469DBBFA0ADE5B;Kickstart 3.2.3 A1200 (47.115);A1200.47.115.rom
+1.0;9.9;Include;;3.9;1;646773759326FBAC3B2311FD8C8793EE;Kickstart 3.1 A1200 (40.068);A1200.40.068.rom

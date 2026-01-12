@@ -1,0 +1,19 @@
+name: filesysbox
+friendly_name: FileSysbox
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/libs/filesysbox.m68k-amigaos.lha
+  filename: filesysbox.m68k-amigaos.lha
+install:
+- from: filesysbox/Libs/filesysbox.library.020
+  to: Libs/
+  rename: filesysbox.library

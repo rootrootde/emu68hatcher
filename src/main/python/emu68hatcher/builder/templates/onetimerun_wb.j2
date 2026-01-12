@@ -1,0 +1,16 @@
+; OneTimeRunWB - First boot Workbench initialization
+; This script runs once after LoadWB and then renames itself
+
+; Set icon positions
+IF EXISTS S:SetIconPositions
+  C:Execute S:SetIconPositions
+ENDIF
+
+; Move any held WBStartup items into place
+IF EXISTS S:OneTimeRunWB/MoveWBStartup
+  C:Execute S:OneTimeRunWB/MoveWBStartup
+ENDIF
+
+; Rename this script so it doesn't run again
+; Note: S:OneTimeRunWB is used by WBStartup/OnetimeRunWB after LoadWB - don't delete it here
+C:Rename S:OneTimeRunWB.script S:OneTimeRunWB.done QUIET

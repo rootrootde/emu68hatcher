@@ -1,0 +1,17 @@
+name: listdevices
+friendly_name: ListDevices
+group: System
+description: Lists DOS devices and their properties
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: local
+  path: System/C/ListDevices
+install:
+- from: System/C/ListDevices
+  to: C/

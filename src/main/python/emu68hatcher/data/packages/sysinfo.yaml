@@ -1,0 +1,22 @@
+name: sysinfo
+friendly_name: SysInfo
+group: Applications
+description: Standard benchmarking program
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: true
+download:
+  source: web
+  url: http://download.d0.se/pub/SysInfo.lha
+  backup_url: https://www.dropbox.com/scl/fi/x2ayt3w7f0kyly11pmbrb/SysInfo.lha?rlkey=vbxoki1oxu801o9f8w5sv3tuj&dl=1
+  hash: 8384493A31CF4C2A3F03FE51EF0341F7
+  filename: SysInfo.lha
+install:
+- from: SysInfo.info
+  to: Programs/
+- from: SysInfo/*
+  to: Programs/SysInfo/

@@ -1,0 +1,12 @@
+; HatcherTunings - per-device TCP/UDP buffer sizes for Roadshow.
+; Edit only if you know what you are doing.
+; Format: device;parameter;value
+; Parameters: TCPReceive, UDPReceive, TCPSend, UDPSend
+genet;TCPReceive;200000
+genet;UDPReceive;200000
+genet;TCPSend;16384
+genet;UDPSend;16384
+wifipi;TCPReceive;16384
+wifipi;UDPReceive;16384
+wifipi;TCPSend;16384
+wifipi;UDPSend;16384

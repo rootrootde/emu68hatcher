@@ -1,0 +1,17 @@
+name: oc666_library
+friendly_name: oc666.library
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: local
+  path: System/Libs/oc666.library
+install:
+- from: System/Libs/oc666.library
+  to: Libs/

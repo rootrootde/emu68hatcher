@@ -1,0 +1,28 @@
+WAIT 1
+; First-boot setup (Locale, hardware) is handled entirely in Startup-Sequence
+; before LoadWB. This script only handles second-boot ScreenMode selection.
+
+IF $FIRSTTIMEBOOTWB EQ "TRUE"
+   ; First-boot already handled in Startup-Sequence - just clean up
+   C:Echo "FALSE" > SYS:PREFS/ENV-ARCHIVE/FIRSTTIMEBOOTWB
+ENDIF
+
+IF $SCREENMODESETUP EQ "TRUE"
+   C:Echo "FALSE" > SYS:PREFS/ENV-ARCHIVE/SCREENMODESETUP
+   ECHO ""
+   ECHO "============================================"
+   ECHO "   Emu68 Hatcher - Display Setup (2/2)"
+   ECHO "============================================"
+   ECHO ""
+   ECHO "The Screen Mode preferences window will open next."
+   ECHO "Choose your preferred display resolution, then click Save."
+   ECHO ""
+   ECHO "After saving, setup is complete! No more reboots."
+   ECHO ""
+   C:Ask "Press RETURN to continue..."
+   SYS:Prefs/ScreenMode
+   ECHO ""
+   ECHO "Setup complete. Enjoy your Amiga!"
+   ECHO ""
+   C:Wait 3
+ENDIF

@@ -1,0 +1,19 @@
+name: sntp
+friendly_name: SNTP
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: comm/net/sntp.lha
+  hash: 30409A06905519C006C8E88A771E0C32
+  filename: sntp.lha
+install:
+- from: sntp/sntp
+  to: C/

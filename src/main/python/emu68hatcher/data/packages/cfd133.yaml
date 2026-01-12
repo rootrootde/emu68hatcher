@@ -1,0 +1,25 @@
+name: cfd133
+friendly_name: CompactFlash.device
+group: Drivers
+description: Driver used to mount CompactFlash cards on A600 and A1200
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: true
+download:
+  source: aminet
+  path: driver/media/CFD133.lha
+  hash: 41EFA7D5CDEDC94811D27226DA30644F
+  filename: CFD133.lha
+install:
+- from: CFD133/Devs/compactflash.device
+  to: Devs/
+- from: CFD133/C/*
+  to: C/
+- from: CFD133/Devs/CF0
+  to: Storage/DOSDrivers/
+- from: CFD133/Devs/CF0.info
+  to: Storage/DOSDrivers/

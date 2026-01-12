@@ -1,0 +1,16 @@
+name: copyreplace
+friendly_name: CopyReplace
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/sys/CopyReplace.lha
+  hash: e23160b39f50d879d7a2a1a93658a0c5
+  filename: CopyReplace.lha
+install:
+- from: Copy
+  to: C/

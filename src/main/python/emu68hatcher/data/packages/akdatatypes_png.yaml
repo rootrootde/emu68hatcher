@@ -1,0 +1,20 @@
+name: akdatatypes_png
+friendly_name: akDatatypes - PNG
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/dtype/akPNG-dt.lha
+  hash: ff0fe74ed8f9790ee27098aaf43ef756
+  filename: akPNG-dt.lha
+install:
+- from: akPNG-Datatype/Classes/DataTypes/akPNG.datatype
+  to: Classes/DataTypes/
+- from: akPNG-Datatype/devs/Datatypes/*
+  to: Devs/DataTypes/
+- from: akPNG-Datatype/Prefs/Datatypes/*
+  to: Prefs/akDatatypes/

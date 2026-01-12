@@ -1,0 +1,20 @@
+# Consolidated PiStorm folder local files
+# These are bundled scripts and utilities for the PiStorm folder
+name: pistorm_local_files
+friendly_name: PiStorm Scripts & Utilities
+group: System
+description: 'Network scripts, utilities, and configuration tools for PiStorm'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: local
+install:
+# Copy entire Pistorm folder contents
+- from: System/Pistorm/*
+  to: PiStorm/
+  recursive: true

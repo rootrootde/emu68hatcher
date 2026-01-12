@@ -1,0 +1,42 @@
+# Consolidated Emu68-tools package
+# Downloads once and installs all components to correct locations
+name: emu68_tools
+friendly_name: Emu68 Tools
+group: System
+description: 'EmuControl, Videocore, WaitUntilConnected, Emu68EDID, Emu68Info'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: github
+  repo: michalsc/Emu68-tools
+  asset_pattern: Emu68-tools
+  filename: Emu68-tools.zip
+install:
+# C/ folder tools
+- from: WaitUntilConnected/WaitUntilConnected
+  to: C/
+- from: EmuControl/EmuControl
+  to: C/
+- from: Emu68EDID/Emu68EDID
+  to: C/
+# EMU68INFO - direct from zip (also in Contrib/Emu68Info_0.1.7.lha)
+- from: Emu68Info/Emu68Info
+  to: C/
+  rename: EMU68INFO
+# PiStorm folder - EmuControl with icon
+- from: EmuControl/EmuControl
+  to: PiStorm/
+- from: EmuControl/EmuControl.info
+  to: PiStorm/
+# Picasso96 VideoCore driver
+- from: VideoCore/VideoCore.card
+  to: Libs/Picasso96/
+# WiFi device driver
+- from: Emu68-WiFi/Devs/*
+  to: Devs/
+  recursive: true

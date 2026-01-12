@@ -1,0 +1,15 @@
+# Boot files are handled specially by workflow.py, not the package installer
+# This package exists only to track the download dependency
+# Consolidates emu68_pistorm and emu68_pistorm32lite
+name: emu68_boot
+friendly_name: Emu68 Boot Files
+group: System
+description: 'Emu68 firmware, kernel, and boot configuration'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+# No install rules - boot files go to EMU68BOOT partition via workflow.py

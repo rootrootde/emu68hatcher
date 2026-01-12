@@ -1,0 +1,19 @@
+name: janoeditor
+friendly_name: JanoEditor
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: text/edit/JanoEditor.lha
+  hash: f7ad33f8c8374ccb8b9488f571ff76f5
+  filename: JanoEditor.lha
+install:
+- from: Jano_v*/Jano*
+  to: Programs/JanoEditor/

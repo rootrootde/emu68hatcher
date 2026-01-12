@@ -1,0 +1,71 @@
+name: ibrowse
+friendly_name: IBrowse
+group: Internet
+description: Demo version of Ibrowse (time limited to 30 minutes) of the popular Amiga
+  Web Browser.
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: true
+download:
+  source: web
+  url: http://www.ibrowse-dev.net/resources/IBrowse3.0a-OS3.lha
+  backup_url: https://www.dropbox.com/scl/fi/8kzcii0sz6nn3sdaoaijb/IBrowse-OS3.lha?rlkey=0q0sr03yux90qtnf582bsf4pc&dl=1
+  hash: E448F1B7E46034A5D2DBCB464C9A7268
+  filename: IBrowse-OS3.lha
+install:
+- from: IBrowse*.info
+  to: Programs/
+  rename: IBrowse.info
+- from: IBrowse*-OS3/Catalogs/*
+  to: Programs/IBrowse/Catalogs/
+- from: Ibrowse*-OS3/Codecs/*
+  to: Programs/IBrowse/Codecs/
+- from: Ibrowse*-OS3/Codecs040fpu/*
+  to: Programs/IBrowse/Codecs040fpu/
+- from: Ibrowse*-OS3/ibcc/*
+  to: Programs/IBrowse/ibcc/
+- from: Ibrowse*-OS3/images/*
+  to: Programs/IBrowse/images/
+- from: Ibrowse*-OS3/Anims/TransferAnimation.24
+  to: Programs/IBrowse/images/
+  rename: TransferAnimation
+- from: Ibrowse*-OS3/Anims/TransferAnimation
+  to: Programs/IBrowse/images/
+  rename: TransferAnimation
+- from: Ibrowse*-OS3/info/*
+  to: Programs/IBrowse/info/
+- from: Ibrowse*-OS3/protocols/*
+  to: Programs/IBrowse/protocols/
+- from: Ibrowse*-OS3/Icons/IBrowse.info
+  to: Programs/IBrowse/
+- from: Ibrowse*-OS3/Javascript/javascript.library.020
+  to: Programs/IBrowse/
+  rename: javascript.library
+- from: Ibrowse*-OS3/plugins
+  to: Programs/IBrowse/Plugins/Plugins/
+- from: Ibrowse*-OS3/MUI/*
+  to: Programs/MUI/Libs/MUI/
+- from: Ibrowse*-OS3/spatch
+  to: C/
+- from: Ibrowse*-OS3/cache
+  to: Programs/IBrowse/Plugins/Cache/
+- from: IBrowse*-OS3/history.txt
+  to: Programs/IBrowse/
+- from: IBrowse*-OS3/IBrowse
+  to: Programs/IBrowse/
+- from: IBrowse*-OS3/ReadMe.html
+  to: Programs/IBrowse/
+- from: IBrowse*-OS3/ReadMe.html.info
+  to: Programs/IBrowse/
+- from: IBrowse*-OS3/ReadMe.mui
+  to: Programs/IBrowse/
+- from: IBrowse*-OS3/ReadMe.mui.info
+  to: Programs/IBrowse/
+- from: IBrowse*-OS3/ReadMe.txt
+  to: Programs/IBrowse/
+- from: IBrowse*-OS3/ReadMe.txt.info
+  to: Programs/IBrowse/

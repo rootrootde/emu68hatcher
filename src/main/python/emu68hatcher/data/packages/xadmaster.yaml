@@ -1,0 +1,23 @@
+name: xadmaster
+friendly_name: XADMaster
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/arc/xadmaster020.lha
+  hash: 38C003269BECBF309108BF1C86E0C688
+  filename: xadmaster020.lha
+install:
+- from: xad/c/*
+  to: C/
+- from: xad/libs/xad/*
+  to: Libs/xad/
+- from: xad/libs/xadmast*
+  to: Libs/

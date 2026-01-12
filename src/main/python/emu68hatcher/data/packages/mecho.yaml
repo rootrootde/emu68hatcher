@@ -1,0 +1,19 @@
+name: mecho
+friendly_name: Mecho
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/batch/mecho.lha
+  hash: DA39BA19826D212FD7A2B74131F6C213
+  filename: mecho.lha
+install:
+- from: mecho
+  to: C/

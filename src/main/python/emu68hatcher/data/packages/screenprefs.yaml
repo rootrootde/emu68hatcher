@@ -1,0 +1,14 @@
+name: screenprefs
+friendly_name: ScreenPrefs
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.9'
+mandatory: true
+download:
+  source: local
+  path: System/Prefs/Env-Archive/Sys/screenmode.prefs
+install:
+- from: System/Prefs/Env-Archive/Sys/screenmode.prefs
+  to: Prefs/Env-Archive/Sys/

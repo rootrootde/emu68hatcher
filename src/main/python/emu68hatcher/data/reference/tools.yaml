@@ -1,0 +1,23 @@
+7zip:
+  windows-x64:
+    url: "https://www.7-zip.org/a/7z2408-extra.7z"
+    binary: "x64/7za.exe"
+    extract_method: self
+  windows-x86:
+    url: "https://www.7-zip.org/a/7z2408-extra.7z"
+    binary: "7za.exe"
+    extract_method: self
+  linux-x64:
+    url: "https://github.com/p7zip-project/p7zip/releases/download/v17.05/linux-p7zip.zip"
+    binary: "bin/7za"
+    extract_method: zip
+  linux-arm64:
+    url: "https://github.com/p7zip-project/p7zip/releases/download/v17.05/linux-p7zip.zip"
+    binary: "bin/7za"
+    extract_method: zip
+
+7zr-bootstrap:
+  windows:
+    url: "https://www.7-zip.org/a/7zr.exe"
+    binary: "7zr.exe"
+    extract_method: none

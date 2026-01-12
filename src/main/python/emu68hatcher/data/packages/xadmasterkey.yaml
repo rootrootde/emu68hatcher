@@ -1,0 +1,19 @@
+name: xadmasterkey
+friendly_name: XADMasterKey
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/arc/xadmaster-key.lha
+  hash: DCF85245D75DC1B1F17C4E5AE9163403
+  filename: xadmaster-key.lha
+install:
+- from: xadmaster.key
+  to: S/

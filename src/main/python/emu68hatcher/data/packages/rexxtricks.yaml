@@ -1,0 +1,18 @@
+name: rexxtricks
+friendly_name: RexxTricks
+group: System
+description: ARexx extension library (needed by Emu68-Updater)
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/rexx/RexxTricks_386.lha
+  hash: 7ABF177D07FEF0E41B80315E5C403E83
+install:
+- from: RexxTricks/Libs/rexxtricks.library
+  to: Libs/

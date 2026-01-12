@@ -1,0 +1,30 @@
+name: whdload
+friendly_name: WHDLoad
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: web
+  url: http://whdload.de/whdload/WHDLoad_usr.lha
+  backup_url: https://www.dropbox.com/scl/fi/d5eg85zx8tta49uesd1ll/Whdload_usr.lha?rlkey=gf0wbltrgej9k998kqqcq7wvk&dl=1
+  filename: Whdload_usr.lha
+install:
+- from: WHDLoad/C/WHDLoad
+  to: C/
+  rename: WHDLoad.ori
+- from: WHDLoad/C/WHDLoadCD32
+  to: C/
+- from: WHDLoad/C/RawDIC
+  to: C/
+- from: WHDLoad/C/DIC
+  to: C/
+- from: WHDLoad/C/Patcher
+  to: C/
+- from: WHDLoad/S/*
+  to: S/

@@ -1,0 +1,21 @@
+name: identify
+friendly_name: Identify
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/libs/IdentifyUsr.lha
+  hash: F8BD9FEB9FA595BEA979755224D08C5C
+  filename: IdentifyUsr.lha
+install:
+- from: Identify/libs/rexxidentify.library
+  to: Libs/
+- from: Identify/libs/identify.library
+  to: Libs/

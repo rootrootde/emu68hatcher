@@ -1,0 +1,67 @@
+name: mui38
+friendly_name: MUI38
+group: System
+description: ''
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/libs/mui38usr.lha
+  hash: 04DF2D2C444A112C66D1B2CA593CB71A
+  filename: mui38usr.lha
+install:
+- from: MUI.info
+  to: Programs/
+- from: MUI/Docs/*
+  to: Programs/MUI/Docs/
+- from: MUI/Libs/*
+  to: Programs/MUI/Libs/
+- from: MUI/Rexx/*
+  to: Programs/MUI/Rexx/
+- from: MUI/Presets/*
+  to: Programs/MUI/Presets/
+- from: MUI/Patterns/*
+  to: Programs/MUI/Patterns/
+- from: MUI/Icons/*
+  to: Programs/MUI/Icons/
+- from: MUI/Goodies/*
+  to: Programs/MUI/Goodies/
+- from: MUI/Images/*
+  to: Programs/MUI/Images/
+- from: MUI/Docs.info
+  to: Programs/MUI/
+- from: MUI/Goodies.info
+  to: Programs/MUI/
+- from: MUI/Icons.info
+  to: Programs/MUI/
+- from: MUI/Images.info
+  to: Programs/MUI/
+- from: MUI/Libs.info
+  to: Programs/MUI/
+- from: MUI/LiesMich
+  to: Programs/MUI/
+- from: MUI/LiesMich.info
+  to: Programs/MUI/
+- from: MUI/MUI
+  to: Programs/MUI/
+- from: MUI/MUI.info
+  to: Programs/MUI/
+- from: MUI/Patterns.info
+  to: Programs/MUI/
+- from: MUI/Presets.info
+  to: Programs/MUI/
+- from: MUI/PSI
+  to: Programs/MUI/
+- from: MUI/PSI.info
+  to: Programs/MUI/
+- from: MUI/ReadMe
+  to: Programs/MUI/
+- from: MUI/ReadMe.info
+  to: Programs/MUI/
+- from: MUI/Rexx.info
+  to: Programs/MUI/

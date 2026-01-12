@@ -1,0 +1,23 @@
+name: setdst
+friendly_name: SetDST
+group: System
+description: 'Daylight savings time handler. DST.Dat config installed via environment_variables package.'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/time/SetDST.lha
+  hash: EF32E16790F81AAF5AB8DDC1A60E372B
+  filename: SetDST.lha
+install:
+- from: SetDST-*/C/*
+  to: C/
+- from: SetDST-*/SetDST
+  to: C/
+- from: SetDST-*/SetDST.info
+  to: WBStartup/Disabled/

@@ -1,0 +1,43 @@
+IF $RpiType EQ "RPi4"
+	C:Echo "Raspberry 4 (or CM4) Found - brcm-emmc.device"
+	C:Copy >NIL: Sys:Storage/DOSDrivers/SD0pi4 Sys:Devs/DOSDrivers/SD0
+
+	IF $KickstartVersion EQ 3.2
+		IF EXISTS Sys:Tools/HDToolbox.info
+			C:Delete Sys:Tools/HDToolbox.info QUIET
+		ENDIF
+	ENDIF
+	IF $KickstartVersion EQ 3.9
+		Skip END
+	ENDIF
+	IF EXISTS Sys:Tools/HDToolboxPi4.info
+		C:Rename from Sys:Tools/HDToolboxPi4.info to Sys:Tools/HDToolbox.info QUIET
+	ENDIF
+	C:Delete >NIL: Sys:Storage/DOSDrivers/SD0Pi3 QUIET
+	C:Delete >NIL: Sys:Storage/DOSDrivers/SD0Pi4 QUIET
+	IF EXISTS Sys:Tools/HDToolboxPi3.info
+		C:Delete Sys:Tools/HDToolboxPi3.info QUIET
+	ENDIF
+ENDIF
+IF $RpiType EQ "RPi3"
+	C:Echo "Raspberry 3 (or Raspberry Zero2) Found - brcm-sdhc.device"
+	C:Copy >NIL: Sys:Storage/DOSDrivers/SD0pi3 Sys:Devs/DOSDrivers/SD0
+
+	IF $KickstartVersion EQ 3.2
+		IF EXISTS Sys:Tools/HDToolbox.info
+			C:Delete Sys:Tools/HDToolbox.info QUIET
+		ENDIF
+	ENDIF
+	IF $KickstartVersion EQ 3.9
+		Skip END
+	ENDIF
+	IF EXISTS Sys:Tools/HDToolboxPi3.info
+		C:Rename from Sys:Tools/HDToolboxPi3.info to Sys:Tools/HDToolbox.info QUIET
+	ENDIF
+	C:Delete >NIL: Sys:Storage/DOSDrivers/SD0Pi3 QUIET
+	C:Delete >NIL: Sys:Storage/DOSDrivers/SD0Pi4 QUIET
+	IF EXISTS Sys:Tools/HDToolboxPi4.info
+		C:Delete Sys:Tools/HDToolboxPi4.info QUIET
+	ENDIF
+ENDIF
+LAB END
