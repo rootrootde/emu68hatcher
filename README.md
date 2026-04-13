@@ -1,10 +1,14 @@
+<p align="center">
+  <img src="images/logo/emu-icon.svg" width="128" height="128" alt="emu68-hatcher logo">
+</p>
+
 # emu68-hatcher
 
 cross-platform app to build sd card images for pistorm/emu68 amiga systems, similar to [Emu68-Imager](https://github.com/mja65/Emu68-Imager-Software)
 
 designed to run cross-platform with a simple Qt GUI and CLI
 
-![start tab](screenshots/start.png)
+![start tab](images/screenshots/start.png)
 
 1. [⚠️ important / state of the project](#1--important--state-of-the-project)
 2. [system requirements](#2-system-requirements)
@@ -91,22 +95,22 @@ there's also a `emu68-hatcher` console script registered by pip, but depending o
 2. if required tools are shown as missing, click **download missing tools**, wait for green checkmarks. if 7z fails try brew: `brew install p7zip` and hit refresh
 3. kickstart tab: pick the workbench version to install. select the folder containing the ROMs. emu68-hatcher will automatically look in the same folder for the workbench ADF files but you can also point it somewhere else
 
-   ![kickstart tab](screenshots/kickstart.png)
+   ![kickstart tab](images/screenshots/kickstart.png)
 
 4. display tab: pick the HDMI output mode for your monitor and the icon set (GlowIcons (only 3.2+) or Standard)
 
-   ![display tab](screenshots/display.png)
+   ![display tab](images/screenshots/display.png)
 5. packages tab: enable/disable optional packages. mandatory system packages are always included and not shown here
 6. partitions tab: configure disk size and partition layout. default is a 64gb image with a ~4gb Workbench partition and the rest labeled as "Work". you can add/remove/resize partitions, drag the borders on the partition bar to resize them (or type exact sizes)
 
-   ![partitions tab](screenshots/partitions.png)
+   ![partitions tab](images/screenshots/partitions.png)
 
 7. output tab: pick **image file** (not disk, see [state of the project](#1-%EF%B8%8F-important--state-of-the-project)), pick a destination folder and filename
 
-   ![output tab](screenshots/output.png)
+   ![output tab](images/screenshots/output.png)
 8. click **build image**. first build downloads a bunch of packages (uses cache after that)
 
-   ![build progress](screenshots/building.png)
+   ![build progress](images/screenshots/building.png)
 
 9. flash the image to the sd card (see [5. flashing to sd](#5-flashing-to-sd))
 
