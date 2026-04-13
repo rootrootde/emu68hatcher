@@ -10,7 +10,7 @@ this package provides the core functionality for:
 """
 
 __version__ = "0.1.0"
-__author__ = "Chris"
+__author__ = "rootrootde"
 
 from emu68hatcher.config.schema import BuildConfig
 

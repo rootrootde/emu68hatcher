@@ -8,7 +8,7 @@ each package is defined in its own YAML file with clear structure.
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SourceType(str, Enum):
@@ -69,8 +69,7 @@ class InstallRule(BaseModel):
     uncompress_z: bool = False  # for Workbench 3.2.x .Z files
     rename: Optional[str] = None  # rename file on install
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ScriptModification(BaseModel):
@@ -162,5 +161,4 @@ class ADFRule(BaseModel):
     # icon set filter (if set, only include for this icon set)
     icon_set: Optional[str] = None
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)

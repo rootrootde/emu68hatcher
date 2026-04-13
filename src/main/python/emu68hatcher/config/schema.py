@@ -12,7 +12,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class KickstartVersion(str, Enum):
@@ -346,66 +346,65 @@ class BuildConfig(BaseModel):
         description="Emu68 boot command line parameters",
     )
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "version": "1.0.0",
-                "metadata": {
-                    "description": "My Amiga 3.1 setup",
-                    "author": "User",
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "version": "1.0.0",
+            "metadata": {
+                "description": "My Amiga 3.1 setup",
+                "author": "User",
+            },
+            "kickstart": {
+                "version": "3.1",
+                "rom_directory": "/path/to/roms/",
+            },
+            "install_media": {
+                "type": "ADF",
+                "directory": "/path/to/workbench/",
+            },
+            "display": {
+                "screen_mode": "PAL",
+                "workbench": {
+                    "screen_mode": "PAL:HighRes",
+                    "color_depth": 8,
+                    "backdrop": True,
                 },
-                "kickstart": {
-                    "version": "3.1",
-                    "rom_directory": "/path/to/roms/",
-                },
-                "install_media": {
-                    "type": "ADF",
-                    "directory": "/path/to/workbench/",
-                },
-                "display": {
-                    "screen_mode": "PAL",
-                    "workbench": {
-                        "screen_mode": "PAL:HighRes",
-                        "color_depth": 8,
-                        "backdrop": True,
+            },
+            "packages": [
+                {"name": "WHDLoad", "enabled": True},
+                {"name": "DirectoryOpus", "enabled": True},
+            ],
+            "icon_set": "GlowIcons",
+            "partitions": {
+                "disk_size": 7600000000,
+                "layout": [
+                    {"type": "fat32", "name": "EMU68BOOT", "size": 506000000},
+                    {
+                        "type": "id76",
+                        "name": "AMIGA",
+                        "size": 7093000000,
+                        "amiga_partitions": [
+                            {
+                                "device": "SDH0",
+                                "volume": "Workbench",
+                                "filesystem": "PFS3",
+                                "size": 506000000,
+                                "bootable": True,
+                                "priority": 0,
+                            },
+                            {
+                                "device": "SDH1",
+                                "volume": "Work",
+                                "filesystem": "PFS3",
+                                "size": 6586000000,
+                                "bootable": False,
+                            },
+                        ],
                     },
-                },
-                "packages": [
-                    {"name": "WHDLoad", "enabled": True},
-                    {"name": "DirectoryOpus", "enabled": True},
                 ],
-                "icon_set": "GlowIcons",
-                "partitions": {
-                    "disk_size": 7600000000,  # 8GB SD card with 95% usable
-                    "layout": [
-                        {"type": "fat32", "name": "EMU68BOOT", "size": 506000000},
-                        {
-                            "type": "id76",
-                            "name": "AMIGA",
-                            "size": 7093000000,
-                            "amiga_partitions": [
-                                {
-                                    "device": "SDH0",
-                                    "volume": "Workbench",
-                                    "filesystem": "PFS3",
-                                    "size": 506000000,  # ~500MB
-                                    "bootable": True,
-                                    "priority": 0,
-                                },
-                                {
-                                    "device": "SDH1",
-                                    "volume": "Work",
-                                    "filesystem": "PFS3",
-                                    "size": 6586000000,  # remainder
-                                    "bootable": False,
-                                },
-                            ],
-                        },
-                    ],
-                },
-                "output": {"type": "img", "path": "/home/user/amiga.img"},
-            }
+            },
+            "output": {"type": "img", "path": "/home/user/amiga.img"},
         }
+    })
 
     def to_json_file(self, path: Path) -> None:
         """save configuration to a JSON file"""

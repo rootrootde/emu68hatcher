@@ -9,11 +9,11 @@ description = "Cross-platform tool for creating Emu68/PiStorm SD card images for
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "Chris", email = "chris@example.com"}
+    {name = "rootrootde", email = "emu68hatcher@rootroot.de"},
 ]
 requires-python = ">=3.10"
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
@@ -55,10 +55,10 @@ all = [
 emu68-hatcher = "emu68hatcher.cli.main:cli"
 
 [project.urls]
-Homepage = "https://github.com/your-repo/emu68-hatcher"
-Documentation = "https://github.com/your-repo/emu68-hatcher#readme"
-Repository = "https://github.com/your-repo/emu68-hatcher"
-Issues = "https://github.com/your-repo/emu68-hatcher/issues"
+Homepage = "https://github.com/rootrootde/emu68-hatcher"
+Documentation = "https://github.com/rootrootde/emu68-hatcher#readme"
+Repository = "https://github.com/rootrootde/emu68-hatcher"
+Issues = "https://github.com/rootrootde/emu68-hatcher/issues"
 
 # Package discovery handled by setup.py for complex multi-root structure
 
