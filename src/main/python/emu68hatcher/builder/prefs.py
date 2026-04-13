@@ -272,29 +272,21 @@ def install_default_prefs(
         logger.info(f"Writing screenmode.prefs ({len(data)} bytes) with mode_id={hex(screen_mode.mode_id)}")
         logger.debug(f"ScreenMode prefs hex: {data.hex()}")
 
-        # remove any existing screenmode.prefs (handles case variations from ADF)
-        prefs_file = prefs_dir / "screenmode.prefs"
-        for variant in ["screenmode.prefs", "ScreenMode.prefs", "Screenmode.prefs"]:
-            variant_path = prefs_dir / variant
-            if variant_path.exists():
-                variant_path.unlink()
-                logger.debug(f"Removed existing {variant_path}")
+        def _write_prefs(directory: Path) -> None:
+            for variant in ["screenmode.prefs", "ScreenMode.prefs", "Screenmode.prefs"]:
+                variant_path = directory / variant
+                if variant_path.exists():
+                    variant_path.unlink()
+                    logger.debug(f"Removed existing {variant_path}")
+            dest = directory / "screenmode.prefs"
+            dest.write_bytes(data)
+            logger.info(f"Wrote {dest}")
 
-        prefs_file.write_bytes(data)
-        logger.info(f"Wrote {prefs_file}")
+        _write_prefs(prefs_dir)
 
         sys_dir = env_archive / "Sys"
         sys_dir.mkdir(parents=True, exist_ok=True)
-
-        # remove any existing screenmode.prefs in Env-Archive/Sys
-        for variant in ["screenmode.prefs", "ScreenMode.prefs", "Screenmode.prefs"]:
-            variant_path = sys_dir / variant
-            if variant_path.exists():
-                variant_path.unlink()
-                logger.debug(f"Removed existing {variant_path}")
-
-        env_prefs_file = sys_dir / "screenmode.prefs"
-        env_prefs_file.write_bytes(data)
+        _write_prefs(sys_dir)
         logger.info(f"Wrote {env_prefs_file}")
 
     # locale

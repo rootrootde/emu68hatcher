@@ -4,6 +4,7 @@ tool downloader - downloads HST Imager, 7-Zip, and other required tools
 uses tools.csv for download URLs and platform-specific binaries.
 """
 
+import logging
 import os
 import shutil
 import subprocess
@@ -18,6 +19,8 @@ from emu68hatcher.data.data_manager import load_yaml_data
 from emu68hatcher.data.startup_files import get_tool_download_info
 from emu68hatcher.utils.platform import get_platform_info
 from emu68hatcher.utils.paths import get_tools_dir
+
+logger = logging.getLogger("emu68hatcher.tools")
 
 
 def get_tool_url(name: str, platform: str) -> Optional[dict]:
@@ -61,7 +64,7 @@ def download_file(url: str, dest: Path, progress_callback=None) -> bool:
 
         return True
     except Exception as e:
-        print(f"Download error: {e}")
+        logger.error(f"Download error: {e}")
         return False
 
 

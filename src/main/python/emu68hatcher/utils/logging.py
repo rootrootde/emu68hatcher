@@ -133,55 +133,12 @@ def setup_logging(
 def get_log_file_path() -> Path:
     """
     get the default log file path"""
-    cache_dir = Path.home() / ".cache" / "emu68-hatcher"
-    cache_dir.mkdir(parents=True, exist_ok=True)
+    from emu68hatcher.utils.paths import get_cache_dir
+
+    log_dir = get_cache_dir() / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return cache_dir / f"emu68-hatcher_{timestamp}.log"
+    return log_dir / f"emu68-hatcher_{timestamp}.log"
 
 
-class BuildProgress:
-    """
-    track progress through the build process stages
-
-    provides a high-level view of build progress with named stages.
-    """
-
-    STAGES = [
-        "Validating configuration",
-        "Downloading packages",
-        "Extracting archives",
-        "Creating disk image",
-        "Setting up partitions",
-        "Installing Workbench",
-        "Installing packages",
-        "Configuring system",
-        "Finalizing image",
-    ]
-
-    def __init__(self):
-        self.current_stage = 0
-        self.total_stages = len(self.STAGES)
-        self.logger = get_logger()
-
-    def start(self) -> None:
-        """start the build process"""
-        self.logger.section("Build Process")
-        console.print(f"Starting build with {self.total_stages} stages\n")
-
-    def next_stage(self, custom_message: Optional[str] = None) -> None:
-        """move to the next stage"""
-        if self.current_stage < self.total_stages:
-            stage_name = custom_message or self.STAGES[self.current_stage]
-            self.logger.step(self.current_stage + 1, self.total_stages, stage_name)
-            self.current_stage += 1
-
-    def complete(self) -> None:
-        """mark the build as complete"""
-        console.print()
-        self.logger.success("Build completed successfully!")
-
-    def fail(self, error: str) -> None:
-        """mark the build as failed"""
-        console.print()
-        self.logger.error(f"Build failed: {error}")

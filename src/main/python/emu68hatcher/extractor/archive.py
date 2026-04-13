@@ -57,6 +57,9 @@ class ExtractionResult:
 # progress callback type
 ExtractProgressCallback = Callable[[str, int, int], None]
 
+# extensions recognized as extractable archives
+ARCHIVE_EXTENSIONS = {'.lha', '.lzh', '.zip', '.7z', '.tar', '.gz', '.tgz'}
+
 
 def detect_format(path: Path) -> ArchiveFormat:
     """

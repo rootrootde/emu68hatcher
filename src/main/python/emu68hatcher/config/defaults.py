@@ -165,50 +165,6 @@ HST_AMIGA_VERSION: Final[str] = "1.0.30"
 # =============================================================================
 
 
-def calculate_partition_layout(
-    disk_size_gb: int,
-    boot_size_mb: int = 512,
-    num_amiga_partitions: int = 2,
-) -> dict:
-    """
-    calculate a reasonable partition layout for a given disk size
-
-    uses the same logic as the original Emu68 Imager tool with proper
-    MBR sector and cylinder alignment."""
-    disk_size = disk_size_gb * 1024 * 1024 * 1024
-
-    # cylinder size for Amiga partition alignment
-    cylinder_size = 16 * 63 * 512  # 516,096 bytes
-
-    def round_to_mbr_sector(size: int) -> int:
-        return (size // 512) * 512
-
-    def round_to_cylinder(size: int) -> int:
-        return (size // cylinder_size) * cylinder_size
-
-    # EMU68BOOT: min(disk/15, 1GB)
-    boot_size = round_to_mbr_sector(min(disk_size // 15, 1024 * 1024 * 1024))
-
-    # ID76 MBR partition size (total for Amiga)
-    id76_size = round_to_mbr_sector(disk_size - boot_size - MBR_OVERHEAD)
-
-    # usable space for Amiga partitions (subtract RDB overhead)
-    usable_amiga = id76_size - RDB_OVERHEAD
-
-    # workbench: min(disk/15, 1GB), rounded to cylinder
-    workbench_size = round_to_cylinder(min(disk_size // 15, 1024 * 1024 * 1024))
-
-    # work gets the rest, rounded to cylinder
-    work_size = round_to_cylinder(usable_amiga - workbench_size)
-
-    return {
-        "disk_size": disk_size,
-        "boot_size": boot_size,
-        "id76_size": id76_size,
-        "amiga_total": usable_amiga,
-        "partition_sizes": [workbench_size, work_size],
-    }
-
 
 def create_default_config():
     """

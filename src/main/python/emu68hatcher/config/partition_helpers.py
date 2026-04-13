@@ -44,8 +44,8 @@ def disk_size_for_gb(gb: int) -> int:
 
 
 def calculate_boot_default(disk_size: int) -> int:
-    """calculate default boot partition size: min(disk/15, 1GB), MBR-aligned"""
-    return round_to_mbr_sector(min(disk_size // 15, 1024 * 1024 * 1024))
+    """calculate default boot partition size: disk/15, MBR-aligned"""
+    return round_to_mbr_sector(disk_size // 15)
 
 
 def calculate_id76_size(disk_size: int, boot_size: int) -> int:

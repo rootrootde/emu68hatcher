@@ -15,7 +15,7 @@ from emu68hatcher.builder.script_generator import (
     generate_onetimerun_wb,
     generate_boot_partition_files,
 )
-from emu68hatcher.builder.script_injector import apply_standard_injections
+from emu68hatcher.builder.script_injector import apply_standard_injections, write_amiga_script
 from emu68hatcher.data.package_loader import get_local_packages_dir
 from emu68hatcher.utils.paths import ensure_dir
 
@@ -86,15 +86,11 @@ def _resolve_devices(workflow: BuildWorkflow) -> tuple[str, str]:
 
 def _collect_enabled_packages(workflow: BuildWorkflow) -> set[str]:
     """build set of all enabled package names (user-selected + mandatory)"""
-    enabled = {p.name.lower() for p in workflow.config.packages if p.enabled}
+    from emu68hatcher.data.package_loader import get_mandatory_packages
 
-    from emu68hatcher.builder.package_installer import PackageInstaller
-    installer = PackageInstaller(
-        kickstart_version=workflow.config.kickstart.version.value,
-        staging_dir=workflow.state.staging_dir,
-        extracted_packages_dir=workflow.state.extracted_dir if workflow.state.extracted_dir else workflow.state.work_dir / "extracted",
-    )
-    mandatory = {p.lower() for p in installer.get_mandatory_packages()}
+    enabled = {p.name.lower() for p in workflow.config.packages if p.enabled}
+    ks_version = workflow.config.kickstart.version.value
+    mandatory = {p.name.lower() for p in get_mandatory_packages(ks_version)}
     return enabled | mandatory
 
 
@@ -118,10 +114,6 @@ def _build_script_config(
     )
 
 
-def _write_amiga_script(path: Path, content: str) -> None:
-    """write script with Amiga-compatible encoding and LF line endings"""
-    normalized = content.replace('\r\n', '\n').replace('\r', '\n')
-    path.write_bytes(normalized.encode('iso-8859-1'))
 
 
 # =============================================================================
@@ -161,7 +153,7 @@ def _configure_scripts(
     else:
         workflow.logger.warning("No Startup-Sequence from ADF, generating from template")
         startup_sequence = generate_startup_sequence(script_config)
-        _write_amiga_script(startup_path, startup_sequence)
+        write_amiga_script(startup_path, startup_sequence.splitlines())
         workflow.logger.info(f"Generated Startup-Sequence ({len(startup_sequence)} bytes)")
 
     # user-Startup: ensure it exists for package injections
@@ -169,14 +161,14 @@ def _configure_scripts(
     workflow._log("Setting up User-Startup")
     user_startup_path = s_dir / "User-Startup"
     if not user_startup_path.exists():
-        _write_amiga_script(user_startup_path, "; User-Startup\n; Emu68 Hatcher\n")
+        write_amiga_script(user_startup_path, ["; User-Startup", "; Emu68 Hatcher"])
     workflow.logger.info("User-Startup ready for package injections")
 
     # shell-Startup
     workflow._update_state(progress=30.0)
     workflow._log("Generating Shell-Startup")
     shell_startup = generate_shell_startup()
-    _write_amiga_script(s_dir / "Shell-Startup", shell_startup)
+    write_amiga_script(s_dir / "Shell-Startup", shell_startup.splitlines())
     workflow.logger.info(f"Generated Shell-Startup ({len(shell_startup)} bytes)")
 
     # OneTimeRunWB first-boot script
@@ -184,26 +176,11 @@ def _configure_scripts(
     workflow._log("Setting up first-boot scripts")
     ensure_dir(s_dir / "OneTimeRunWB")
     onetimerun_wb_content = generate_onetimerun_wb()
-    _write_amiga_script(s_dir / "OneTimeRunWB.script", onetimerun_wb_content)
+    write_amiga_script(s_dir / "OneTimeRunWB.script", onetimerun_wb_content.splitlines())
     workflow.logger.info(f"Generated OneTimeRunWB.script ({len(onetimerun_wb_content)} bytes)")
 
-    # configure network icons and menu entries (Roadshow only)
-    _configure_network_scripts(workflow, boot_staging)
+    # inject network menu entries (Roadshow only)
     _inject_menutools_entries(workflow, boot_staging)
-
-
-def _configure_network_scripts(workflow: BuildWorkflow, boot_staging: Path) -> None:
-    """network script configuration (placeholder)
-
-    HatcherNet.rexx and HatcherTunings are installed directly by
-    pistorm_local_files. A single "Network Manager" menu entry is injected
-    by _inject_menutools_entries.
-    """
-    if workflow.config.network_stack is None:
-        workflow.logger.debug("No network stack selected")
-        return
-
-    workflow.logger.info("Network scripts configured (Roadshow)")
 
 
 def _inject_menutools_entries(workflow: BuildWorkflow, boot_staging: Path) -> None:

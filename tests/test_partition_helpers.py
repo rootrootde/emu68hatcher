@@ -57,14 +57,15 @@ def test_calculate_boot_default():
     boot = calculate_boot_default(disk)
     assert boot > 0
     assert boot % MBR_SECTOR_SIZE == 0
-    assert boot <= 1024 * 1024 * 1024  # max 1 GB
+    assert boot == round_to_mbr_sector(disk // 15)
 
 
 def test_calculate_boot_default_large_disk():
-    # for very large disks, boot should cap at 1 GB
+    # for very large disks, boot scales with disk size (no cap)
     disk = disk_size_for_gb(512)
     boot = calculate_boot_default(disk)
-    assert boot == round_to_mbr_sector(1024 * 1024 * 1024)
+    assert boot == round_to_mbr_sector(disk // 15)
+    assert boot > 1024 * 1024 * 1024  # exceeds 1 GB for 512 GB disk
 
 
 def test_calculate_id76_size():

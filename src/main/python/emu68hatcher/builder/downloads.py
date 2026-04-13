@@ -13,7 +13,6 @@ features:
 - progress reporting
 """
 
-import hashlib
 import json
 import shutil
 import time
@@ -22,6 +21,8 @@ import urllib.error
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
+
+from emu68hatcher.utils.hashing import HashAlgorithm, calculate_hash
 
 from emu68hatcher.utils.paths import get_cache_dir, get_downloads_dir
 from emu68hatcher.utils.logging import get_logger
@@ -99,7 +100,7 @@ class DownloadManager:
         if not cached.exists():
             return False
         if expected_hash:
-            actual = hashlib.md5(cached.read_bytes()).hexdigest().upper()
+            actual = calculate_hash(cached, HashAlgorithm.MD5).upper()
             return actual == expected_hash.upper()
         return True
 
@@ -192,7 +193,7 @@ class DownloadManager:
 
             # verify hash if provided
             if item.expected_hash:
-                actual = hashlib.md5(cached.read_bytes()).hexdigest().upper()
+                actual = calculate_hash(cached, HashAlgorithm.MD5).upper()
                 if actual != item.expected_hash.upper():
                     result.error = f"Hash mismatch: expected {item.expected_hash}, got {actual}"
                     cached.unlink()

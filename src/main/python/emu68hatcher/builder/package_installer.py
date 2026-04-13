@@ -20,11 +20,8 @@ from emu68hatcher.data.package_loader import (
     get_package_by_name,
 )
 from emu68hatcher.data.package_schema import Package, InstallRule, ScriptModification, ScriptAction
-from emu68hatcher.extractor.archive import extract_archive
+from emu68hatcher.extractor.archive import ARCHIVE_EXTENSIONS, extract_archive
 from emu68hatcher.utils.paths import ensure_dir
-
-# archive extensions that can be nested and need extraction
-ARCHIVE_EXTENSIONS = {'.lha', '.lzh', '.zip', '.7z', '.tar', '.gz', '.tgz'}
 from emu68hatcher.utils.logging import get_logger
 
 

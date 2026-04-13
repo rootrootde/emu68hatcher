@@ -9,6 +9,7 @@ handles:
 """
 
 import os
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -190,8 +191,6 @@ class DiskManager:
             if result.returncode == 0:
                 for line in result.stdout.split("\n"):
                     if "Disk Size:" in line or "Total Size:" in line:
-                        # parse "Disk Size: 8.0 GB (8000000000 Bytes)"
-                        import re
                         match = re.search(r"\((\d+) Bytes\)", line)
                         if match:
                             return int(match.group(1))
@@ -499,7 +498,6 @@ class DiskManager:
 
         try:
             returncode = os.system(cmd)
-            full_stderr = ""
 
             # os.system returns the exit status in the format of wait()
             exit_code = os.waitstatus_to_exitcode(returncode) if hasattr(os, 'waitstatus_to_exitcode') else returncode >> 8

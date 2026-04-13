@@ -241,15 +241,25 @@ class PartitionConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_partition_sizes(self):
+        from emu68hatcher.config.defaults import MBR_OVERHEAD
+
         total = sum(p.size for p in self.layout)
-        # allow for MBR overhead (about 1MB)
-        overhead = 1048576 + 50688
-        if total + overhead > self.disk_size:
+        if total + MBR_OVERHEAD > self.disk_size:
             raise ValueError(
-                f"Total partition size ({total}) + overhead ({overhead}) "
+                f"Total partition size ({total}) + overhead ({MBR_OVERHEAD}) "
                 f"exceeds disk size ({self.disk_size})"
             )
         return self
+
+    @property
+    def uses_pfs3(self) -> bool:
+        """check if any Amiga partition uses the PFS3 filesystem"""
+        return any(
+            amiga_part.filesystem == Filesystem.PFS3
+            for mbr_part in self.layout
+            if mbr_part.amiga_partitions
+            for amiga_part in mbr_part.amiga_partitions
+        )
 
 
 class OutputConfig(BaseModel):
@@ -427,28 +437,16 @@ def create_default_partition_layout(disk_size_gb: int = 8) -> PartitionConfig:
     note: SD cards use decimal GB (1 GB = 1,000,000,000 bytes), not GiB.
     A "32GB" card has ~29.8 GiB usable. we use 95% of decimal size for safety.
     """
-    # SD cards use decimal GB, and often have slightly less than advertised
-    # use 95% of decimal GB size to ensure image fits on real cards
-    disk_size = int(disk_size_gb * 1_000_000_000 * 0.95)
+    from emu68hatcher.config.defaults import MBR_OVERHEAD, RDB_OVERHEAD
+    from emu68hatcher.config.partition_helpers import (
+        calculate_boot_default, disk_size_for_gb, round_to_cylinder,
+        round_to_mbr_sector, PFS3_MAX_CREATE,
+    )
 
-    # constants from original tool (SetVariables.ps1)
-    MBR_SECTOR_SIZE = 512
-    MBR_OVERHEAD = 1048576 + 50688  # 1,099,264 bytes
-    CYLINDER_SIZE = 16 * 63 * 512  # 516,096 bytes (Heads * Sectors * BlockSize)
-    RDB_OVERHEAD = 1032192  # hardcoded in original (16 * 63 * 512 * 2)
-    PFS3_MAX = 101 * 1024 * 1024 * 1024  # 101 GB
+    disk_size = disk_size_for_gb(disk_size_gb)
+    PFS3_MAX = PFS3_MAX_CREATE
 
-    def round_to_mbr_sector(size: int) -> int:
-        """round down to MBR sector boundary (512 bytes)"""
-        return (size // MBR_SECTOR_SIZE) * MBR_SECTOR_SIZE
-
-    def round_to_cylinder(size: int) -> int:
-        """round down to cylinder boundary (516,096 bytes)"""
-        return (size // CYLINDER_SIZE) * CYLINDER_SIZE
-
-    # EMU68BOOT default: min(disk/15, 1GB), rounded to MBR sector
-    emu68boot_default = min(disk_size // 15, 1024 * 1024 * 1024)
-    boot_size = round_to_mbr_sector(emu68boot_default)
+    boot_size = calculate_boot_default(disk_size)
 
     # ID76 size: remaining space after MBR overhead and boot, rounded to MBR sector
     remaining_for_id76 = disk_size - MBR_OVERHEAD - boot_size

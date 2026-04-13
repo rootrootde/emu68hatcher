@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 def stage_create_image(workflow: BuildWorkflow) -> None:
     """create the disk image"""
-    from emu68hatcher.builder.hst_commands import generate_disk_creation_script, Filesystem
+    from emu68hatcher.builder.hst_commands import generate_disk_creation_script
     from emu68hatcher.builder.hst_runner import HSTRunner
 
     workflow._update_state(BuildStage.CREATE_IMAGE, 0.0)
@@ -35,14 +35,7 @@ def stage_create_image(workflow: BuildWorkflow) -> None:
 
     # use PFS3AIO handler downloaded during DOWNLOAD stage
     pfs3_handler_path: Optional[Path] = workflow.state.pfs3_handler_path
-    uses_pfs3 = any(
-        amiga_part.filesystem == Filesystem.PFS3
-        for mbr_part in workflow.config.partitions.layout
-        if mbr_part.amiga_partitions
-        for amiga_part in mbr_part.amiga_partitions
-    )
-
-    if uses_pfs3 and not pfs3_handler_path:
+    if workflow.config.partitions.uses_pfs3 and not pfs3_handler_path:
         raise BuildError(
             "PFS3AIO filesystem handler not available. "
             "This should have been downloaded during the DOWNLOAD stage."

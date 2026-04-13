@@ -138,9 +138,12 @@ def _copy_staged_files_to_image(workflow: BuildWorkflow) -> None:
         device_name = device_dir.name
 
         # count files in staging directory
-        staged_files = list(device_dir.rglob("*"))
-        file_count = sum(1 for f in staged_files if f.is_file())
-        total_bytes = sum(f.stat().st_size for f in staged_files if f.is_file())
+        file_count = 0
+        total_bytes = 0
+        for f in device_dir.rglob("*"):
+            if f.is_file():
+                file_count += 1
+                total_bytes += f.stat().st_size
 
         # check if there are any files to copy
         if file_count == 0:

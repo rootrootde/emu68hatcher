@@ -54,19 +54,7 @@ def _download_pfs3aio_if_needed(workflow: BuildWorkflow, manager: DownloadManage
     stores the handler path in workflow.state so create_image can use it
     without a separate network call.
     """
-    from emu68hatcher.builder.hst_commands import Filesystem
-
-    if not workflow.config.partitions:
-        return
-
-    uses_pfs3 = any(
-        amiga_part.filesystem == Filesystem.PFS3
-        for mbr_part in workflow.config.partitions.layout
-        if mbr_part.amiga_partitions
-        for amiga_part in mbr_part.amiga_partitions
-    )
-
-    if not uses_pfs3:
+    if not workflow.config.partitions or not workflow.config.partitions.uses_pfs3:
         return
 
     workflow._update_state(progress=2.0)
@@ -212,7 +200,8 @@ def stage_extract(workflow: BuildWorkflow) -> None:
     workflow._update_state(BuildStage.EXTRACT, 0.0)
     workflow._log("Extracting archives")
 
-    archive_extensions = {'.lha', '.zip', '.7z', '.tar', '.gz', '.tgz'}
+    from emu68hatcher.extractor.archive import ARCHIVE_EXTENSIONS
+    archive_extensions = ARCHIVE_EXTENSIONS
 
     if not workflow.state.downloaded_files:
         workflow._update_state(progress=100.0)

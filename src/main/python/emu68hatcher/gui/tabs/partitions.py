@@ -302,7 +302,7 @@ class PartitionsTab(QWidget):
         boot_layout = QHBoxLayout(boot_group)
         boot_layout.addWidget(QLabel("Size:"))
         self.boot_spin = QSpinBox()
-        self.boot_spin.setRange(128, 1024)
+        self.boot_spin.setRange(128, 16384)
         self.boot_spin.setSuffix(" MB")
         self.boot_spin.setSingleStep(64)
         self.boot_spin.setValue(self._boot_size // (1024 * 1024))
