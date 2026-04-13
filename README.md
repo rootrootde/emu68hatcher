@@ -1,8 +1,4 @@
-<p align="center">
-  <img src="images/logo/emu-icon.svg" width="128" height="128" alt="emu68-hatcher logo">
-</p>
-
-# emu68-hatcher
+# <img src="images/logo/emu-icon.svg" width="96" height="96" alt="logo"> emu68-hatcher
 
 cross-platform app to build sd card images for pistorm/emu68 amiga systems, similar to [Emu68-Imager](https://github.com/mja65/Emu68-Imager-Software)
 
