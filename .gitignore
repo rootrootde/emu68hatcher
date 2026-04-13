@@ -32,8 +32,9 @@ Amiga_WB/
 *.ISO
 *.hdf
 
-# tools
+# tools / runtime data
 tools/
+hatcher_data/
 
 # config/output files
 emu68-config*.json
