@@ -24,6 +24,29 @@ def _drawer_template() -> Path:
     return get_local_packages_dir() / "System" / "_drawer.info"
 
 
+def ensure_dirs_for_orphan_drawer_icons(boot_staging: Path) -> int:
+    """create empty dirs for drawer-type .info files whose target dir is missing"""
+    created = 0
+    for info_path in boot_staging.rglob("*.info"):
+        # disk.info is the volume icon; _drawer.info represents the parent dir itself
+        if info_path.name in ("disk.info", "_drawer.info"):
+            continue
+        try:
+            data = info_path.read_bytes()
+        except OSError:
+            continue
+        # DiskObject struct: magic 0xE310 at offset 0, do_Type byte at offset 48 (2 = WB_DRAWER)
+        if len(data) < 49 or data[0:2] != b"\xe3\x10" or data[48] != 2:
+            continue
+        drawer = info_path.with_suffix("")
+        if drawer.exists():
+            continue
+        drawer.mkdir(parents=True, exist_ok=True)
+        created += 1
+        logger.info(f"Created missing drawer for orphan icon: {drawer.relative_to(boot_staging)}")
+    return created
+
+
 def _iter_drawer_dirs(boot_staging: Path):
     """yield every directory under the icon roots that should have an icon"""
     for root_name in _ICON_ROOTS:

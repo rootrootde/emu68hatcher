@@ -125,11 +125,17 @@ def configure_preferences(
 
     workflow._update_state(progress=90.0)
     workflow._milestone("Generating drawer icons")
-    from emu68hatcher.builder.staging.icons import ensure_drawer_icons
+    from emu68hatcher.builder.staging.icons import (
+        ensure_dirs_for_orphan_drawer_icons,
+        ensure_drawer_icons,
+    )
 
     created = ensure_drawer_icons(boot_staging)
     if created:
         workflow.logger.info(f"Created {created} drawer icons")
+    fixed = ensure_dirs_for_orphan_drawer_icons(boot_staging)
+    if fixed:
+        workflow.logger.info(f"Created {fixed} missing drawers for orphan icons")
 
     workflow._update_state(progress=95.0)
     workflow._milestone("Configuring icons")
