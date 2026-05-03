@@ -32,8 +32,9 @@ theme:
 
 nav:
   - Home: index.md
+  - Download: download.md
   - Installation: installation.md
-  - Build an image: usage.md
+  - Usage: usage.md
   - Flashing: flashing.md
 
 markdown_extensions:
