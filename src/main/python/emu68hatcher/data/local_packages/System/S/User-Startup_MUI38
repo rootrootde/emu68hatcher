@@ -1,0 +1,19 @@
+;BEGIN MUI
+if exists SYS:Programs/MUI
+   C:assign MUI: SYS:Programs/MUI
+   if exists MUI:Libs
+      C:assign add LIBS: MUI:Libs
+   endif
+   if exists MUI:Locale
+      C:assign add LOCALE: MUI:Locale
+   endif
+   C:version >nil: exec.library 39
+   if not warn
+      if exists MUI:Docs
+         if exists HELP:dummy ; do not remove
+         endif                ; this entry!
+         C:assign add HELP: MUI:Docs
+      endif
+   endif
+endif
+;END MUI

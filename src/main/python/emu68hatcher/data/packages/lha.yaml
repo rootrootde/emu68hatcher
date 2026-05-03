@@ -1,0 +1,20 @@
+name: lha
+friendly_name: LHA
+group: System
+description: 'LHA/LZH archiver'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/arc/lha_68k.lha
+  hash: b027204c48dfde2b653dadb598124e28
+  filename: lha_68k.lha
+install:
+- from: lha_68040
+  to: C/
+  rename: LHA

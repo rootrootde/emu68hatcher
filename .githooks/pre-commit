@@ -1,0 +1,26 @@
+#!/bin/sh
+# run ruff format + check on staged .py files. fail commit if either complains
+
+files=$(git diff --cached --name-only --diff-filter=ACM -- '*.py')
+[ -z "$files" ] && exit 0
+
+if [ -x ".venv/bin/ruff" ]; then
+    ruff=".venv/bin/ruff"
+elif command -v ruff >/dev/null 2>&1; then
+    ruff="ruff"
+else
+    echo "pre-commit: ruff not found (.venv or PATH). run bootstrap.py --dev"
+    exit 1
+fi
+
+if ! $ruff format --check $files; then
+    echo ""
+    echo "fix: $ruff format $files && git add $files"
+    exit 1
+fi
+
+if ! $ruff check $files; then
+    echo ""
+    echo "fix: $ruff check --fix $files && git add $files"
+    exit 1
+fi

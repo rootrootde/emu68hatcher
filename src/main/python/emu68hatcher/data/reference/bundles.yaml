@@ -1,0 +1,15 @@
+# package bundles: groups of packages presented as a single checkbox in the GUI.
+# members declare membership via `bundle: <id>` in their own YAML.
+# bundle-level default wins over member `default:` flags.
+
+hippoplayer:
+  display_name: HippoPlayer
+  group: Applications
+  description: "music player (with update)"
+  default: true
+
+picasso96:
+  display_name: Picasso96
+  group: RTG
+  description: "picasso96 RTG driver (shareware) + amiga-blitter disable patch"
+  default: true

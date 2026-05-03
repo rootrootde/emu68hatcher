@@ -1,0 +1,17 @@
+name: picasso96settings
+friendly_name: Picasso96
+group: RTG
+description: 'default Picasso96Settings'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: local
+  path: System/Devs/Picasso96Settings
+install:
+- from: System/Devs/Picasso96Settings
+  to: Devs/

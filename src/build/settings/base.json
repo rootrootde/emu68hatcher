@@ -1,0 +1,29 @@
+{
+    "app_name": "Emu68 Hatcher",
+    "author": "rootrootde",
+    "main_module": "src/main/python/main.py",
+    "version": "0.1.0",
+    "url": "https://github.com/rootrootde/emu68hatcher",
+    "hidden_imports": [
+        "emu68hatcher",
+        "emu68hatcher.builder.pipeline.validate",
+        "emu68hatcher.builder.pipeline.download",
+        "emu68hatcher.builder.pipeline.create_image",
+        "emu68hatcher.builder.pipeline.install_workbench",
+        "emu68hatcher.builder.pipeline.install_packages",
+        "emu68hatcher.builder.pipeline.configure",
+        "emu68hatcher.builder.pipeline.finalize",
+        "pydantic",
+        "pydantic.deprecated.decorator",
+        "yaml",
+        "jinja2",
+        "rich",
+        "certifi"
+    ],
+    "extra_pyinstaller_args": [
+        "--collect-data", "emu68hatcher",
+        "--collect-data", "certifi",
+        "--collect-submodules", "emu68hatcher",
+        "--collect-submodules", "rich"
+    ]
+}

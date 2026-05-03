@@ -1,0 +1,19 @@
+name: snoopdos
+friendly_name: SnoopDOS
+group: Applications
+description: 'system call viewer'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: true
+download:
+  source: aminet
+  path: util/moni/SnoopDos.lha
+  hash: 2D214246781EB26B9536628BE9A6A0F9
+  filename: Snoopdos.lha
+install:
+- from: '*'
+  to: Programs/SnoopDOS/

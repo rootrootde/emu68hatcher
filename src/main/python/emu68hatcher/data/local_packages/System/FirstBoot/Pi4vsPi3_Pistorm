@@ -1,0 +1,35 @@
+; at first boot, pick the SD0 DOSDriver and HDToolBox icon matching
+; the actual Pi the image booted on. both variants are extracted /
+; patched at build time with the right brcm-* SCSI_DEVICE_NAME; here
+; we rename the matching one to the canonical HDToolbox.info and
+; delete the rest so the user sees a single working HDToolBox icon.
+IF $RpiType EQ "RPi4"
+	C:Echo "Raspberry 4 (or CM4) detected - brcm-emmc.device"
+	C:Copy >NIL: Sys:Storage/DOSDrivers/SD0pi4 Sys:Devs/DOSDrivers/SD0
+	C:Delete >NIL: Sys:Storage/DOSDrivers/SD0pi3 QUIET
+	C:Delete >NIL: Sys:Storage/DOSDrivers/SD0pi4 QUIET
+	IF EXISTS Sys:Tools/HDToolbox.info
+		C:Delete Sys:Tools/HDToolbox.info QUIET
+	ENDIF
+	IF EXISTS Sys:Tools/HDToolBoxPi4.info
+		C:Rename from Sys:Tools/HDToolBoxPi4.info to Sys:Tools/HDToolbox.info QUIET
+	ENDIF
+	IF EXISTS Sys:Tools/HDToolBoxPi3.info
+		C:Delete Sys:Tools/HDToolBoxPi3.info QUIET
+	ENDIF
+ENDIF
+IF $RpiType EQ "RPi3"
+	C:Echo "Raspberry 3 (or Zero 2) detected - brcm-sdhc.device"
+	C:Copy >NIL: Sys:Storage/DOSDrivers/SD0pi3 Sys:Devs/DOSDrivers/SD0
+	C:Delete >NIL: Sys:Storage/DOSDrivers/SD0pi3 QUIET
+	C:Delete >NIL: Sys:Storage/DOSDrivers/SD0pi4 QUIET
+	IF EXISTS Sys:Tools/HDToolbox.info
+		C:Delete Sys:Tools/HDToolbox.info QUIET
+	ENDIF
+	IF EXISTS Sys:Tools/HDToolBoxPi3.info
+		C:Rename from Sys:Tools/HDToolBoxPi3.info to Sys:Tools/HDToolbox.info QUIET
+	ENDIF
+	IF EXISTS Sys:Tools/HDToolBoxPi4.info
+		C:Delete Sys:Tools/HDToolBoxPi4.info QUIET
+	ENDIF
+ENDIF

@@ -1,0 +1,22 @@
+name: firstboot
+friendly_name: FirstBoot
+group: System
+description: 'first-boot init scripts'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: local
+install:
+- from: System/FirstBoot/*
+  to: S/FirstBoot/
+- from: System/FirstBootWB/*
+  to: S/FirstBootWB/
+- from: System/WBStartup/FirstBootWB
+  to: WBStartup/
+- from: System/WBStartup/FirstBootWB.info
+  to: WBStartup/

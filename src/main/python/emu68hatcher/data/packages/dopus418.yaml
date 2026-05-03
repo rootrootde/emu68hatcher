@@ -1,0 +1,43 @@
+name: dopus418
+friendly_name: DirectoryOpus
+group: Applications
+description: 'file manager'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: true
+download:
+  source: aminet
+  path: util/dopus/DOpus416JRbin.lha
+  hash: 19C6CDEA1F01EBDFE8154C16E7DABF23
+  filename: DOpus416JRbin.lha
+install:
+- from: DOpus.info
+  to: Programs/
+  rename: DOpus.info
+- from: DOpus/DirectoryOpus
+  to: Programs/DOpus/
+- from: DOpus/DirectoryOpus.info
+  to: Programs/DOpus/
+- from: DOpus/libs/*
+  to: Programs/DOpus/libs/
+- from: DOpus/libs/dopus.library
+  to: Libs/
+- from: DOpus/modules/*
+  to: Programs/DOpus/modules/
+- from: DOpus/c/*
+  to: Programs/DOpus/c/
+- from: DOpus/s/*
+  to: Programs/DOpus/s/
+- from: DOpus/catalogs/*
+  to: Programs/DOpus/catalogs/
+  recursive: true
+- from: DOpus/Docs/English/*
+  to: Programs/DOpus/Docs/
+- from: DOpus/DOpus416JRbin.readme
+  to: Programs/DOpus/
+- from: DOpus/DOpus416JRbin.readme.info
+  to: Programs/DOpus/

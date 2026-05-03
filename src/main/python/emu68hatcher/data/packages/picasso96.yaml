@@ -1,0 +1,50 @@
+name: picasso96
+friendly_name: Picasso96
+bundle: picasso96
+group: RTG
+description: 'picasso96 driver (shareware)'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: true
+download:
+  source: aminet
+  path: driver/video/Picasso96.lha
+  hash: 16287F92CE6DDEA23F5456CEB4525189
+  filename: Picasso96.lha
+install:
+- from: Picasso96Install/Classes/DataTypes/picture.datatype
+  to: Classes/DataTypes/
+- from: Picasso96Install/Devs/Monitors/Picasso96.info
+  to: Devs/Monitors/
+  rename: Videocore.info
+- from: Picasso96Install/Devs/Monitors/Picasso96
+  to: Devs/Monitors/
+  rename: Videocore
+- from: Picasso96Install/Devs/Monitors/Picasso96.info
+  to: Storage/Monitors/
+  rename: uaegfx.info
+- from: Picasso96Install/Devs/Monitors/Picasso96
+  to: Storage/Monitors/
+  rename: uaegfx
+- from: Picasso96Install/Libs/*
+  to: Libs/
+- from: Picasso96Install/Prefs/Picasso96Mode
+  to: Prefs/
+- from: Picasso96Install/Prefs/Picasso96Mode.info
+  to: Prefs/
+- from: Picasso96Install/Prefs/PVS
+  to: Prefs/
+- from: Picasso96Install/Prefs/PVS.info
+  to: Prefs/
+- from: Picasso96Install/Prefs/PVS.guide
+  to: Programs/Picasso96/
+- from: Picasso96Install/Prefs/PVS.guide.info
+  to: Programs/Picasso96/
+- from: Picasso96Install/Picasso96/*
+  to: Programs/Picasso96/
+- from: Picasso96Install/Picasso96.info
+  to: Programs/

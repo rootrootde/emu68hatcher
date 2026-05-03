@@ -1,0 +1,11 @@
+; Rename cmdline backup on EMU68BOOT (PiStorm only, not UAE)
+; Use Assign EXISTS to check volume silently (IF EXISTS triggers "Please insert volume" requester)
+IF NOT $SYSTEM EQ "UAE"
+   C:Assign >NIL: EXISTS EMU68BOOT:
+   IF NOT WARN
+      IF EXISTS EMU68BOOT:cmdlineBAK.txt
+         C:Delete EMU68BOOT:cmdline.txt QUIET
+         C:Rename FROM EMU68BOOT:cmdlineBAK.txt TO EMU68BOOT:cmdline.txt
+      ENDIF
+   ENDIF
+ENDIF

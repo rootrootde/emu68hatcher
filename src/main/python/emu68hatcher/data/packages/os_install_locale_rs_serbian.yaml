@@ -1,0 +1,6 @@
+name: os_install_locale_rs_serbian
+friendly_name: Serbian (RS) Locale Files
+group: Locale
+description: 'serbian language + keymap files'
+versions:
+- 3.2.3

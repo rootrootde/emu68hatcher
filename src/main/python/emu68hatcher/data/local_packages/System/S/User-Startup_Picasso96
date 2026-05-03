@@ -1,0 +1,5 @@
+;BEGIN Picasso96
+If Exists SYS:Programs/Picasso96
+  C:Assign Picasso96: SYS:Programs/Picasso96
+EndIf
+;END Picasso96

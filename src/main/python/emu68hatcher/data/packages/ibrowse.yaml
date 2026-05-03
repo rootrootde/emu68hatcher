@@ -1,0 +1,69 @@
+name: ibrowse
+friendly_name: IBrowse
+group: Internet
+description: 'web browser (demo)'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: true
+download:
+  source: web
+  url: http://www.ibrowse-dev.net/resources/IBrowse3.0a-OS3.lha
+  hash: E448F1B7E46034A5D2DBCB464C9A7268
+  filename: IBrowse-OS3.lha
+install:
+- from: IBrowse*.info
+  to: Programs/
+  rename: IBrowse.info
+- from: IBrowse*-OS3/Catalogs/*
+  to: Programs/IBrowse/Catalogs/
+- from: IBrowse*-OS3/codecs/*
+  to: Programs/IBrowse/codecs/
+- from: IBrowse*-OS3/codecs040fpu/*
+  to: Programs/IBrowse/codecs040fpu/
+- from: IBrowse*-OS3/ibcc/*
+  to: Programs/IBrowse/ibcc/
+- from: IBrowse*-OS3/images/*
+  to: Programs/IBrowse/images/
+- from: IBrowse*-OS3/Anims/TransferAnimation.24
+  to: Programs/IBrowse/images/
+  rename: TransferAnimation
+- from: IBrowse*-OS3/Anims/TransferAnimation
+  to: Programs/IBrowse/images/
+  rename: TransferAnimation
+- from: IBrowse*-OS3/info/*
+  to: Programs/IBrowse/info/
+- from: IBrowse*-OS3/protocols/*
+  to: Programs/IBrowse/protocols/
+- from: IBrowse*-OS3/Icons/IBrowse.info
+  to: Programs/IBrowse/
+- from: IBrowse*-OS3/javascript/javascript.library.020
+  to: Programs/IBrowse/
+  rename: javascript.library
+- from: IBrowse*-OS3/Plugins
+  to: Programs/IBrowse/Plugins/Plugins/
+- from: IBrowse*-OS3/mui/*
+  to: Programs/MUI/Libs/MUI/
+- from: IBrowse*-OS3/spatch
+  to: C/
+- from: IBrowse*-OS3/Cache
+  to: Programs/IBrowse/Plugins/Cache/
+- from: IBrowse*-OS3/history.txt
+  to: Programs/IBrowse/
+- from: IBrowse*-OS3/IBrowse
+  to: Programs/IBrowse/
+- from: IBrowse*-OS3/ReadMe.html
+  to: Programs/IBrowse/
+- from: IBrowse*-OS3/ReadMe.html.info
+  to: Programs/IBrowse/
+- from: IBrowse*-OS3/ReadMe.mui
+  to: Programs/IBrowse/
+- from: IBrowse*-OS3/ReadMe.mui.info
+  to: Programs/IBrowse/
+- from: IBrowse*-OS3/ReadMe.txt
+  to: Programs/IBrowse/
+- from: IBrowse*-OS3/ReadMe.txt.info
+  to: Programs/IBrowse/

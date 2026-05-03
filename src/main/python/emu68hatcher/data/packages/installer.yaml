@@ -1,0 +1,19 @@
+name: installer
+friendly_name: Installer
+group: System
+description: 'commodore installer utility'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/misc/Installer-43_3.lha
+  hash: B22CD3A6A6CBE7D8A44BD7853ABB56E9
+  filename: Installer-43_3.lha
+install:
+- from: Installer43_3/Installer
+  to: C/

@@ -1,0 +1,19 @@
+name: screentext
+friendly_name: Screentext
+group: System
+description: 'print text onto screen'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: web
+  url: http://thomas-rapp.hier-im-netz.de/downloads/ScreenText.lha
+  hash: 55EAC0A9583DC989A69DA48FC626DC6F
+  filename: ScreenText.lha
+install:
+- from: ScreenText
+  to: C/

@@ -1,0 +1,24 @@
+name: hippoplayerupdate
+friendly_name: HippoPlayer
+bundle: hippoplayer
+group: Applications
+description: 'hippoplayer update'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: true
+download:
+  source: aminet
+  path: mus/play/hippoplayerupdate.lha
+  hash: A845E1B7AADCDC67ED461529D75A3662
+  filename: hippoplayerupdate.lha
+install:
+- from: HiP
+  to: Programs/HippoPlayer/
+- from: HippoPlayer.group
+  to: S/
+- from: playsid.library
+  to: Libs/

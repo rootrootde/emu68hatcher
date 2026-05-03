@@ -1,0 +1,42 @@
+FailAt 21
+IF $System EQ "UAE"
+	IF EXISTS Devs:Picasso96Settings
+		C:Rename Devs:Picasso96Settings Devs:Picasso96SettingsPiStorm QUIET
+	ENDIF
+	IF EXISTS Devs:Monitors/Videocore
+		C:Copy >NIL: Devs:Monitors/Videocore SYS:Storage/Monitors/
+		C:Delete Devs:Monitors/Videocore ALL QUIET FORCE
+	ENDIF
+	IF EXISTS Devs:Monitors/Videocore.info
+		C:Copy >NIL: Devs:Monitors/Videocore.info SYS:Storage/Monitors/
+		C:Delete Devs:Monitors/Videocore.info ALL QUIET FORCE
+	ENDIF
+	IF EXISTS SYS:Storage/Monitors/Uaegfx
+		C:Copy >NIL: SYS:Storage/Monitors/Uaegfx Devs:Monitors/
+		C:Delete SYS:Storage/Monitors/Uaegfx ALL QUIET FORCE
+	ENDIF
+	IF EXISTS SYS:Storage/Monitors/Uaegfx.info
+		C:Copy >NIL: SYS:Storage/Monitors/Uaegfx.info Devs:Monitors/
+		C:Delete SYS:Storage/Monitors/Uaegfx.info ALL QUIET FORCE
+	ENDIF
+ELSE
+	IF EXISTS Devs:Monitors/Uaegfx
+		C:Copy >NIL: Devs:Monitors/Uaegfx SYS:Storage/Monitors/
+		C:Delete Devs:Monitors/Uaegfx ALL QUIET FORCE
+	ENDIF
+	IF EXISTS Devs:Monitors/Uaegfx.info
+		C:Copy >NIL: Devs:Monitors/Uaegfx.info SYS:Storage/Monitors/
+		C:Delete Devs:Monitors/Uaegfx.info ALL QUIET FORCE
+	ENDIF
+	IF EXISTS SYS:Storage/Monitors/Videocore
+		C:Copy >NIL: SYS:Storage/Monitors/Videocore Devs:Monitors/
+		C:Delete SYS:Storage/Monitors/Videocore ALL QUIET FORCE
+	ENDIF
+	IF EXISTS SYS:Storage/Monitors/Videocore.info
+		C:Copy >NIL: SYS:Storage/Monitors/Videocore.info Devs:Monitors/
+		C:Delete SYS:Storage/Monitors/Videocore.info ALL QUIET FORCE
+	ENDIF
+	IF EXISTS Devs:Picasso96SettingsPiStorm
+		C:Rename Devs:Picasso96SettingsPiStorm Devs:Picasso96Settings QUIET
+	ENDIF
+ENDIF

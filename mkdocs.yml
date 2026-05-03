@@ -1,0 +1,50 @@
+site_name: Emu68 Hatcher
+site_description: cross-platform tool to build bootable amiga sd card images for emu68/pistorm
+site_url: https://rootrootde.github.io/emu68hatcher/
+repo_url: https://github.com/rootrootde/emu68hatcher
+repo_name: rootrootde/emu68hatcher
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  logo: assets/emu-icon.svg
+  favicon: assets/emu-icon.svg
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/brightness-7
+        name: switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/brightness-4
+        name: switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - content.code.copy
+    - content.action.edit
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Build an image: usage.md
+  - Flashing: flashing.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+      toc_depth: 2

@@ -1,0 +1,19 @@
+name: reqtools
+friendly_name: ReqTools
+group: System
+description: 'reqtools requester library'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/libs/Reqtools-Wide.lha
+  hash: 7b146009ce6b99623d73a244a89b8c2a
+  filename: ReqtoolsWide.lha
+install:
+- from: reqtools.library
+  to: Libs/

@@ -1,0 +1,7 @@
+name: os_install_locale_3_1
+friendly_name: Locale Files
+group: Locale
+description: 'all-languages locale + keymap files (3.1)'
+versions:
+- '3.1'
+default: true

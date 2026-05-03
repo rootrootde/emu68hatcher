@@ -1,0 +1,17 @@
+name: wifipi_config
+friendly_name: WifiPi Config
+group: System
+description: 'WiFi credentials config (Pi4/CM4)'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: local
+  path: System/Devs/NetInterfaces/wifipi
+install:
+- from: System/Devs/NetInterfaces/wifipi
+  to: Devs/NetInterfaces/

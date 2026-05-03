@@ -1,0 +1,6 @@
+name: os_install_locale_cz_czech
+friendly_name: Czech (CZ) Locale Files
+group: Locale
+description: 'czech language + keymap files'
+versions:
+- 3.2.3

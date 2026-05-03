@@ -1,0 +1,398 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 512 512"
+   width="512"
+   height="512"
+   version="1.1"
+   id="svg20"
+   sodipodi:docname="emu-icon.svg"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs20" />
+  <sodipodi:namedview
+     id="namedview"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:current-layer="shell-bottom"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:zoom="1.2177922"
+     inkscape:cx="197.48853"
+     inkscape:cy="80.473497"
+     inkscape:window-width="1352"
+     inkscape:window-height="815"
+     inkscape:window-x="0"
+     inkscape:window-y="35"
+     inkscape:window-maximized="0" />
+  <!-- background -->
+  <g
+     id="background"
+     inkscape:label="background">
+    <circle
+       id="bg-fill"
+       inkscape:label="fill"
+       cx="256"
+       cy="256"
+       r="245"
+       fill="#6db5c4" />
+    <circle
+       id="bg-stroke"
+       inkscape:label="outline"
+       cx="256"
+       cy="256"
+       r="245"
+       fill="none"
+       stroke="#4a8f9e"
+       stroke-width="5" />
+  </g>
+  <!-- emu body (behind bottom shell) -->
+  <ellipse
+     id="body"
+     inkscape:label="body"
+     cx="256"
+     cy="326"
+     rx="95"
+     ry="60"
+     fill="#4a3728" />
+  <!-- bottom egg shell -->
+  <g
+     id="shell-bottom"
+     inkscape:label="shell bottom">
+    <path
+       id="shell-bottom-shape"
+       inkscape:label="shape"
+       fill="#f5edda"
+       stroke="#3a3a3a"
+       stroke-width="5"
+       stroke-linejoin="round"
+       d="m 100,336 c 0,110 70,160 156,160 86,0 156,-50 156,-160              l -12,-10 -20,30 -20,-40 -25,35 -25,-40 -25,35              -29,-40 -28,40 -23,-35 -27,40 -23,-35 -23,40 -17,-30 z" />
+    <path
+       id="shell-bottom-shadow"
+       inkscape:label="shadow"
+       fill="none"
+       stroke="#d5cdb0"
+       stroke-width="3"
+       opacity="0.6"
+       d="m 148,396 c 25,30 185,30 218,0" />
+    <path
+       id="shell-bottom-highlight"
+       inkscape:label="highlight"
+       fill="none"
+       stroke="#faf5e8"
+       stroke-width="2"
+       opacity="0.5"
+       d="m 155,371 c 18,18 160,18 200,0" />
+    <g
+       id="shell-bottom-speckles"
+       inkscape:label="speckles"
+       fill="#ccc4a8"
+       opacity="0.45"
+       transform="translate(0,-8.113052)">
+      <circle
+         cx="195"
+         cy="411"
+         r="2.2"
+         id="circle1" />
+      <circle
+         cx="235"
+         cy="431"
+         r="1.6"
+         id="circle2" />
+      <circle
+         cx="285"
+         cy="416"
+         r="2"
+         id="circle3" />
+      <circle
+         cx="315"
+         cy="441"
+         r="1.5"
+         id="circle4" />
+      <circle
+         cx="175"
+         cy="441"
+         r="1.4"
+         id="circle5" />
+      <circle
+         cx="255"
+         cy="461"
+         r="1.8"
+         id="circle6" />
+      <circle
+         cx="220"
+         cy="396"
+         r="1.3"
+         id="circle7" />
+      <circle
+         cx="330"
+         cy="411"
+         r="1.6"
+         id="circle8" />
+      <circle
+         cx="165"
+         cy="421"
+         r="1.2"
+         id="circle9" />
+      <circle
+         cx="275"
+         cy="451"
+         r="1.5"
+         id="circle10" />
+      <circle
+         cx="210"
+         cy="466"
+         r="1.3"
+         id="circle11" />
+      <circle
+         cx="300"
+         cy="466"
+         r="1.4"
+         id="circle12" />
+    </g>
+  </g>
+  <!-- wing stubs -->
+  <g
+     id="wings"
+     inkscape:label="wings">
+    <path
+       id="wing-left"
+       inkscape:label="left"
+       fill="#4a3728"
+       stroke="#3a3a3a"
+       stroke-width="3"
+       stroke-linejoin="round"
+       d="m 166.18,309.20 -22,8 -10,14 15,6 15,-8" />
+    <path
+       id="wing-right"
+       inkscape:label="right"
+       fill="#4a3728"
+       stroke="#3a3a3a"
+       stroke-width="3"
+       stroke-linejoin="round"
+       d="m 345.82,309.20 22,8 10,14 -15,6 -15,-8" />
+  </g>
+  <!-- neck -->
+  <path
+     id="neck"
+     inkscape:label="neck"
+     fill="#4a3728"
+     d="M 232,276 C 228,226 235,186 256,156 277,186 284,226 280,276 Z" />
+  <!-- head -->
+  <ellipse
+     id="head"
+     inkscape:label="head"
+     cx="256"
+     cy="146"
+     rx="58"
+     ry="50"
+     fill="#4a3728" />
+  <!-- head feather tufts -->
+  <g
+     id="head-tufts"
+     inkscape:label="head tufts"
+     fill="#5c4636">
+    <circle
+       id="tuft-left"
+       inkscape:label="left"
+       cx="238"
+       cy="128"
+       r="14" />
+    <circle
+       id="tuft-center"
+       inkscape:label="center"
+       cx="260"
+       cy="121"
+       r="16" />
+    <circle
+       id="tuft-right"
+       inkscape:label="right"
+       cx="280"
+       cy="128"
+       r="13" />
+  </g>
+  <!-- beak -->
+  <g
+     id="beak"
+     inkscape:label="beak"
+     transform="matrix(1.4236525,0,0,1.4628082,-108.07845,-49.231706)">
+    <path
+       id="beak-shape"
+       inkscape:label="shape"
+       fill="#e09030"
+       stroke="#3a3a3a"
+       stroke-width="4"
+       stroke-linejoin="round"
+       d="m 240,155 16,27 16,-27 c -12.18,-18.47 -22.93,-19.84 -32,0 z" />
+    <circle
+       id="nostril-left"
+       inkscape:label="nostril left"
+       cx="250"
+       cy="163"
+       r="2.5"
+       fill="#a06818" />
+    <circle
+       id="nostril-right"
+       inkscape:label="nostril right"
+       cx="262"
+       cy="163"
+       r="2.5"
+       fill="#a06818" />
+  </g>
+  <!-- left eye -->
+  <g
+     id="eye-left"
+     inkscape:label="eye left">
+    <ellipse
+       id="eye-left-white"
+       inkscape:label="white"
+       cx="232"
+       cy="151"
+       rx="27"
+       ry="30"
+       fill="#fff"
+       stroke="#3a3a3a"
+       stroke-width="5" />
+    <circle
+       id="eye-left-pupil"
+       inkscape:label="pupil"
+       cx="237"
+       cy="156"
+       r="14"
+       fill="#1a1a1a" />
+    <circle
+       id="eye-left-shine"
+       inkscape:label="shine"
+       cx="243"
+       cy="148"
+       r="5"
+       fill="#fff" />
+    <circle
+       id="eye-left-shine2"
+       inkscape:label="shine small"
+       cx="234"
+       cy="162"
+       r="3"
+       fill="#fff"
+       opacity="0.6" />
+  </g>
+  <!-- right eye -->
+  <g
+     id="eye-right"
+     inkscape:label="eye right">
+    <ellipse
+       id="eye-right-white"
+       inkscape:label="white"
+       cx="280"
+       cy="151"
+       rx="27"
+       ry="30"
+       fill="#fff"
+       stroke="#3a3a3a"
+       stroke-width="5" />
+    <circle
+       id="eye-right-pupil"
+       inkscape:label="pupil"
+       cx="275"
+       cy="156"
+       r="14"
+       fill="#1a1a1a" />
+    <circle
+       id="eye-right-shine"
+       inkscape:label="shine"
+       cx="281"
+       cy="148"
+       r="5"
+       fill="#fff" />
+    <circle
+       id="eye-right-shine2"
+       inkscape:label="shine small"
+       cx="272"
+       cy="162"
+       r="3"
+       fill="#fff"
+       opacity="0.6" />
+  </g>
+  <!-- top egg shell hat -->
+  <g
+     id="shell-top"
+     inkscape:label="shell top"
+     transform="translate(-8,14)">
+    <path
+       id="shell-top-shape"
+       inkscape:label="shape"
+       fill="#f5edda"
+       stroke="#3a3a3a"
+       stroke-width="5"
+       stroke-linejoin="round"
+       d="M 153.23,119.03 C 163.80,39.97 210,5 270,2 340,5 373.90,55 378.65,120              L 350,108 l -18,24 -20,-32 -22,28 -25,-36 -25,33 -22,-30 -13,35 -25.5,-25 z" />
+    <path
+       id="shell-top-highlight"
+       inkscape:label="highlight"
+       fill="none"
+       stroke="#faf5e8"
+       stroke-width="2"
+       opacity="0.5"
+       d="m 200,40 c 25,-8 90,-5 125,2" />
+    <path
+       id="shell-top-shadow"
+       inkscape:label="shadow"
+       fill="none"
+       stroke="#d5cdb0"
+       stroke-width="2.5"
+       opacity="0.5"
+       d="m 190,75 c 30,10 100,-5 140,5" />
+    <g
+       id="shell-top-speckles"
+       inkscape:label="speckles"
+       fill="#ccc4a8"
+       opacity="0.45">
+      <circle
+         cx="225"
+         cy="35"
+         r="1.8"
+         id="circle13" />
+      <circle
+         cx="270"
+         cy="25"
+         r="1.5"
+         id="circle14" />
+      <circle
+         cx="310"
+         cy="42"
+         r="1.6"
+         id="circle15" />
+      <circle
+         cx="245"
+         cy="60"
+         r="1.4"
+         id="circle16" />
+      <circle
+         cx="290"
+         cy="70"
+         r="1.7"
+         id="circle17" />
+      <circle
+         cx="210"
+         cy="68"
+         r="1.3"
+         id="circle18" />
+      <circle
+         cx="330"
+         cy="65"
+         r="1.2"
+         id="circle19" />
+      <circle
+         cx="260"
+         cy="88"
+         r="1.5"
+         id="circle20" />
+    </g>
+  </g>
+</svg>

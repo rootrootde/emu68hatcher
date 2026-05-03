@@ -1,0 +1,56 @@
+# <img src="assets/emu-icon.svg" width="96" height="96" alt="logo"> Emu68 Hatcher
+
+Build ready-to-run SD cards with pre-configured Workbench installation for [PiStorm](https://github.com/captain-amygdala/pistorm)-accelerated Amigas. 
+
+Cross-platform Python+Qt app trying to be an [Emu68 Imager](https://github.com/mja65/Emu68-Imager-Software) alternative for Mac and Linux users
+
+<img src="assets/screenshot_macos.png" alt="Emu68 Hatcher main window (macOS, light + dark)" width="600">
+
+- Bootable Emu68 install for pistorm32-lite, pistorm, pistorm16
+- Workbench install from stock ADFs (3.1 / 3.2 / 3.2.2.1 / 3.2.3)
+- Customizable package set: MUI, WHDLoad+WHDLoadWrapper, IBrowse, HippoPlayer, ...
+- RTG via Picasso96 (shareware driver)
+- Network stack (wifipi+genet) via Roadshow Demo + config tools
+- Partition layout editor (PFS3 + FFS)
+- Build configs as JSON (save / load)
+
+## Known issues / limitations
+
+**Still in an early stage** - Only actively tested on my A1200 + pistorm32-lite + CM4 / on macOS. If you run it on different hardware or OS, let me know on the [Discord](https://discord.com/invite/ApTbasXJPE) or open a [GitHub issue](https://github.com/rootrootde/emu68hatcher/issues) - even just "it worked" is useful.
+
+- **needs at least as much free disk space as your sd card size** (32gb sd = 32gb free space) - sparse file support is on the roadmap
+- **Workbench 3.9 not supported yet**
+- **No framethrower / unicam configuration yet**
+- **mostly tested on 3.2(.3)** - expect more potential issues with 3.1
+- **Ethernet (genet.device) connection is set up, but completely untested** (cause my eth port died)
+- **the .app bundle is unsigned/not notarized** so macOS Gatekeeper blocks it on first launch and has to be persuaded to run it anyways (see [Installation](installation.md#macos) for instructions)
+
+## Support + Feedback
+
+For questions, feedback, bug reports, feature requests, and project updates:
+
+[Join the Discord](https://discord.com/invite/ApTbasXJPE){ .md-button .md-button--primary }
+
+!!! warning "Please don't ask for support on other Amiga Discord servers"
+    I won't be able to keep up with multiple channels, and the Emu68 Hatcher server is a better place for discussions plus I can post updates there more frequently.
+
+[Open a GitHub issue](https://github.com/rootrootde/emu68hatcher/issues){ .md-button }
+
+!!! tip "Reporting a build error"
+    If you get a build error (especially on Windows), **please attach the buildlog.txt file** which you can find in the same directory where the image was created. It contains the full build log output incl. error messages and helps a lot with debugging.
+
+## Credits
+
+**This project would have never been possible without [mja65](https://github.com/mja65)'s work on the fantastic [Emu68 Imager](https://github.com/mja65/Emu68-Imager-Software) project.** The code in this repo borrows heavily from emu68 imager, and the overall design and workflow is similar.
+
+Built on top of:
+
+- [Emu68](https://github.com/michalsc/Emu68) and [Emu68-tools](https://github.com/michalsc/Emu68-tools) by Michal Schulz (MPL-2.0) - the m68k JIT and the on-Amiga companion tools (EmuControl, VideoCore.card, WiFiPi.device, ...)
+- [hst-imager](https://github.com/henrikstengaard/hst-imager) and [hst-amiga](https://github.com/henrikstengaard/hst-amiga) by Henrik Stengaard (MIT) - disk image + RDB tooling
+
+Bundled / downloaded at build time:
+
+- [WHDLoad](http://whdload.de/) by Bert Jahn - donationware; please [donate](http://whdload.de/whdload/donations.html) if you use it
+- [Roadshow Demo](https://www.amigashop.org/product_info.php?cPath=2_34&products_id=200&language=de) bundled with permission from A. Magerl (APC&TCP)
+- [7-Zip](https://github.com/ip7z/7zip) (GNU LGPL) - downloaded at install time, License.txt copied alongside the binary
+- Aminet packages (MUI, HippoPlayer, IBrowse, akDatatypes, Picasso96, ...) - downloaded from [aminet.net](https://aminet.net) at build time; each ships its own readme with license

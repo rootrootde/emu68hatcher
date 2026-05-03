@@ -1,0 +1,30 @@
+name: whdload
+friendly_name: WHDLoad
+group: System
+description: 'runs amiga games+demos from HD'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: web
+  url: http://whdload.de/whdload/WHDLoad_usr.lha
+  hash: E76EC3049BFD7DE6E9CFC17D7F52EC0C
+  filename: Whdload_usr.lha
+install:
+- from: WHDLoad/C/WHDLoad
+  to: C/
+  rename: WHDLoad.ori
+- from: WHDLoad/C/WHDLoadCD32
+  to: C/
+- from: WHDLoad/C/RawDIC
+  to: C/
+- from: WHDLoad/C/DIC
+  to: C/
+- from: WHDLoad/C/Patcher
+  to: C/
+- from: WHDLoad/S/*
+  to: S/

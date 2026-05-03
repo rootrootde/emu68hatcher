@@ -1,0 +1,30 @@
+name: hippoplayer
+friendly_name: HippoPlayer
+bundle: hippoplayer
+group: Applications
+description: 'music player'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: true
+download:
+  source: aminet
+  path: mus/play/hippoplayer.lha
+  hash: aa28f29175d968c4f4ccfd5a6c4f7ce4
+  filename: hippoplayer.lha
+install:
+- from: HippoPlayer/HiP
+  to: Programs/HippoPlayer/
+- from: HippoPlayer/HiP.*
+  to: Programs/HippoPlayer/
+- from: HippoPlayer/HippoPlayer.PS3M
+  to: S/
+- from: HippoSupport/*
+  to: Programs/HippoPlayer/
+- from: HippoSupport/Libs/octa*
+  to: Libs/
+- from: HippoSupport/Libs/m*
+  to: Libs/

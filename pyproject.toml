@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "emu68hatcher"
+version = "0.1.0"
+description = "cross-platform (MacOS, Linux, Windows) app to build ready-to-run Amiga SD card images for Emu68/PiStorm"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "rootrootde", email = "emu68hatcher@rootroot.de"},
+]
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: X11 Applications :: Qt",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Hardware",
+    "Topic :: Utilities",
+]
+keywords = ["amiga", "emu68", "pistorm", "pistorm32", "retro", "raspberry-pi"]
+
+dependencies = [
+    "pydantic>=2.0",
+    "rich>=13.0",
+    "jinja2>=3.0",
+    "pyyaml>=6.0",
+    "PySide6>=6.5.0",
+    "certifi>=2024.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+]
+docs = [
+    "mkdocs-material>=9.5",
+]
+
+[project.scripts]
+emu68hatcher = "emu68hatcher.app:run"
+
+[project.urls]
+Homepage = "https://github.com/rootrootde/emu68hatcher"
+Documentation = "https://rootrootde.github.io/emu68hatcher/"
+Repository = "https://github.com/rootrootde/emu68hatcher"
+Issues = "https://github.com/rootrootde/emu68hatcher/issues"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"

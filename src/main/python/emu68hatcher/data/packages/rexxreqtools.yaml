@@ -1,0 +1,19 @@
+name: rexxreqtools
+friendly_name: RexxReqTools
+group: System
+description: 'ARexx wrapper for reqtools.library'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/libs/ReqToolsUsr.lha
+  hash: d2155055d235218d213b08743b334e6c
+  filename: ReqToolsUsr.lha
+install:
+- from: ReqTools/RexxReqTools/rexxreqtools.library
+  to: Libs/

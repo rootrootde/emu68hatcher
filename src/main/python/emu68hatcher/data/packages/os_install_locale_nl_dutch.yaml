@@ -1,0 +1,9 @@
+name: os_install_locale_nl_dutch
+friendly_name: Dutch (NL) Locale Files
+group: Locale
+description: 'dutch language + keymap files'
+versions:
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+default: true

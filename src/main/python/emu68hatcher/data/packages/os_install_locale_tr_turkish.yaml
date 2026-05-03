@@ -1,0 +1,8 @@
+name: os_install_locale_tr_turkish
+friendly_name: Turkish (TR) Locale Files
+group: Locale
+description: 'turkish language + keymap files'
+versions:
+- '3.2'
+- 3.2.2.1
+- 3.2.3

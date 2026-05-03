@@ -1,0 +1,3 @@
+#!/bin/sh
+export GIO_MODULE_DIR=
+exec "/opt/emu68hatcher/emu68hatcher" "$@"

@@ -1,0 +1,28 @@
+name: emu68hatcher_local_files
+friendly_name: Hatcher Tools
+group: System
+description: 'network manager + WiFi config tools'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: local
+install:
+- from: System/S/WifiConfig.rexx
+  to: S/
+- from: System/S/NetworkManager.rexx
+  to: S/
+- from: System/S/RoadshowSettings
+  to: S/
+- from: System/Prefs/Wifi Config
+  to: Prefs/
+- from: System/Prefs/Wifi Config.info
+  to: Prefs/
+- from: System/Utilities/Network Manager
+  to: Utilities/
+- from: System/Utilities/Network Manager.info
+  to: Utilities/

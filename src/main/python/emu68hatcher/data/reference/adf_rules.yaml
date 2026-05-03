@@ -1,0 +1,1265 @@
+'3.1':
+- adf: Storage3_1
+  from: DosDrivers/PC0.info
+  to: Devs/DosDrivers/
+  rename: SD0.info
+  sequence: 1
+  package: sd0_device
+- adf: Storage3_1
+  from: DosDrivers/PC1.info
+  to: Storage/DosDrivers/
+  rename: SMB0.info
+  sequence: 1
+  package: smb0_device
+- adf: Workbench3_1
+  from: '*'
+  to: /
+  recursive: true
+  sequence: 1
+  package: os_install
+- adf: Extras3_1
+  from: '*'
+  to: /
+  recursive: true
+  sequence: 1
+  package: os_install
+- adf: Fonts3_1
+  from: '*'
+  to: Fonts/
+  recursive: true
+  sequence: 1
+  package: os_install
+- adf: Storage3_1
+  from: DataTypes/*
+  to: Storage/DataTypes/
+  recursive: true
+  sequence: 1
+  package: os_install
+- adf: Storage3_1
+  from: DOSDrivers/*
+  to: Storage/DOSDrivers/
+  recursive: true
+  sequence: 1
+  package: os_install
+- adf: Storage3_1
+  from: Keymaps/*
+  to: Storage/Keymaps/
+  recursive: true
+  sequence: 1
+  package: os_install
+- adf: Storage3_1
+  from: Keymaps/*
+  to: Devs/Keymaps/
+  recursive: true
+  sequence: 1
+  package: os_install
+- adf: Storage3_1
+  from: Monitors/*
+  to: Storage/Monitors/
+  recursive: true
+  sequence: 1
+  package: os_install
+- adf: Storage3_1
+  from: Monitors/NTSC
+  to: Devs/Monitors/
+  sequence: 1
+  package: os_install
+- adf: Storage3_1
+  from: Monitors/PAL
+  to: Devs/Monitors/
+  sequence: 1
+  package: os_install
+- adf: Storage3_1
+  from: Monitors/NTSC.info
+  to: Devs/Monitors/
+  sequence: 1
+  package: os_install
+- adf: Storage3_1
+  from: Monitors/PAL.info
+  to: Devs/Monitors/
+  sequence: 1
+  package: os_install
+- adf: Storage3_1
+  from: Printers/*
+  to: Storage/Printers/
+  recursive: true
+  sequence: 1
+  package: os_install
+- adf: Storage3_1
+  from: '*.info'
+  to: Storage/
+  recursive: true
+  sequence: 1
+  package: os_install
+- adf: Storage3_1
+  from: Keymaps.info
+  to: Devs/
+  sequence: 1
+  package: os_install
+- adf: Locale3_1
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 1
+  package: os_install_locale_3_1
+  mandatory: false
+- adf: Install3_1
+  from: C/Iconpos
+  to: C/
+  sequence: 1
+  package: os_install
+- adf: Install3_1
+  from: HDTools/S/*
+  to: S/
+  recursive: true
+  sequence: 1
+  package: os_install
+- adf: Install3_1
+  from: HDTools/BRU
+  to: Tools/
+  sequence: 1
+  package: os_install
+- adf: Install3_1
+  from: HDTools/HDBackup
+  to: Tools/
+  sequence: 1
+  package: os_install
+- adf: Install3_1
+  from: HDTools/HDToolbox
+  to: Tools/
+  sequence: 1
+  package: os_install
+- adf: Install3_1
+  from: HDTools/HDBackup.info
+  to: Tools/
+  sequence: 1
+  package: os_install
+- adf: Install3_1
+  from: HDTools/HDToolbox.info
+  to: Tools/
+  rename: HDToolBoxPi3.info
+  sequence: 1
+  package: os_install
+- adf: Install3_1
+  from: HDTools/HDToolbox.info
+  to: Tools/
+  rename: HDToolBoxPi4.info
+  sequence: 1
+  package: os_install
+- adf: Install3_1
+  from: Libs/*
+  to: Libs/
+  recursive: true
+  sequence: 1
+  package: os_install
+- adf: Install3_1
+  from: Prefs/*
+  to: Prefs/
+  recursive: true
+  sequence: 1
+  package: os_install
+- adf: Install3_1
+  from: Update/Disk.info
+  to: /
+  sequence: 1
+  package: os_install
+- adf: Workbench3_1
+  from: System.info
+  to: /
+  rename: Storage.info
+  sequence: 1
+  package: os_install
+- adf: Install3_1
+  from: Update/Startup-HardDrive
+  to: S/
+  rename: Startup-Sequence
+  sequence: 2
+  package: os_install
+'3.2':
+- &id002
+  adf: Storage3_2
+  from: DosDrivers/PC0.info
+  to: Devs/DosDrivers/
+  rename: SD0.info
+  sequence: 1
+  package: sd0_device
+- &id003
+  adf: Storage3_2
+  from: DosDrivers/PC1.info
+  to: Storage/DosDrivers/
+  rename: SMB0.info
+  sequence: 1
+  package: smb0_device
+- &id004
+  adf: Storage3_2
+  from: Monitors/NTSC
+  to: Devs/Monitors/
+  sequence: 1
+  package: os_install
+- &id005
+  adf: Storage3_2
+  from: Monitors/PAL
+  to: Devs/Monitors/
+  sequence: 1
+  package: os_install
+- &id006
+  adf: Storage3_2
+  from: Monitors/NTSC.info
+  to: Devs/Monitors/
+  sequence: 1
+  package: os_install
+- &id007
+  adf: Storage3_2
+  from: Monitors/PAL.info
+  to: Devs/Monitors/
+  sequence: 1
+  package: os_install
+- &id008
+  adf: Install3_2
+  from: HDTools/HDToolBox
+  to: Tools/
+  sequence: 1
+  package: os_install
+- &id009
+  adf: Install3_2
+  from: Libs/icon.library
+  to: Libs/
+  sequence: 1
+  package: os_install
+- &id010
+  adf: Install3_2
+  from: Libs/workbench.library
+  to: Libs/
+  sequence: 1
+  package: os_install
+- &id011
+  adf: Install3_2
+  from: Storage.info
+  to: /
+  sequence: 1
+  package: os_install
+- &id012
+  adf: Install3_2
+  from: C/Iconpos
+  to: C/
+  sequence: 1
+  package: os_install
+- &id013
+  adf: Workbench3_2
+  from: '*'
+  to: /
+  recursive: true
+  sequence: 1
+  package: os_install
+- adf: DiskDoctor3_2
+  from: C/DAControl
+  to: C/
+  sequence: 1
+  package: os_install
+- adf: DiskDoctor3_2
+  from: C/DiskDoctor
+  to: C/
+  sequence: 1
+  package: os_install
+- adf: DiskDoctor3_2
+  from: Devs/trackfile.device
+  to: Devs/
+  sequence: 1
+  package: os_install
+- &id014
+  adf: Locale3_2
+  from: Countries
+  to: Locale/Countries/
+  sequence: 1
+  package: os_install
+- &id015
+  adf: Locale3_2
+  from: Catalogs
+  to: Locale/Catalogs/
+  sequence: 1
+  package: os_install
+- &id016
+  adf: Locale3_2
+  from: Support/Fonts
+  to: Fonts/
+  sequence: 1
+  package: os_install
+- &id017
+  adf: LocaleDE3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 1
+  package: os_install_locale_de_german
+  mandatory: false
+- &id018
+  adf: LocaleDK3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 1
+  package: os_install_locale_dk_danish
+  mandatory: false
+- &id019
+  adf: LocaleEN3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 1
+  package: os_install
+- &id020
+  adf: LocaleES3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 1
+  package: os_install_locale_es_spanish
+  mandatory: false
+- &id021
+  adf: LocaleFR3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 1
+  package: os_install_locale_fr_french
+  mandatory: false
+- &id022
+  adf: LocaleGR3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 1
+  package: os_install_locale_gr_greek
+  mandatory: false
+- &id023
+  adf: LocaleIT3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 1
+  package: os_install_locale_it_italian
+  mandatory: false
+- &id024
+  adf: LocaleNL3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 1
+  package: os_install_locale_nl_dutch
+  mandatory: false
+- &id025
+  adf: LocaleNO3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 1
+  package: os_install_locale_no_norwegian
+  mandatory: false
+- &id026
+  adf: LocalePL3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 1
+  package: os_install_locale_pl_polish
+  mandatory: false
+- &id027
+  adf: LocalePT3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 1
+  package: os_install_locale_pt_portuguese
+  mandatory: false
+- &id028
+  adf: LocaleRU3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 1
+  package: os_install_locale_ru_russian
+  mandatory: false
+- &id029
+  adf: LocaleSE3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 1
+  package: os_install_locale_se_swedish
+  mandatory: false
+- &id030
+  adf: LocaleTR3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 1
+  package: os_install_locale_tr_turkish
+  mandatory: false
+- &id031
+  adf: LocaleUK3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 1
+  package: os_install_locale_uk_english
+  mandatory: false
+- &id032
+  adf: Extras3_2
+  from: '*'
+  to: /
+  recursive: true
+  sequence: 1
+  package: os_install
+- &id033
+  adf: Classes3_2
+  from: '*'
+  to: /
+  recursive: true
+  sequence: 1
+  package: os_install
+- &id034
+  adf: Fonts3_2
+  from: '*'
+  to: Fonts/
+  recursive: true
+  sequence: 1
+  package: os_install
+- &id035
+  adf: Storage3_2
+  from: KeyMaps/*
+  to: Storage/KeyMaps/
+  recursive: true
+  sequence: 1
+  package: os_install
+- &id036
+  adf: Storage3_2
+  from: Monitors/*
+  to: Storage/Monitors/
+  recursive: true
+  sequence: 1
+  package: os_install
+- &id037
+  adf: Storage3_2
+  from: Printers/*
+  to: Storage/Printers/
+  recursive: true
+  sequence: 1
+  package: os_install
+- &id038
+  adf: Storage3_2
+  from: DOSDrivers.info
+  to: Storage/
+  sequence: 1
+  package: os_install
+- &id039
+  adf: Storage3_2
+  from: KeyMaps.info
+  to: Storage/
+  sequence: 1
+  package: os_install
+- adf: Storage3_2
+  from: KeyMaps.info
+  to: Devs/
+  sequence: 1
+  package: os_install
+- &id040
+  adf: Storage3_2
+  from: Monitors.info
+  to: Storage/
+  sequence: 1
+  package: os_install
+- &id041
+  adf: Storage3_2
+  from: Printers.info
+  to: Storage/
+  sequence: 1
+  package: os_install
+- &id042
+  adf: Storage3_2
+  from: Classes/DataTypes/*
+  to: Classes/DataTypes/
+  recursive: true
+  sequence: 1
+  package: os_install
+- &id043
+  adf: Storage3_2
+  from: C/*
+  to: C/
+  recursive: true
+  sequence: 1
+  package: os_install
+- &id044
+  adf: Storage3_2
+  from: Presets/Pointers/*
+  to: Prefs/Presets/Pointers/
+  recursive: true
+  sequence: 1
+  package: os_install
+- &id045
+  adf: Storage3_2
+  from: Monitors/*
+  to: Storage/Monitors/
+  recursive: true
+  sequence: 1
+  package: os_install
+- &id046
+  adf: Storage3_2
+  from: DOSDrivers/*
+  to: Storage/DosDrivers/
+  recursive: true
+  sequence: 1
+  package: os_install
+- &id047
+  adf: Storage3_2
+  from: WBStartup/AsyncWB
+  to: WBStartup/
+  sequence: 1
+  package: os_install
+- &id048
+  adf: Storage3_2
+  from: WBStartup/AsyncWB.info
+  to: WBStartup/
+  sequence: 1
+  package: os_install
+- &id049
+  adf: Storage3_2
+  from: WBStartup/AutoArrangeIcons
+  to: WBStartup/
+  sequence: 1
+  package: os_install
+- &id050
+  adf: Storage3_2
+  from: WBStartup/RAWBInfo
+  to: WBStartup/
+  sequence: 1
+  package: os_install
+- &id051
+  adf: Storage3_2
+  from: WBStartup/DefIcons.info
+  to: WBStartup/
+  sequence: 1
+  package: os_install
+- &id052
+  adf: Storage3_2
+  from: WBStartup/MenuTools
+  to: WBStartup/
+  sequence: 1
+  package: os_install
+- &id053
+  adf: Storage3_2
+  from: WBStartup/AutoArrangeIcons.info
+  to: WBStartup/
+  sequence: 1
+  package: os_install
+- &id054
+  adf: Storage3_2
+  from: WBStartup/MenuTools.info
+  to: WBStartup/
+  sequence: 1
+  package: os_install
+- &id055
+  adf: Storage3_2
+  from: WBStartup/RAWBInfo.info
+  to: WBStartup/
+  sequence: 1
+  package: os_install
+- &id056
+  adf: Storage3_2
+  from: DefIcons/*
+  to: Prefs/Env-Archive/Sys/DefIcons/
+  recursive: true
+  sequence: 1
+  package: os_install
+- &id057
+  adf: Storage3_2
+  from: Env-Archive/deficons.prefs
+  to: Prefs/Env-Archive/
+  sequence: 1
+  package: os_install
+- &id058
+  adf: Storage3_2
+  from: Env-Archive/Pointer.prefs
+  to: Prefs/Env-Archive/Sys/
+  sequence: 1
+  package: os_install
+- &id059
+  adf: Storage3_2
+  from: Printers/*
+  to: Devs/Printers/
+  recursive: true
+  sequence: 1
+  package: os_install
+- &id060
+  adf: Storage3_2
+  from: KeyMaps/*
+  to: Devs/Keymaps/
+  recursive: true
+  sequence: 1
+  package: os_install
+- &id061
+  adf: Storage3_2
+  from: Libs/*
+  to: Libs/
+  recursive: true
+  sequence: 1
+  package: os_install
+- &id062
+  adf: Backdrops3_2
+  from: '*'
+  to: Prefs/Presets/Backdrops/
+  recursive: true
+  sequence: 1
+  package: os_install
+- adf: Install3_2
+  from: Update/Startup-HardDrive
+  to: S/
+  rename: Startup-Sequence
+  sequence: 2
+  package: os_install
+- &id063
+  adf: GlowIcons3_2
+  from: '*'
+  to: /
+  recursive: true
+  sequence: 3
+  package: os_install
+  icon_set: GlowIcons
+- &id064
+  adf: GlowIcons3_2
+  from: Disk.Info
+  to: /
+  sequence: 3
+  package: os_install
+  icon_set: GlowIcons
+- &id065
+  adf: GlowIcons3_2
+  from: Tools/HDToolbox.info
+  to: Tools/
+  rename: HDToolBoxPi3.info
+  sequence: 3
+  package: os_install
+  icon_set: GlowIcons
+- &id066
+  adf: GlowIcons3_2
+  from: Tools/HDToolbox.info
+  to: Tools/
+  rename: HDToolBoxPi4.info
+  sequence: 3
+  package: os_install
+  icon_set: GlowIcons
+3.2.2.1:
+- *id002
+- *id003
+- *id004
+- *id005
+- *id006
+- *id007
+- *id008
+- *id009
+- *id010
+- *id011
+- *id012
+- *id013
+- *id014
+- *id015
+- *id016
+- *id017
+- *id018
+- *id019
+- *id020
+- *id021
+- *id022
+- *id023
+- *id024
+- *id025
+- *id026
+- *id027
+- *id028
+- *id029
+- *id030
+- *id031
+- *id032
+- *id033
+- *id034
+- *id035
+- *id036
+- *id037
+- *id038
+- *id039
+- *id040
+- *id041
+- *id042
+- *id043
+- *id044
+- *id045
+- *id046
+- *id047
+- *id048
+- *id049
+- *id050
+- *id051
+- *id052
+- *id053
+- *id054
+- *id055
+- *id056
+- *id057
+- *id058
+- *id059
+- *id060
+- *id061
+- *id062
+- adf: Update3_2_2
+  from: Update/IconEdit.Info
+  to: Tools/
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2
+  from: Installer
+  to: System/
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2
+  from: Update/Release
+  to: Prefs/Env-Archive/Versions/
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2
+  from: Libs/*
+  to: Libs/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2
+  from: C/*.Z
+  to: C/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2
+  from: Devs/*
+  to: Devs/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2
+  from: L/*
+  to: L/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2
+  from: Locale/Countries/*
+  to: Locale/Countries/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2
+  from: Prefs/*
+  to: Prefs/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2
+  from: System/*
+  to: System/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2
+  from: Tools/*
+  to: Tools/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2
+  from: Utilities/*
+  to: Utilities/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2
+  from: WBStartup/*
+  to: WBStartup/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2
+  from: Update/Startup-HardDrive
+  to: S/
+  rename: Startup-Sequence
+  sequence: 2
+  package: os_install
+- adf: Classes3_2_2
+  from: '*'
+  to: /
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: DiskDoctor3_2_2
+  from: C/DAControl
+  to: C/
+  sequence: 2
+  package: os_install
+- adf: DiskDoctor3_2_2
+  from: C/DiskDoctor
+  to: C/
+  sequence: 2
+  package: os_install
+- adf: DiskDoctor3_2_2
+  from: Devs/trackfile.device
+  to: Devs/
+  sequence: 2
+  package: os_install
+- adf: LocaleDE3_2_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_de_german
+  mandatory: false
+- adf: LocaleDK3_2_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_dk_danish
+  mandatory: false
+- adf: LocaleEN3_2_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: LocaleES3_2_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_es_spanish
+  mandatory: false
+- adf: LocaleFR3_2_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_fr_french
+  mandatory: false
+- adf: LocaleGR3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_gr_greek
+  mandatory: false
+- adf: LocaleIT3_2_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_it_italian
+  mandatory: false
+- adf: LocaleNL3_2_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_nl_dutch
+  mandatory: false
+- adf: LocaleNO3_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_no_norwegian
+  mandatory: false
+- adf: LocalePL3_2_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_pl_polish
+  mandatory: false
+- adf: LocalePT3_2_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_pt_portuguese
+  mandatory: false
+- adf: LocaleRU3_2_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_ru_russian
+  mandatory: false
+- adf: LocaleSE3_2_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_se_swedish
+  mandatory: false
+- adf: LocaleTR3_2_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_tr_turkish
+  mandatory: false
+- adf: LocaleUK3_2_2
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_uk_english
+  mandatory: false
+- adf: Update3_2_2_1
+  from: C
+  to: C/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2_1
+  from: Classes/*
+  to: Classes/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2_1
+  from: System/*
+  to: System/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2_1
+  from: Tools/*
+  to: Tools/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_2_1
+  from: Update/Release
+  to: Prefs/Env-Archive/Versions/
+  sequence: 2
+  package: os_install
+- *id063
+- *id064
+- *id065
+- *id066
+3.2.3:
+- *id002
+- *id003
+- *id004
+- *id005
+- *id006
+- *id007
+- *id008
+- *id009
+- *id010
+- *id011
+- *id012
+- *id013
+- *id014
+- *id015
+- *id016
+- *id017
+- *id018
+- *id019
+- *id020
+- *id021
+- *id022
+- *id023
+- *id024
+- *id025
+- *id026
+- *id027
+- *id028
+- *id029
+- *id030
+- *id031
+- *id032
+- *id033
+- *id034
+- *id035
+- *id036
+- *id037
+- *id038
+- *id039
+- *id040
+- *id041
+- *id042
+- *id043
+- *id044
+- *id045
+- *id046
+- *id047
+- *id048
+- *id049
+- *id050
+- *id051
+- *id052
+- *id053
+- *id054
+- *id055
+- *id056
+- *id057
+- *id058
+- *id059
+- *id060
+- *id061
+- *id062
+- adf: Classes3_2_3
+  from: '*'
+  to: /
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: DiskDoctor3_2_3
+  from: C/DAControl
+  to: C/
+  sequence: 2
+  package: os_install
+- adf: DiskDoctor3_2_3
+  from: C/DiskDoctor
+  to: C/
+  sequence: 2
+  package: os_install
+- adf: DiskDoctor3_2_3
+  from: C/Eval
+  to: C/
+  sequence: 2
+  package: os_install
+- adf: DiskDoctor3_2_3
+  from: C/Execute
+  to: C/
+  sequence: 2
+  package: os_install
+- adf: DiskDoctor3_2_3
+  from: C/List
+  to: C/
+  sequence: 2
+  package: os_install
+- adf: DiskDoctor3_2_3
+  from: C/MakeDir
+  to: C/
+  sequence: 2
+  package: os_install
+- adf: DiskDoctor3_2_3
+  from: C/Protect
+  to: C/
+  sequence: 2
+  package: os_install
+- adf: DiskDoctor3_2_3
+  from: C/SetPatch
+  to: C/
+  sequence: 2
+  package: os_install
+- adf: DiskDoctor3_2_3
+  from: C/Type
+  to: C/
+  sequence: 2
+  package: os_install
+- adf: DiskDoctor3_2_3
+  from: Devs/trackfile.device
+  to: Devs/
+  sequence: 2
+  package: os_install
+- adf: Extras3_2_3
+  from: '*'
+  to: /
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: LocaleCZ3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_cz_czech
+  mandatory: false
+- adf: LocaleDE3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_de_german
+  mandatory: false
+- adf: LocaleDK3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_dk_danish
+  mandatory: false
+- adf: LocaleEN3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: LocaleES3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_es_spanish
+  mandatory: false
+- adf: LocaleFR3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_fr_french
+  mandatory: false
+- adf: LocaleGR3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_gr_greek
+  mandatory: false
+- adf: LocaleIT3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_it_italian
+  mandatory: false
+- adf: LocaleNL3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_nl_dutch
+  mandatory: false
+- adf: LocaleNO3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_no_norwegian
+  mandatory: false
+- adf: LocalePL3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_pl_polish
+  mandatory: false
+- adf: LocalePT3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_pt_portuguese
+  mandatory: false
+- adf: LocaleRS3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_rs_serbian
+  mandatory: false
+- adf: LocaleRU3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_ru_russian
+  mandatory: false
+- adf: LocaleSE3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_se_swedish
+  mandatory: false
+- adf: LocaleTR3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_tr_turkish
+  mandatory: false
+- adf: LocaleUK3_2_3
+  from: '*'
+  to: Locale/
+  recursive: true
+  sequence: 2
+  package: os_install_locale_uk_english
+  mandatory: false
+- adf: Update3_2_3
+  from: Update/IconEdit.Info
+  to: Tools/
+  sequence: 2
+  package: os_install
+- adf: Update3_2_3
+  from: Installer
+  to: System/
+  sequence: 2
+  package: os_install
+- adf: Update3_2_3
+  from: Update/Release
+  to: Prefs/Env-Archive/Versions/
+  sequence: 2
+  package: os_install
+- adf: Update3_2_3
+  from: Libs/*
+  to: Libs/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_3
+  from: C/*.Z
+  to: C/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_3
+  from: Devs/*
+  to: Devs/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_3
+  from: L/*
+  to: L/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_3
+  from: Locale/Countries/*
+  to: Locale/Countries/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_3
+  from: System/*
+  to: System/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_3
+  from: Utilities/*
+  to: Utilities/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_3
+  from: WBStartup/*
+  to: WBStartup/
+  recursive: true
+  sequence: 2
+  package: os_install
+- adf: Update3_2_3
+  from: Update/Startup-HardDrive.Z
+  to: S/
+  rename: Startup-Sequence.Z
+  sequence: 2
+  package: os_install
+- *id063
+- *id064
+- *id065
+- *id066

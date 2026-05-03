@@ -1,0 +1,48 @@
+name: roadshow
+friendly_name: Roadshow
+group: Network
+description: 'TCP/IP stack (demo)'
+purchase_url: https://www.amigashop.org/product_info.php?cPath=2_34&products_id=200&language=de
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: true
+download:
+  source: local
+  path: Roadshow-Demo-1.15.lha
+  hash: 25471647C76D8EAB98F78D24945B3FC6
+  filename: Roadshow-Demo-1.15.lha
+install:
+- from: Roadshow-Demo-*/Workbench/Storage/*
+  to: Storage/
+- from: Roadshow-Demo-*/Workbench/Libs/*
+  to: Libs/
+- from: Roadshow-Demo-*/Workbench/Devs/*
+  to: Devs/
+- from: Roadshow-Demo-*/Workbench/C/*
+  to: C/
+- from: Roadshow-Demo-*/Workbench/Locale/*
+  to: Locale/
+- from: Roadshow-Demo-*/Workbench/S/Stop-Firewall
+  to: S/
+- from: Roadshow-Demo-*/Workbench/S/Start-Firewall
+  to: S/
+- from: Roadshow-Demo-*/Workbench/S/Network-Startup
+  to: S/
+- from: Roadshow-Demo-*/Workbench/S/Check-Firewall-Rules
+  to: S/
+- from: Roadshow-Demo-*/Workbench/S/IPF/*
+  to: S/IPF/
+- from: Roadshow-Demo-*/Workbench/S/PPP-Configurations/*
+  to: S/PPP-Configurations/
+- from: Roadshow-Demo-*/Documentation/*
+  to: Programs/Roadshow/
+- from: Roadshow-Demo-*/Workbench/Storage/NetInterfaces/CNet16.info
+  to: Devs/NetInterfaces/
+  rename: wifipi.info
+- from: Roadshow-Demo-*/Workbench/Storage/NetInterfaces/CNet16.info
+  to: Devs/NetInterfaces/
+  rename: genet.info

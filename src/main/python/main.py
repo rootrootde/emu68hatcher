@@ -1,0 +1,65 @@
+"""Emu68 Hatcher entry point"""
+
+import os
+import sys
+
+
+def _augment_path_for_gui_launch():
+    """.app has only minimal PATH -> add paths so 7z etc resolve"""
+    if sys.platform != "darwin":
+        return
+    extras = [
+        "/opt/homebrew/bin",
+        "/opt/homebrew/sbin",
+        "/usr/local/bin",
+        "/usr/local/sbin",
+        "/opt/local/bin",
+        "/opt/local/sbin",
+    ]
+    current = os.environ.get("PATH", "").split(os.pathsep)
+    for p in extras:
+        if p not in current:
+            current.insert(0, p)
+    os.environ["PATH"] = os.pathsep.join(current)
+
+
+def _point_ssl_at_certifi():
+    """frozen python has no system CA -> use certifi for urllib/requests"""
+    if not getattr(sys, "frozen", False):
+        return
+    try:
+        import certifi
+    except ImportError:
+        return
+    bundle = certifi.where()
+    os.environ.setdefault("SSL_CERT_FILE", bundle)
+    os.environ.setdefault("REQUESTS_CA_BUNDLE", bundle)
+
+
+def _hide_windows_subprocess_consoles():
+    """prevent flashing console window"""
+    if sys.platform != "win32" or not getattr(sys, "frozen", False):
+        return
+    import subprocess
+
+    _orig = subprocess.Popen.__init__
+
+    def _patched(self, *args, **kwargs):
+        kwargs["creationflags"] = kwargs.get("creationflags", 0) | subprocess.CREATE_NO_WINDOW
+        _orig(self, *args, **kwargs)
+
+    subprocess.Popen.__init__ = _patched
+
+
+def main():
+    _augment_path_for_gui_launch()
+    _point_ssl_at_certifi()
+    _hide_windows_subprocess_consoles()
+
+    from emu68hatcher.app import run
+
+    run()
+
+
+if __name__ == "__main__":
+    main()

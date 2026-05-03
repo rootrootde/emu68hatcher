@@ -1,0 +1,86 @@
+- name: Standard
+  description: Standard Icon set
+  default: true
+  versions: ["3.1"]
+  new_folder_icon:
+    source: Storage3_1
+    media: ADF
+    file: Monitors.info
+  system_disk_icon:
+    source: Install3_1
+    media: ADF
+    file: Update/Disk.info
+  work_disk_icon:
+    source: Install3_1
+    media: ADF
+    file: Update/Disk.info
+  boot_disk_icon:
+    source: Install3_1
+    media: ADF
+    file: Update/Disk.info
+
+- name: Standard
+  description: Standard Icon set
+  default: false
+  versions: ["3.2", "3.2.2.1", "3.2.3"]
+  new_folder_icon:
+    source: Storage3_2
+    media: ADF
+    file: Monitors.info
+  system_disk_icon:
+    source: Install3_2
+    media: ADF
+    file: Update/Disk.info
+  work_disk_icon:
+    source: Install3_2
+    media: ADF
+    file: Update/Disk.info
+  boot_disk_icon:
+    source: Install3_2
+    media: ADF
+    file: Update/Disk.info
+
+- name: GlowIcons
+  description: Glow Icons more suitable for screenmodes with greater than 8 colours
+  default: true
+  versions: ["3.2", "3.2.2.1", "3.2.3"]
+  new_folder_icon:
+    source: GlowIcons3_2
+    media: ADF
+    file: Prefs/Env-Archive/Sys/def_drawer.info
+  system_disk_icon:
+    source: GlowIcons3_2
+    media: ADF
+    file: Disk.Info
+  work_disk_icon:
+    source: GlowIcons3_2
+    media: ADF
+    file: Prefs/Env-Archive/Sys/def_harddisk.info
+  boot_disk_icon:
+    source: GlowIcons3_2
+    media: ADF
+    file: Prefs/Env-Archive/Sys/def_harddisk.info
+
+- name: Standard
+  description: Standard Icon set
+  default: true
+  versions: ["3.9"]
+  new_folder_icon:
+    source: AmigaOS3_9
+    media: CD
+    file: OS-Version3.9/Icons/drawer.info
+    modify_info_type: Drawer
+  system_disk_icon:
+    source: AmigaOS3_9
+    media: CD
+    file: OS-VERSION3.9/ICONS/DISK.INFO
+    modify_info_type: Disk
+  work_disk_icon:
+    source: AmigaOS3_9
+    media: CD
+    file: OS-Version3.9/Icons/HD.info
+    modify_info_type: Disk
+  boot_disk_icon:
+    source: AmigaOS3_9
+    media: CD
+    file: OS-Version3.9/Workbench3.9/Prefs/ENV-Archive/Sys/def_disk.info

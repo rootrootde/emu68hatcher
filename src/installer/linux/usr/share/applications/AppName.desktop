@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Emu68 Hatcher
+Comment=Build bootable SD card images for Emu68/PiStorm Amiga setups
+Type=Application
+Exec=/opt/${app_name}/${app_name} %F
+Terminal=false
+NoDisplay=false
+Categories=${categories}
+Version=1.2
+Icon=${app_name}

@@ -1,0 +1,15 @@
+name: setpatch44_38
+friendly_name: Setpatch44.38
+group: System
+description: 'setpatch 44.38 (OS bug fixes)'
+versions:
+- '3.1'
+mandatory: true
+download:
+  source: web
+  url: http://cdn.cloanto.com/pub/amiga/SetPatch-44-38.lha
+  hash: B3FCB573BF33987C33E4C9415E3ED0BB
+  filename: SetPatch.lha
+install:
+- from: SetPatch
+  to: C/

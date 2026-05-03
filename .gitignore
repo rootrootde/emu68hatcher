@@ -1,0 +1,76 @@
+# dotfiles/dirs (ide, venv, caches, etc)
+.*
+!.gitignore
+!.githooks/
+!.github/
+
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+MANIFEST
+
+# packaging
+build/
+!src/build/
+!src/build/**/*.json
+dist/
+target/
+wheels/
+
+.DS_Store
+
+# amiga files (copyrighted)
+*.rom
+*.ROM
+*.bin
+*.adf
+*.ADF
+Amiga_ROMs/
+Amiga_WB/
+
+# disk images
+*.img
+*.IMG
+*.iso
+*.ISO
+*.hdf
+
+# tools / runtime data
+tools/
+hatcher_data/
+
+# config/output files
+emu68-config*.json
+wb*.json
+*.local.json
+build_manifest_*.json
+build_manifest_*.txt
+
+# logs
+*.log
+emu68imagerlog.txt
+buildlog.txt
+
+# temp
+tmp/
+temp/
+*.tmp
+*.bak
+
+# licensed / private
+fbs_pro*.tar.gz
+tests/
+
+# unused icon drafts
+emu68-hatcher-logo*.svg
+
+# dev scripts
+clean.sh
+extract_hdf.sh
+build-and-extract.sh
+
+# mkdocs build output
+site/

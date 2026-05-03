@@ -1,0 +1,8 @@
+name: os_install_locale_pt_portuguese
+friendly_name: Portuguese (PT) Locale Files
+group: Locale
+description: 'portuguese language + keymap files'
+versions:
+- '3.2'
+- 3.2.2.1
+- 3.2.3

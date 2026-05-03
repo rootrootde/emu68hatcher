@@ -1,0 +1,8 @@
+failat 21
+; Wait for Videocore driver init / Intuition screen reset to complete.
+; Without this, the Intuition "close AmigaDOS window" request can kill
+; the Startup-Sequence CLI before it finishes.
+C:Wait 5
+IF EXISTS Sys:System/RexxMast
+   SYS:System/RexxMast >NIL:
+EndIF

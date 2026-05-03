@@ -1,0 +1,9 @@
+name: os_install_locale_it_italian
+friendly_name: Italian (IT) Locale Files
+group: Locale
+description: 'italian language + keymap files'
+versions:
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+default: true

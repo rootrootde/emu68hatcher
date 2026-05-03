@@ -1,0 +1,84 @@
+"""path utils - runtime data dir resolved via $HATCHER_HOME, OS data dir (frozen), or repo-local hatcher_data/"""
+
+import os
+import sys
+import tempfile
+from functools import cache
+from pathlib import Path
+
+from emu68hatcher.utils.platform import OperatingSystem, get_platform_info
+
+
+def _user_data_dir() -> Path:
+    """return the OS-standard per-user data directory for this app"""
+    app_name = "Emu68 Hatcher"
+    os_name = get_platform_info().os
+    if os_name == OperatingSystem.MACOS:
+        return Path.home() / "Library" / "Application Support" / app_name
+    if os_name == OperatingSystem.WINDOWS:
+        # LOCALAPPDATA, not Roaming APPDATA (caches shouldn't sync across domain machines)
+        base = os.environ.get("LOCALAPPDATA")
+        if base:
+            return Path(base) / app_name
+        return Path.home() / "AppData" / "Local" / app_name
+    # linux / other Unix: XDG spec
+    xdg = os.environ.get("XDG_DATA_HOME")
+    if xdg:
+        return Path(xdg) / "emu68hatcher"
+    return Path.home() / ".local" / "share" / "emu68hatcher"
+
+
+def _ensure(path: Path) -> Path:
+    """mkdir -p once and return"""
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+@cache
+def _get_home() -> Path:
+    """base dir for all runtime data"""
+    home = os.environ.get("HATCHER_HOME")
+    if home:
+        p = Path(home).expanduser().resolve()
+    elif getattr(sys, "frozen", False):
+        p = _user_data_dir()
+    else:
+        # source checkout: store under repo root (5 parents up from this file)
+        p = Path(__file__).resolve().parents[5] / "hatcher_data"
+    return _ensure(p)
+
+
+@cache
+def get_cache_dir() -> Path:
+    """return '<home>/cache'"""
+    return _ensure(_get_home() / "cache")
+
+
+@cache
+def get_downloads_dir() -> Path:
+    """dir for downloaded packages"""
+    return _ensure(get_cache_dir() / "downloads")
+
+
+@cache
+def get_extracted_dir() -> Path:
+    """dir for extracted package contents"""
+    return _ensure(get_cache_dir() / "extracted")
+
+
+def make_temp_workdir() -> Path:
+    """create a fresh temp dir under cache"""
+    temp_base = _ensure(get_cache_dir() / "temp")
+    return Path(tempfile.mkdtemp(dir=temp_base))
+
+
+@cache
+def get_tools_dir() -> Path:
+    """return '<home>/tools/<platform>'"""
+    info = get_platform_info()
+    return _ensure(_get_home() / "tools" / info.platform_string)
+
+
+def ensure_dir(path: Path) -> Path:
+    """mkdir -p (helper for tmp dirs)"""
+    return _ensure(path)

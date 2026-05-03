@@ -1,0 +1,29 @@
+name: akdatatypes_gif
+friendly_name: akDatatypes - GIF
+group: System
+description: 'GIF image datatype'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: util/dtype/akGIF-dt.lha
+  hash: 9b5ae40e92dcb2960c93635f90209f53
+  filename: akGIF-dt.lha
+install:
+- from: akGIF-Datatype/Classes/DataTypes/akGIF.datatype
+  to: Classes/DataTypes/
+- from: akGIF-Datatype/devs/Datatypes/*
+  to: Devs/DataTypes/
+- from: akGIF-Datatype/Prefs/Datatypes/*
+  to: Prefs/akDatatypes/
+- from: akGIF-Datatype/c/dtimage.library
+  to: Libs/
+- from: akGIF-Datatype/c/spatch
+  to: C/
+- from: akGIF-Datatype/classes/datatypes/akGIF-040.pch
+  to: Classes/DataTypes/

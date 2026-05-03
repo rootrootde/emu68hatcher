@@ -1,0 +1,11 @@
+name: emu68_boot
+friendly_name: Emu68 Boot Files
+group: System
+description: 'emu68 firmware + kernel + boot config'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
