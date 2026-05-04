@@ -1,4 +1,2 @@
-/* Network Manager launcher - double-click fires the real script in S:.
- * Absolute path on rx so the inner shell finds it regardless of
- * whether Rexxc: / C:rx are on the user's PATH. */
-address command 'SYS:Rexxc/rx >CON:0/20/680/400/NetworkManager/AUTO s:NetworkManager.rexx'
+; Network Manager launcher - launched via IconX so a CLI exists for `address command`.
+SYS:Rexxc/rx >CON:0/20/680/400/NetworkManager/AUTO/CLOSE/WAIT s:NetworkManager.rexx
