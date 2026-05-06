@@ -1,4 +1,4 @@
-"""finalize build stage - copy staged files to image"""
+"""finalize stage - copy staged files into the image"""
 
 from __future__ import annotations
 
@@ -15,13 +15,19 @@ if TYPE_CHECKING:
 
 
 def stage_finalize(workflow: BuildWorkflow) -> None:
-    """finalize the build - copy staged files into the output image"""
+    """copy staged files into the image"""
+    from emu68hatcher.config.schema import OutputType
+
     workflow._update_state(BuildStage.FINALIZE, 0.0)
     workflow._milestone("Finalizing")
 
     if workflow.config.output is None:
         raise BuildError("Missing output configuration")
-    if not workflow.state.image_path or not workflow.state.image_path.exists():
+    if not workflow.state.image_path:
+        raise BuildError("Disk image not found - create_image stage may have failed")
+    # windows physical-drive paths lie in exists() once the disk is offline; in DEVICE mode
+    # the path is meaningful regardless of fs state
+    if workflow.config.output.type != OutputType.DEVICE and not workflow.state.image_path.exists():
         raise BuildError("Disk image not found - create_image stage may have failed")
     if not workflow.state.staging_dir:
         raise BuildError("Staging directory not set - setup stage may have failed")
@@ -33,7 +39,7 @@ def stage_finalize(workflow: BuildWorkflow) -> None:
     workflow._update_state(progress=90.0)
     workflow._milestone("Cleaning up")
     if workflow.state.work_dir and workflow.state.work_dir.exists():
-        # keep the output image file, clean up work directories
+        # keep the image file, clean up work dirs
         for subdir in ["staging", "downloads", "extracted", "workbench"]:
             cleanup_path = workflow.state.work_dir / subdir
             if cleanup_path.exists():
@@ -43,28 +49,50 @@ def stage_finalize(workflow: BuildWorkflow) -> None:
     workflow._milestone("Build complete")
 
 
-def _copy_staged_files_to_image(workflow: BuildWorkflow) -> None:
-    """copy staged files into the image via hst-imager (FAT32: mbr/1, amiga RDB: mbr/2/rdb/<dev>)"""
-    from emu68hatcher.builder.host.hst_commands import HSTCommand, HSTCommandLine
-    from emu68hatcher.builder.host.hst_runner import HSTRunner
+def _ensure_device_unmounted(workflow: BuildWorkflow) -> None:
+    """re-unmount before fs copy - windows auto-mounts the new fat32 and locks the raw disk"""
+    from emu68hatcher.config.schema import OutputType
 
-    if not workflow.state.image_path or not workflow.state.image_path.exists():
+    if workflow.config.output is None or workflow.config.output.type != OutputType.DEVICE:
+        return
+    from emu68hatcher.utils.disk_enum import find_disk, unmount_disk
+
+    info = find_disk(str(workflow.config.output.path))
+    if info is None or not info.mounted_partitions:
+        return
+    unmount_disk(info, workflow.logger, elevation=workflow.state.elevation)
+
+
+def _copy_staged_files_to_image(workflow: BuildWorkflow) -> None:
+    """fs copy into the image (FAT32: mbr/1, amiga RDB: mbr/2/rdb/<dev>)"""
+    from emu68hatcher.builder.host.hst_commands import HSTCommand, HSTCommandLine, hst_path
+    from emu68hatcher.builder.host.hst_runner import HSTRunner
+    from emu68hatcher.config.schema import OutputType
+
+    if not workflow.state.image_path:
+        workflow.logger.warning("No image path set, skipping file copy")
+        return
+    if (
+        workflow.config.output is not None
+        and workflow.config.output.type != OutputType.DEVICE
+        and not workflow.state.image_path.exists()
+    ):
         workflow.logger.warning("No image file found, skipping file copy")
         return
 
-    runner = HSTRunner()
+    runner = HSTRunner(cancel_check=lambda: workflow._cancelled)
 
     if not runner.is_available():
         workflow.logger.warning("HST Imager not available, skipping file copy")
         return
 
-    # log raw + posix form so buildlogs show what hst-imager actually got (it needs forward slashes)
+    # log raw + posix form - buildlog needs to show what hst-imager actually got (forward slashes)
     workflow.logger.info(
         f"finalize: image path: raw={workflow.state.image_path!s} "
         f"posix={workflow.state.image_path.as_posix()!s}"
     )
 
-    # map each device to its 1-based MBR partition number
+    # device -> 1-based MBR partition number
     device_to_mbr: dict[str, int] = {}
     id76_mbr_num: int | None = None
 
@@ -78,10 +106,12 @@ def _copy_staged_files_to_image(workflow: BuildWorkflow) -> None:
                     device_to_mbr[amiga_part.device] = index
 
     if id76_mbr_num is None:
-        # nothing to copy onto the Amiga RDB - bail before trying
+        # no Amiga RDB to copy onto - bail before trying
         raise BuildError("partition layout has no ID76/Amiga partition; nothing to install")
 
     workflow.logger.info(f"finalize: device->MBR mapping: {device_to_mbr}")
+
+    _ensure_device_unmounted(workflow)
 
     devices_copied = 0
     devices_failed = 0
@@ -90,7 +120,7 @@ def _copy_staged_files_to_image(workflow: BuildWorkflow) -> None:
         if not device_dir.is_dir():
             continue
 
-        # cancel honored between per-partition copies (each can take minutes)
+        # cancel checkpoint - each per-partition copy can take minutes
         workflow._check_cancelled()
 
         device_name = device_dir.name
@@ -106,15 +136,11 @@ def _copy_staged_files_to_image(workflow: BuildWorkflow) -> None:
             workflow.logger.info(f"Skipping empty staging directory: {device_name}")
             continue
 
-        # hst-imager splits on first "/" as native|virtual boundary - native side must use forward slashes
-        image_path_str = workflow.state.image_path.as_posix()
         if device_name == EMU68_BOOT_PARTITION_NAME:
-            # FAT32 boot partition: image/mbr/1
             mbr_num = device_to_mbr.get(EMU68_BOOT_PARTITION_NAME, 1)
-            dest = f"{image_path_str}/mbr/{mbr_num}"
+            dest = hst_path(workflow.state.image_path, "mbr", mbr_num)
         else:
-            # amiga RDB partition: image/mbr/N/rdb/DEVICE
-            dest = f"{image_path_str}/mbr/{id76_mbr_num}/rdb/{device_name}"
+            dest = hst_path(workflow.state.image_path, "mbr", id76_mbr_num, "rdb", device_name)
 
         source_pattern = f"{device_dir.as_posix()}/*"
 
@@ -129,7 +155,7 @@ def _copy_staged_files_to_image(workflow: BuildWorkflow) -> None:
             "TRUE",
         ]
 
-        # UAE metadata preserves Amiga file attributes (protection bits, comment, timestamps)
+        # UAE metadata keeps amiga attrs (protection bits, comment, timestamps)
         if device_name != EMU68_BOOT_PARTITION_NAME:
             args.extend(["--uaemetadata", "UaeFsDb"])
 
@@ -143,7 +169,7 @@ def _copy_staged_files_to_image(workflow: BuildWorkflow) -> None:
         workflow.logger.info(f"Running: {command.to_string()}")
 
         start_time = time.time()
-        result = runner.run_command(command)
+        result = runner.run_command(command, elevation=workflow.state.elevation)
         duration_ms = int((time.time() - start_time) * 1000)
 
         if result.success:

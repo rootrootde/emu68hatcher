@@ -1,4 +1,4 @@
-"""HST Imager command exec - progress, capture, errors, timeout"""
+"""hst-imager command exec - progress, capture, errors, timeout"""
 
 import logging
 import shlex
@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
+from emu68hatcher.builder.errors import BuildCancelledError
+from emu68hatcher.builder.host.elevation import ElevationToken, run_elevated
 from emu68hatcher.builder.host.hst_commands import (
     HSTCommandLine,
     HSTScript,
@@ -19,7 +21,7 @@ _logger = logging.getLogger("emu68hatcher")
 
 
 class CommandStatus(str, Enum):
-    """status of a command execution"""
+    """command run status"""
 
     RUNNING = "running"
     COMPLETED = "completed"
@@ -30,7 +32,7 @@ class CommandStatus(str, Enum):
 
 @dataclass
 class CommandResult:
-    """result of executing single HST command"""
+    """one hst-imager command's result"""
 
     command: HSTCommandLine
     status: CommandStatus
@@ -47,7 +49,7 @@ class CommandResult:
 
 @dataclass
 class ScriptResult:
-    """result of executing a HST script"""
+    """one hst script's combined result"""
 
     script: HSTScript
     results: list[CommandResult] = field(default_factory=list)
@@ -66,9 +68,9 @@ HstProgressCallback = Callable[[int, int, str, CommandStatus], None]
 
 
 class HSTRunner:
-    """executes HST Imager commands with progress monitoring"""
+    """runs hst-imager commands with progress callbacks"""
 
-    # log resolved binary path once per process to avoid spamming buildlog
+    # binary path is logged once per process - buildlog gets noisy otherwise
     _logged_binary: bool = False
 
     def __init__(
@@ -76,14 +78,16 @@ class HSTRunner:
         hst_imager_path: Path | None = None,
         timeout: float = 300.0,
         dry_run: bool = False,
+        cancel_check: Callable[[], bool] | None = None,
     ):
         self._hst_imager = hst_imager_path
         self.timeout = timeout
         self.dry_run = dry_run
+        self._cancel_check = cancel_check
 
     @property
     def hst_imager(self) -> Path:
-        """HST Imager binary path"""
+        """hst-imager binary path"""
         if self._hst_imager is None:
             self._hst_imager = find_hst_imager()
         if self._hst_imager is None:
@@ -91,7 +95,7 @@ class HSTRunner:
         return self._hst_imager
 
     def is_available(self) -> bool:
-        """check if HST Imager is available"""
+        """hst-imager binary is on disk"""
         try:
             return self.hst_imager.exists()
         except RuntimeError:
@@ -101,8 +105,9 @@ class HSTRunner:
         self,
         command: HSTCommandLine,
         timeout: float | None = None,
+        elevation: ElevationToken | None = None,
     ) -> CommandResult:
-        """run one HST command synchronously"""
+        """run one hst-imager command synchronously"""
         if self.dry_run:
             return CommandResult(
                 command=command,
@@ -119,19 +124,18 @@ class HSTRunner:
             if not HSTRunner._logged_binary:
                 _logger.info(f"hst-imager: binary: {self.hst_imager}")
                 HSTRunner._logged_binary = True
-            # log the full argv shell-quoted so a tester can paste-and-run
-            _logger.info(f"hst-imager: $ {shlex.join(args)}")
+            # log just the subcommand - elevation wrapping is noise
+            _logger.info(f"hst-imager: $ {shlex.join(['hst-imager', *command.to_args()])}")
 
-            result = subprocess.run(
-                args,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=cmd_timeout,
+            result = run_elevated(
+                args, elevation, timeout=cmd_timeout, cancel_check=self._cancel_check
             )
 
             duration = time.time() - start_time
+
+            if getattr(result, "cancelled", False):
+                _logger.info(f"hst-imager: cancelled after {duration:.2f}s")
+                raise BuildCancelledError("Build was cancelled by user")
 
             if result.returncode == 0:
                 _logger.info(f"hst-imager: rc=0 in {duration:.2f}s")
@@ -144,7 +148,7 @@ class HSTRunner:
                     duration=duration,
                 )
             else:
-                # hst-imager errors go to stdout as "[timestamp ERR] message", not stderr
+                # hst-imager errors land on stdout as "[timestamp ERR] message", not stderr
                 error_detail = None
                 if result.stdout:
                     for line in result.stdout.split("\n"):
@@ -155,7 +159,7 @@ class HSTRunner:
                     error_detail = (
                         result.stderr.strip() if result.stderr else f"Exit code {result.returncode}"
                     )
-                # log full stdout/stderr at INFO so buildlog captures failures even if caller swallows them
+                # log stdout/stderr at INFO - buildlog needs failures even when caller swallows them
                 _logger.info(
                     f"hst-imager: rc={result.returncode} in {duration:.2f}s; error={error_detail!r}"
                 )
@@ -180,6 +184,8 @@ class HSTRunner:
                 duration=cmd_timeout,
                 error=f"Command timed out after {cmd_timeout}s",
             )
+        except BuildCancelledError:
+            raise
         except Exception as e:
             return CommandResult(
                 command=command,
@@ -193,8 +199,9 @@ class HSTRunner:
         script: HSTScript,
         progress_callback: HstProgressCallback | None = None,
         stop_on_error: bool = True,
+        elevation: ElevationToken | None = None,
     ) -> ScriptResult:
-        """run an HST script synchronously"""
+        """run a script synchronously"""
         result = ScriptResult(script=script)
         total = len(script.commands)
 
@@ -207,7 +214,7 @@ class HSTRunner:
                     CommandStatus.RUNNING,
                 )
 
-            cmd_result = self.run_command(command)
+            cmd_result = self.run_command(command, elevation=elevation)
             result.results.append(cmd_result)
 
             if progress_callback:
@@ -219,7 +226,6 @@ class HSTRunner:
                 )
 
             if not cmd_result.success and stop_on_error:
-                # mark rest as skipped
                 for remaining in script.commands[i + 1 :]:
                     result.results.append(
                         CommandResult(

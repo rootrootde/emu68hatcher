@@ -34,7 +34,7 @@ from emu68hatcher.gui.tabs import (
 
 
 class MainWindow(QMainWindow):
-    """main application window"""
+    """main app window"""
 
     def __init__(self):
         super().__init__()
@@ -72,11 +72,15 @@ class MainWindow(QMainWindow):
         initial_version = self.kickstart_tab.get_selected_version()
         self.packages_tab.set_kickstart_version(initial_version)
 
+        self.output_tab = OutputTab()
+        self.tabs.addTab(self.output_tab, "Output")
+
         self.partitions_tab = PartitionsTab()
         self.tabs.addTab(self.partitions_tab, "Partitions")
 
-        self.output_tab = OutputTab()
-        self.tabs.addTab(self.output_tab, "Output")
+        # output mode + selected disk drives partition sizing in DEVICE/flash modes
+        self.output_tab.target_size_changed.connect(self.partitions_tab.set_auto_disk_size)
+        self.output_tab.target_size_cleared.connect(self.partitions_tab.clear_auto_disk_size)
 
         layout.addWidget(self.tabs)
 
@@ -151,7 +155,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Error", f"Failed to save config: {e}")
 
     def collect_config(self):
-        """collect configuration from all tabs"""
+        """pull config from all tabs into self.config"""
         import logging
 
         from emu68hatcher.config.schema import KickstartVersion
@@ -202,8 +206,16 @@ class MainWindow(QMainWindow):
         self.config.wifi = self.packages_tab.get_wifi_config()
 
         out = self.output_tab.get_config()
-        if out["path"]:
-            self.config.output = OutputConfig(path=Path(out["path"]))
+        if out.get("path"):
+            self.config.output = OutputConfig(
+                type=out.get("type", "img"),
+                path=Path(out["path"]),
+                sparse=out.get("sparse", True),
+                flash_target=out.get("flash_target"),
+            )
+        else:
+            # device / flash mode without a selected disk - clear stale config
+            self.config.output = None
 
         self.config.partitions = self.partitions_tab.get_config()
 
@@ -270,19 +282,22 @@ class MainWindow(QMainWindow):
         if reply != QMessageBox.StandardButton.Yes:
             return
 
-        # launch build dialog
-        dialog = BuildProgressDialog(self.config, self)
-        dialog.start_build()
-        dialog.exec()
+        # launch build dialog; lock the button so a double-click cant spawn a second worker
+        self.build_btn.setEnabled(False)
+        try:
+            dialog = BuildProgressDialog(self.config, self)
+            dialog.start_build()
+            dialog.exec()
+        finally:
+            self.build_btn.setEnabled(True)
 
-        # show result
         self.statusBar().showMessage(
             "Build complete" if dialog.success else "Build cancelled or failed"
         )
 
 
 def launch_gui():
-    """launch the Qt GUI application"""
+    """start the Qt app"""
     app = QApplication(sys.argv)
     app.setApplicationName("Emu68 Hatcher")
 

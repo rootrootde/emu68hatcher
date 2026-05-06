@@ -1,4 +1,4 @@
-"""build workflow orchestration - validate -> download -> extract -> create -> install -> configure -> finalize"""
+"""build workflow - validate -> download -> extract -> create -> install -> configure -> finalize"""
 
 import logging
 import platform as _platform
@@ -10,13 +10,14 @@ from enum import Enum
 from pathlib import Path
 
 from emu68hatcher.builder.errors import BuildCancelledError, BuildError
+from emu68hatcher.builder.host.elevation import ElevationToken
 from emu68hatcher.config.schema import BuildConfig
 from emu68hatcher.data.install_media import IdentifiedInstallMedia
 from emu68hatcher.utils.logging import get_logger
 
 
 class BuildStage(str, Enum):
-    """stages of build process"""
+    """build pipeline stage tag"""
 
     INIT = "init"
     VALIDATE = "validate"
@@ -27,13 +28,14 @@ class BuildStage(str, Enum):
     INSTALL_PACKAGES = "install_packages"
     CONFIGURE = "configure"
     FINALIZE = "finalize"
+    FLASH = "flash"
     COMPLETE = "complete"
     FAILED = "failed"
 
 
 @dataclass
 class BuildState:
-    """current state of the build process"""
+    """live build state"""
 
     stage: BuildStage = BuildStage.INIT
     progress: float = 0.0
@@ -41,13 +43,19 @@ class BuildState:
 
     # paths
     work_dir: Path | None = None
-    image_path: Path | None = None
+    image_path: Path | None = None  # .img file path OR /dev/diskN for DEVICE mode
     staging_dir: Path | None = None
     downloads_dir: Path | None = None
     extracted_dir: Path | None = None
     workbench_dir: Path | None = None
 
-    # auto-resolved paths
+    # set at validate when DEVICE mode or flash_target is configured
+    elevation: ElevationToken | None = None
+
+    # macos DA claim, held for the build to keep diskarbitrationd off during writes
+    disk_claim: object | None = None
+
+    # paths discovered during scan
     resolved_rom_path: Path | None = None
     resolved_rom_info: dict | None = None  # includes fat32_name for boot partition
     resolved_install_media: list["IdentifiedInstallMedia"] = field(default_factory=list)
@@ -64,7 +72,7 @@ BuildLogCallback = Callable[[str, str], None]  # (stage_name, message)
 
 
 class BuildLogHandler(logging.Handler):
-    """forward INFO+ records on the emu68hatcher logger to the workflow's log_callback"""
+    """INFO+ records on the emu68hatcher logger -> workflow.log_callback"""
 
     def __init__(self, workflow: "BuildWorkflow"):
         super().__init__(level=logging.INFO)
@@ -83,7 +91,7 @@ class BuildLogHandler(logging.Handler):
 
 @dataclass
 class BuildResult:
-    """result of a build operation"""
+    """final build result"""
 
     success: bool
     output_path: Path | None = None
@@ -93,7 +101,7 @@ class BuildResult:
 
 
 class BuildWorkflow:
-    """orchestrate the build: run stages in sequence, update BuildState, emit progress callbacks"""
+    """run pipeline stages in sequence, update BuildState, fire progress callbacks"""
 
     def __init__(
         self,
@@ -111,7 +119,7 @@ class BuildWorkflow:
         self._cancelled = False
 
     def cancel(self) -> None:
-        """request cancellation of the build"""
+        """request build cancellation"""
         self._cancelled = True
 
     def _update_state(
@@ -120,7 +128,7 @@ class BuildWorkflow:
         progress: float | None = None,
         message: str | None = None,
     ) -> None:
-        """update build state and notify callback"""
+        """patch state, fire progress callback"""
         if stage is not None:
             self.state.stage = stage
         if progress is not None:
@@ -132,16 +140,16 @@ class BuildWorkflow:
             self.progress_callback(self.state)
 
     def _log(self, message: str) -> None:
-        """update the status-label only - use '_milestone()' for console/buildlog/gui-log too"""
+        """status label only - use _milestone() for console/buildlog/gui-log"""
         self._update_state(message=message)
 
     def _milestone(self, message: str) -> None:
-        """update status label AND log at INFO so it shows in console + gui log + buildlog"""
+        """status label + INFO log (console + gui log + buildlog)"""
         self._update_state(message=message)
         self.logger.info(message)
 
     def _buildlog_path(self) -> Path:
-        """build log path - same dir as output image if set, else cache_dir"""
+        """buildlog path - alongside the output image if set, else cache_dir"""
         from emu68hatcher.utils.paths import get_cache_dir
 
         if self.config.output and self.config.output.path:
@@ -152,7 +160,7 @@ class BuildWorkflow:
         return get_cache_dir() / "buildlog.txt"
 
     def _attach_build_log(self):
-        """attach a per build file handler, overwrite any previous log"""
+        """per-build file handler; overwrites previous log"""
         from emu68hatcher.utils.logging import attach_file_handler
 
         path = self._buildlog_path()
@@ -169,12 +177,33 @@ class BuildWorkflow:
         return handler, path
 
     def _check_cancelled(self) -> None:
-        """check if build was cancelled and raise if so"""
+        """raise BuildCancelledError if cancelled"""
         if self._cancelled:
             raise BuildCancelledError("Build was cancelled by user")
 
+    def _bring_target_disk_online(self) -> None:
+        """windows: undo the Set-Disk -IsOffline applied at unmount"""
+        from emu68hatcher.config.schema import OutputType
+        from emu68hatcher.utils.disk_enum import find_disk, online_disk
+
+        if self.config.output is None:
+            return
+        targets: list[str] = []
+        if self.config.output.type == OutputType.DEVICE:
+            targets.append(str(self.config.output.path))
+        if self.config.output.flash_target:
+            targets.append(str(self.config.output.flash_target))
+        for device in targets:
+            info = find_disk(device)
+            if info is None:
+                continue
+            try:
+                online_disk(info, self.logger, elevation=self.state.elevation)
+            except Exception:
+                self.logger.exception(f"error bringing {device} online")
+
     def _log_platform_info(self) -> None:
-        """log build environment + tool paths to buildlog.txt for cross-platform debugging"""
+        """dump build env + tool paths to buildlog.txt; helps cross-platform debugging"""
         from emu68hatcher.utils.paths import get_tools_dir
         from emu68hatcher.utils.platform import find_hst_imager
 
@@ -214,7 +243,7 @@ class BuildWorkflow:
         log("platform: === end build environment ===")
 
     def build(self) -> BuildResult:
-        """execute the complete build process synchronously"""
+        """run the full pipeline synchronously"""
         import time
 
         from emu68hatcher.builder.pipeline import (
@@ -223,6 +252,7 @@ class BuildWorkflow:
             stage_download,
             stage_extract,
             stage_finalize,
+            stage_flash,
             stage_install_packages,
             stage_install_workbench,
             stage_setup_workspace,
@@ -239,6 +269,7 @@ class BuildWorkflow:
             (stage_install_packages, BuildStage.INSTALL_PACKAGES),
             (stage_configure, BuildStage.CONFIGURE),
             (stage_finalize, BuildStage.FINALIZE),
+            (stage_flash, BuildStage.FLASH),
         ]
 
         start_time = time.time()
@@ -258,7 +289,7 @@ class BuildWorkflow:
                 self._check_cancelled()
 
             self._update_state(BuildStage.COMPLETE, 100.0)
-            self._milestone("Build succesful!")
+            self._milestone("Build successful!")
             if buildlog_path:
                 self._milestone(f"Build log saved to: {buildlog_path}")
 
@@ -292,7 +323,7 @@ class BuildWorkflow:
 
         except Exception as e:
             self._update_state(BuildStage.FAILED)
-            # exception() captures the traceback in the buildlog
+            # exception() puts the traceback in the buildlog
             self.logger.exception(f"Unexpected error: {e}")
             self._update_state(message=f"Unexpected error: {e}")
             return BuildResult(
@@ -303,6 +334,18 @@ class BuildWorkflow:
             )
 
         finally:
+            if self.state.disk_claim is not None:
+                try:
+                    self.state.disk_claim.release()
+                except Exception:
+                    self.logger.exception("error releasing disk claim")
+                self.state.disk_claim = None
+            self._bring_target_disk_online()
+            if self.state.elevation is not None and getattr(self.state.elevation, "helper", None):
+                try:
+                    self.state.elevation.helper.shutdown()
+                except Exception:
+                    self.logger.exception("error shutting down elevated helper")
             self.logger.logger.removeHandler(gui_log_handler)
             if buildlog_handler is not None:
                 self.logger.logger.removeHandler(buildlog_handler)

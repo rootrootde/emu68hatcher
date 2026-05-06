@@ -1,4 +1,4 @@
-"""pydantic models for build configuration"""
+"""build config - pydantic models"""
 
 from datetime import datetime
 from enum import Enum
@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 
 class KickstartVersion(str, Enum):
-    """Amiga Kickstart versions known to the schema (3.9 is forward-compat, not yet in SUPPORTED_KICKSTARTS)"""
+    """kickstart versions the schema knows; 3.9 listed for forward-compat, not in SUPPORTED_KICKSTARTS"""
 
     V3_1 = "3.1"
     V3_2 = "3.2"
@@ -19,20 +19,28 @@ class KickstartVersion(str, Enum):
 
 
 class Filesystem(str, Enum):
-    """supported Amiga filesystems"""
+    """supported amiga filesystems"""
 
     PFS3 = "PFS3"
     FFS = "FFS"
 
 
 class OutputType(str, Enum):
-    """output format for the created image"""
+    """output sink: file or device"""
 
     IMG = "img"
+    DEVICE = "device"
+
+
+_DEVICE_PATH_PREFIXES = ("/dev/disk", "/dev/sd", "/dev/mmcblk", "\\\\.\\PhysicalDrive")
+
+
+def _is_device_path(p: str | Path) -> bool:
+    return str(p).startswith(_DEVICE_PATH_PREFIXES)
 
 
 class Emu68Version(str, Enum):
-    """upstream Emu68 release to bundle on the boot partition"""
+    """upstream Emu68 release to bundle on boot"""
 
     V1_0_7 = "1.0.7"
     V1_1_0_ALPHA_1 = "1.1.0-alpha.1"
@@ -44,7 +52,7 @@ class Emu68Version(str, Enum):
 
 
 class ConfigMetadata(BaseModel):
-    """metadata about the configuration file"""
+    """config-file metadata"""
 
     created: datetime = Field(default_factory=datetime.now)
     modified: datetime | None = None
@@ -52,7 +60,7 @@ class ConfigMetadata(BaseModel):
     author: str = ""
 
 
-# versions the pipeline builds; adding here enables the GUI + validator. needs adf_rules.yaml entry first
+# versions the pipeline builds; adding here enables GUI + validator. needs adf_rules.yaml entry first
 SUPPORTED_KICKSTARTS: tuple[KickstartVersion, ...] = (
     KickstartVersion.V3_1,
     KickstartVersion.V3_2,
@@ -62,7 +70,7 @@ SUPPORTED_KICKSTARTS: tuple[KickstartVersion, ...] = (
 
 
 def _check_supported_version(label: str, v: KickstartVersion) -> KickstartVersion:
-    """validator helper - raise unless v is in SUPPORTED_KICKSTARTS"""
+    """raise unless v is in SUPPORTED_KICKSTARTS"""
     if v not in SUPPORTED_KICKSTARTS:
         supported = ", ".join(k.value for k in SUPPORTED_KICKSTARTS)
         raise ValueError(
@@ -72,14 +80,14 @@ def _check_supported_version(label: str, v: KickstartVersion) -> KickstartVersio
 
 
 def _coerce_optional_path(v):
-    """validator helper - turn '' / None into None, str into Path"""
+    """'' / None -> None; str -> Path"""
     if v is None or v == "":
         return None
     return Path(v) if isinstance(v, str) else v
 
 
 class KickstartConfig(BaseModel):
-    """kickstart ROM configuration"""
+    """kickstart ROM config"""
 
     version: KickstartVersion = KickstartVersion.V3_1
     rom_directory: Path | None = Field(
@@ -99,7 +107,7 @@ class KickstartConfig(BaseModel):
 
 
 class InstallMediaConfig(BaseModel):
-    """OS installation media configuration"""
+    """OS install media config"""
 
     version: KickstartVersion = KickstartVersion.V3_1
     directory: Path | None = Field(
@@ -119,7 +127,7 @@ class InstallMediaConfig(BaseModel):
 
 
 class CustomScreenMode(BaseModel):
-    """custom screen mode params -> config.txt CVT line"""
+    """custom HDMI mode -> config.txt CVT line"""
 
     width: int = Field(ge=320, le=1920, default=640)
     height: int = Field(ge=200, le=1200, default=480)
@@ -127,32 +135,32 @@ class CustomScreenMode(BaseModel):
 
 
 class DisplayConfig(BaseModel):
-    """display and screen mode configuration"""
+    """display + screen mode"""
 
-    # must match a row in data/reference/screen_modes.yaml, or "Custom"
+    # row in data/reference/screen_modes.yaml, or "Custom"
     hdmi_mode: str = "1280*720-50"
     custom: CustomScreenMode | None = None
 
     @model_validator(mode="after")
     def validate_custom_mode(self):
-        # guards hand-edited JSON that picks "Custom" without providing the fields
+        # catches hand-edited JSON that picks "Custom" without supplying fields
         if self.hdmi_mode == "Custom" and self.custom is None:
             raise ValueError("Custom HDMI mode selected but no custom settings provided")
         return self
 
 
 class PackageConfig(BaseModel):
-    """individual package selection"""
+    """one package toggle"""
 
     name: str
     enabled: bool = True
 
 
 class AmigaPartition(BaseModel):
-    """amiga RDB partition within an ID76 MBR partition"""
+    """amiga RDB partition inside an ID76 MBR partition"""
 
     device: str = Field(pattern=r"^[A-Z]{2,3}\d+$", description="e.g., DH0, DH1, SDH0, SDH1")
-    # AmigaDOS volume names are 1..31 chars
+    # AmigaDOS volume names: 1..31 chars
     volume: str = Field(min_length=1, max_length=31)
     filesystem: Filesystem = Filesystem.PFS3
     size: int = Field(gt=0, description="Size in bytes")
@@ -165,12 +173,12 @@ class AmigaPartition(BaseModel):
 
 
 class MBRPartition(BaseModel):
-    """MBR partition (FAT32 for boot or ID76 for Amiga)"""
+    """MBR partition - FAT32 (boot) or ID76 (amiga)"""
 
     type: Literal["fat32", "id76"]
     name: str
     size: int = Field(gt=0, description="Size in bytes")
-    # only for ID76 partitions
+    # ID76 only
     amiga_partitions: list[AmigaPartition] | None = None
 
     @model_validator(mode="after")
@@ -183,20 +191,20 @@ class MBRPartition(BaseModel):
 
 
 class PartitionConfig(BaseModel):
-    """disk partition layout configuration"""
+    """disk partition layout"""
 
     disk_size: int = Field(gt=0, description="Total disk size in bytes")
     layout: list[MBRPartition] = Field(min_length=1)
 
     def iter_amiga_partitions(self):
-        """yield every AmigaPartition in declaration order"""
+        """yield AmigaPartitions in declaration order"""
         for mbr_part in self.layout:
             if mbr_part.amiga_partitions:
                 yield from mbr_part.amiga_partitions
 
     @property
     def bootable_device(self) -> str | None:
-        """device name of the first bootable Amiga partition, or None"""
+        """first bootable amiga partition's device, or None"""
         for amiga_part in self.iter_amiga_partitions():
             if amiga_part.bootable:
                 return amiga_part.device
@@ -213,7 +221,7 @@ class PartitionConfig(BaseModel):
                 f"exceeds disk size ({self.disk_size})"
             )
 
-        # cross-check Amiga side here too so hand-edited JSON can't bypass GUI pre-flight
+        # cross-check amiga side here too - hand-edited JSON shouldnt bypass GUI pre-flight
         all_devices: list[str] = []
         all_volumes: list[str] = []
         bootable_count = 0
@@ -246,7 +254,7 @@ class PartitionConfig(BaseModel):
 
     @property
     def uses_pfs3(self) -> bool:
-        """check if any Amiga partition uses the PFS3 filesystem"""
+        """any amiga partition on PFS3?"""
         return any(
             amiga_part.filesystem == Filesystem.PFS3
             for mbr_part in self.layout
@@ -256,7 +264,7 @@ class PartitionConfig(BaseModel):
 
     @property
     def uses_ffs(self) -> bool:
-        """check if any Amiga partition uses the FFS filesystem"""
+        """any amiga partition on FFS?"""
         return any(
             amiga_part.filesystem == Filesystem.FFS
             for mbr_part in self.layout
@@ -266,25 +274,54 @@ class PartitionConfig(BaseModel):
 
 
 class OutputConfig(BaseModel):
-    """output configuration for the created image"""
+    """output config for the built image"""
 
     type: OutputType = OutputType.IMG
-    path: Path = Field(description="Output path for the image file")
+    path: Path = Field(description="Output path: .img file or /dev/diskN device")
+    sparse: bool = Field(
+        default=True,
+        description="Allocate the .img as a sparse file (IMG mode only); huge disk-space win",
+    )
+    flash_target: str | None = Field(
+        default=None,
+        description="If set (IMG mode only), flash the built .img to this physical disk",
+    )
 
     @field_validator("path", mode="before")
     @classmethod
     def convert_path(cls, v):
         return Path(v) if isinstance(v, str) else v
 
+    @model_validator(mode="after")
+    def validate_output(self):
+        if self.type == OutputType.DEVICE:
+            if not _is_device_path(self.path):
+                raise ValueError(
+                    f"DEVICE output requires a device path (e.g. /dev/disk4), got: {self.path}"
+                )
+            if self.flash_target:
+                raise ValueError("flash_target is incompatible with DEVICE output")
+        elif self.type == OutputType.IMG and _is_device_path(self.path):
+            raise ValueError(
+                f"IMG output rejects a device path (would overwrite the disk): {self.path}"
+            )
+        if self.flash_target and not _is_device_path(self.flash_target):
+            raise ValueError(
+                f"flash_target must be a physical disk device path, got: {self.flash_target}"
+            )
+        if self.flash_target and str(self.flash_target) == str(self.path):
+            raise ValueError("flash_target cannot equal output path")
+        return self
+
 
 class NetworkStack(str, Enum):
-    """TCP/IP network stack selection"""
+    """TCP/IP stack picker"""
 
     ROADSHOW = "Roadshow"
 
 
 class WifiConfig(BaseModel):
-    """wifi credentials - never serialized to disk"""
+    """wifi creds - never written to disk"""
 
     ssid: str = Field(min_length=1, max_length=32)
     password: str = Field(min_length=8, max_length=63)
@@ -296,7 +333,7 @@ class WifiConfig(BaseModel):
 
 
 class BuildConfig(BaseModel):
-    """complete build config - serializes to/from JSON, drives the whole build pipeline"""
+    """full build config - JSON-serializable; drives the pipeline"""
 
     version: str = Field(default="1.0.0", description="Config schema version")
     metadata: ConfigMetadata = Field(default_factory=ConfigMetadata)
@@ -321,10 +358,10 @@ class BuildConfig(BaseModel):
     # network stack (None = no network stack installed)
     network_stack: NetworkStack | None = NetworkStack.ROADSHOW
 
-    # wifi credentials - never serialized to disk and never echoed via repr
+    # wifi creds - never serialized, never in repr
     wifi: WifiConfig | None = Field(default=None, exclude=True, repr=False)
 
-    # boot configuration
+    # boot
     emu68_version: Emu68Version = Field(
         default=Emu68Version.V1_0_7,
         description="upstream Emu68 release to bundle on the boot partition",
@@ -387,15 +424,15 @@ class BuildConfig(BaseModel):
     )
 
     def to_json_file(self, path: Path) -> None:
-        """save configuration to a JSON file"""
+        """write config to JSON"""
         path.write_text(self.model_dump_json(indent=2))
 
     @classmethod
     def from_json_file(cls, path: Path) -> "BuildConfig":
-        """load configuration from a JSON file"""
+        """read config from JSON"""
         import json
 
-        # use model_validate instead of model_validate_json for proper path handling
+        # model_validate not model_validate_json - the former handles Path coercion
         return cls.model_validate(json.loads(path.read_text()))
 
 
@@ -404,8 +441,10 @@ class BuildConfig(BaseModel):
 ##########################
 
 
-def create_default_partition_layout(disk_size_gb: int = 8) -> PartitionConfig:
-    """default layout: SDH0=Workbench (disk/15, max 1GB), SDH1+=Work (split at PFS3's 101GB cap)"""
+def create_default_partition_layout(
+    disk_size_gb: int = 8, disk_size_bytes: int | None = None
+) -> PartitionConfig:
+    """default: SDH0=Workbench (disk/15, max 1GB), SDH1+=Work (split at PFS3's 101GB cap)"""
     from emu68hatcher.config.defaults import (
         DEFAULT_BOOT_DEVICE,
         DEFAULT_WORK_DEVICE,
@@ -420,7 +459,7 @@ def create_default_partition_layout(disk_size_gb: int = 8) -> PartitionConfig:
         round_to_mbr_sector,
     )
 
-    disk_size = disk_size_for_gb(disk_size_gb)
+    disk_size = disk_size_bytes if disk_size_bytes is not None else disk_size_for_gb(disk_size_gb)
     PFS3_MAX = PFS3_MAX_CREATE
 
     boot_size = calculate_boot_default(disk_size)

@@ -1,4 +1,4 @@
-"""background worker threads for GUI ops"""
+"""GUI background worker threads"""
 
 import threading
 from pathlib import Path
@@ -10,7 +10,7 @@ from emu68hatcher.config.schema import BuildConfig
 
 
 class BuildWorker(QThread):
-    """worker thread for running the build process"""
+    """run a BuildWorkflow on a Qt thread"""
 
     progress_updated = Signal(str, float, str)  # stage, progress, message
     log_event = Signal(str, str)  # stage, message
@@ -24,7 +24,7 @@ class BuildWorker(QThread):
         self._workflow: BuildWorkflow | None = None
 
     def run(self):
-        """execute the build workflow"""
+        """drive the workflow, forward callbacks as Qt signals"""
 
         def progress_callback(state: BuildState):
             self.progress_updated.emit(
@@ -65,7 +65,7 @@ class BuildWorker(QThread):
             )
 
     def cancel(self):
-        """request build cancellation (safe)"""
+        """thread-safe cancel request"""
         with self._lock:
             self._cancelled = True
             workflow = self._workflow
@@ -74,7 +74,7 @@ class BuildWorker(QThread):
 
 
 class ToolDownloadWorker(QThread):
-    """download missing tools"""
+    """fetch missing host tools"""
 
     tool_started = Signal(str)  # tool_name
     tool_progress = Signal(str, int, int)  # tool_name, bytes_downloaded, bytes_total
@@ -82,7 +82,7 @@ class ToolDownloadWorker(QThread):
     download_finished = Signal(bool, list)  # overall success, failed tool names
 
     def run(self):
-        """download every missing tool, emit per-tool progress"""
+        """download each missing tool, emit per-tool progress"""
         from emu68hatcher.builder.host.tools import download_7zip, download_tool
         from emu68hatcher.utils.platform import check_dependencies
 
@@ -97,7 +97,7 @@ class ToolDownloadWorker(QThread):
         for tool_name in missing:
             self.tool_started.emit(tool_name)
 
-            # callback close over tool_name so the Start tab can lbael the bar
+            # close over tool_name so the start tab can label the bar
             def _cb(downloaded: int, total: int, _name=tool_name):
                 self.tool_progress.emit(_name, downloaded, total)
 
@@ -119,7 +119,7 @@ class ToolDownloadWorker(QThread):
 
 
 class ROMScanWorker(QThread):
-    """worker thread for scanning ROM directory"""
+    """scan a directory for Kickstart ROMs"""
 
     scan_finished = Signal(list, bool)  # (found ROMs, truncated)
 
@@ -128,7 +128,7 @@ class ROMScanWorker(QThread):
         self.directory = directory
 
     def run(self):
-        """scan for Kickstart ROMs"""
+        """scan + emit"""
         from emu68hatcher.data.rom_detection import scan_for_kickstart_roms
 
         try:
@@ -139,7 +139,7 @@ class ROMScanWorker(QThread):
 
 
 class ADFScanWorker(QThread):
-    """worker thread for scanning ADF directory"""
+    """scan a directory for Workbench ADFs"""
 
     scan_finished = Signal(list, bool)  # (found media, truncated)
 
@@ -148,7 +148,7 @@ class ADFScanWorker(QThread):
         self.directory = directory
 
     def run(self):
-        """scan for Workbench ADFs"""
+        """scan + emit"""
         from emu68hatcher.data.install_media import scan_install_media_by_hash
 
         try:
@@ -156,3 +156,18 @@ class ADFScanWorker(QThread):
         except Exception:
             found_media, truncated = [], False
         self.scan_finished.emit(found_media, truncated)
+
+
+class DiskListWorker(QThread):
+    """enumerate removable disks off the GUI thread"""
+
+    disks_loaded = Signal(list)  # list[DiskInfo]
+
+    def run(self):
+        from emu68hatcher.utils.disk_enum import list_removable_disks
+
+        try:
+            disks = list_removable_disks()
+        except Exception:
+            disks = []
+        self.disks_loaded.emit(disks)

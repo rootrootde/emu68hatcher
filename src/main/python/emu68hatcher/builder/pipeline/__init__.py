@@ -1,4 +1,4 @@
-"""build stages for Emu68 Hatcher workflow"""
+"""build pipeline stages"""
 
 from emu68hatcher.builder.pipeline.configure import stage_configure
 from emu68hatcher.builder.pipeline.create_image import stage_create_image
@@ -8,6 +8,7 @@ from emu68hatcher.builder.pipeline.download import (
     stage_setup_workspace,
 )
 from emu68hatcher.builder.pipeline.finalize import stage_finalize
+from emu68hatcher.builder.pipeline.flash import stage_flash
 from emu68hatcher.builder.pipeline.install_packages import stage_install_packages
 from emu68hatcher.builder.pipeline.install_workbench import stage_install_workbench
 from emu68hatcher.builder.pipeline.validate import stage_validate
@@ -22,4 +23,5 @@ __all__ = [
     "stage_install_packages",
     "stage_configure",
     "stage_finalize",
+    "stage_flash",
 ]

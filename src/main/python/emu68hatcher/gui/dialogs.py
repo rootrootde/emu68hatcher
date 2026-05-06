@@ -1,4 +1,4 @@
-"""dialog windows"""
+"""GUI dialogs"""
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtGui import QBrush, QColor, QFont
@@ -21,12 +21,12 @@ from emu68hatcher.gui.workers import BuildWorker
 
 
 class BuildProgressDialog(QDialog):
-    """dialog showing build progress"""
+    """live build progress dialog"""
 
     def __init__(self, config: BuildConfig, parent=None):
         super().__init__(parent)
         self.config = config
-        self.worker = None
+        self.worker: BuildWorker | None = None
         self._success: bool = False
         self._output_path: str = ""
         self._error: str = ""
@@ -88,7 +88,7 @@ class BuildProgressDialog(QDialog):
         layout.addLayout(btn_layout)
 
     def start_build(self):
-        """start the build process"""
+        """kick off the build worker"""
         self.worker = BuildWorker(self.config, self)
         self.worker.progress_updated.connect(self.on_progress)
         self.worker.log_event.connect(self.on_log_event)
@@ -105,25 +105,26 @@ class BuildProgressDialog(QDialog):
         "install_packages": "Installing Packages",
         "configure": "Configuring",
         "finalize": "Finalizing",
+        "flash": "Flashing to SD card",
         "complete": "Complete",
         "failed": "Failed",
     }
 
     @Slot(str, float, str)
     def on_progress(self, stage: str, progress: float, message: str):
-        """handle transient status updates - progress bar adn status label only"""
+        """transient status update - progress bar + status label"""
         self.stage_label.setText(self._STAGE_NAMES.get(stage, stage.title()))
         self.progress_bar.setValue(int(progress))
         self.status_label.setText(message)
 
     @Slot(str, str)
     def on_log_event(self, stage: str, message: str):
-        """append one discrete log entry per meaningful unit of work"""
+        """append one log entry"""
         self.log_output.append(f"[{stage}] {message}")
 
     @Slot(bool, str, str)
     def on_finished(self, success: bool, output_path: str, error: str):
-        """handle build completion"""
+        """build done - update labels + buttons"""
         self._success = success
         self._output_path = output_path
         self._error = error
@@ -141,14 +142,14 @@ class BuildProgressDialog(QDialog):
             self.log_output.append(f"\nBuild failed: {error}")
 
     def cancel_build(self):
-        """cancel the build process"""
+        """ask the worker to cancel"""
         if self.worker and self.worker.isRunning():
             self.worker.cancel()
             self.status_label.setText("Cancelling...")
             self.log_output.append("Cancellation requested...")
 
     def closeEvent(self, event):
-        """refuse close while the worker is still running - tearing down the dialog mid-thread crashes Qt"""
+        """block close while the worker runs - Qt crashes if the dialog tears down mid-thread"""
         if self.worker and self.worker.isRunning():
             self.worker.cancel()
             if not self.worker.wait(5000):
@@ -161,7 +162,7 @@ class BuildProgressDialog(QDialog):
 
 
 class ADFDetailsDialog(QDialog):
-    """per-ADF breakdown for Kickstart tab's 'Show details...' dialog"""
+    """per-ADF table - kickstart tab's 'Show details...' dialog"""
 
     _STATUS_GLYPH = {
         "found": "✓",

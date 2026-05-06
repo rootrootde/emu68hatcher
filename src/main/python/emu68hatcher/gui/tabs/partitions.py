@@ -1,4 +1,4 @@
-"""partition config tab - editable partition layout"""
+"""partition tab - editable layout"""
 
 from PySide6.QtCore import QPoint, QRect, Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPen, QPolygon
@@ -64,9 +64,9 @@ def _format_size(size_bytes: int) -> str:
 
 
 class PartitionBar(QWidget):
-    """horizontal bar showing proportional partition sizes with drag-resize"""
+    """horizontal bar - proportional partition sizes with drag-resize"""
 
-    GRAB_ZONE = 5  # pixels from border edge to activate resize
+    GRAB_ZONE = 5  # pixels from border edge that activate resize
     partition_clicked = Signal(int)  # amiga partition index
 
     def __init__(self, parent=None):
@@ -103,15 +103,14 @@ class PartitionBar(QWidget):
         self.update()
 
     def _resizable_border(self, seg_idx: int) -> bool:
-        """true for amiga|amiga and amiga|free borders; the boot|first-amiga border (0|1) is locked"""
+        """true for amiga|amiga and amiga|free; boot|first-amiga (0|1) is locked"""
         # seg 0 = boot. amiga partitions start at seg 1
         left = seg_idx
         right = seg_idx + 1
         if right >= len(self._segments):
             return False
-        # boot border (0|1) is not resizable
         if left == 0:
-            return False
+            return False  # boot border not resizable
         return True
 
     def paintEvent(self, event):
@@ -172,7 +171,7 @@ class PartitionBar(QWidget):
 
             x += seg_w
 
-            # record border position for drag detection
+            # remember border position for drag detection
             if idx < len(self._segments) - 1 and self._resizable_border(idx):
                 self._borders.append((x, idx, idx + 1))
 
@@ -208,7 +207,7 @@ class PartitionBar(QWidget):
         painter.end()
 
     def _border_at(self, x: int) -> int:
-        """return index into self._borders if x is near a border, else -1"""
+        """index into self._borders near x, else -1"""
         for i, (bx, _, _) in enumerate(self._borders):
             if abs(x - bx) <= self.GRAB_ZONE:
                 return i
@@ -263,7 +262,7 @@ class PartitionBar(QWidget):
                     )
             return
 
-        # not dragging - update cursor and tooltip
+        # not dragging - update cursor + tooltip
         bi = self._border_at(pos.x())
         if bi >= 0:
             self.setCursor(Qt.CursorShape.SizeHorCursor)
@@ -313,11 +312,11 @@ COL_BOOTABLE = 4
 
 
 class PartitionsTab(QWidget):
-    """partition configuration tab with editable layout"""
+    """partition layout editor"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._updating = False  # guard against re-entrant table updates
+        self._updating = False  # guard re-entrant table updates
         self._disk_size_bytes = disk_size_for_gb(64)
         self._boot_size = calculate_boot_default(self._disk_size_bytes)
         self._amiga_partitions: list[AmigaPartition] = []
@@ -331,13 +330,18 @@ class PartitionsTab(QWidget):
         top_row = QHBoxLayout()
 
         size_group = QGroupBox("Disk Size")
-        size_layout = QHBoxLayout(size_group)
+        size_layout = QVBoxLayout(size_group)
         self.size_combo = QComboBox()
         for gb in COMMON_DISK_SIZES:
             self.size_combo.addItem(f"{gb} GB", gb)
         self.size_combo.setCurrentIndex(COMMON_DISK_SIZES.index(64))
         self.size_combo.currentIndexChanged.connect(self._on_disk_size_changed)
         size_layout.addWidget(self.size_combo)
+        # shown only when output mode locks the size (Direct-to-SD card)
+        self.auto_size_label = QLabel()
+        self.auto_size_label.setStyleSheet("color: #666; font-style: italic;")
+        self.auto_size_label.setVisible(False)
+        size_layout.addWidget(self.auto_size_label)
         top_row.addWidget(size_group)
 
         boot_group = QGroupBox("Boot Partition (EMU68BOOT - FAT32)")
@@ -407,25 +411,75 @@ class PartitionsTab(QWidget):
         self.error_label.setWordWrap(True)
         layout.addWidget(self.error_label)
 
+    # ── External signals (output tab → here) ────────────────────────────
+
+    def set_auto_disk_size(self, size_bytes, label) -> None:
+        """lock disk_size+boot_spin+reset to the SD card's exact bytes; no 95% fudge"""
+        gb = max(1, size_bytes // (1024**3))  # for combo display only
+        existing = [self.size_combo.itemData(i) for i in range(self.size_combo.count())]
+        self.size_combo.blockSignals(True)
+        if gb not in existing:
+            self.size_combo.addItem(f"{gb} GB", gb)
+        idx = next(
+            (i for i in range(self.size_combo.count()) if self.size_combo.itemData(i) == gb), -1
+        )
+        if idx >= 0:
+            self.size_combo.setCurrentIndex(idx)
+        self.size_combo.blockSignals(False)
+        self.size_combo.setEnabled(False)
+        self.boot_spin.setEnabled(False)
+        self.reset_btn.setEnabled(False)
+        self.auto_size_label.setText(f"Auto: {label}")
+        self.auto_size_label.setVisible(True)
+        self._apply_disk_size_bytes(size_bytes)
+
+    def clear_auto_disk_size(self) -> None:
+        """unlock disk_size combo + boot_spin + reset, re-apply the GB-snapped layout"""
+        if not self.size_combo.isEnabled():
+            self.size_combo.setEnabled(True)
+            self.boot_spin.setEnabled(True)
+            self.reset_btn.setEnabled(True)
+            self.auto_size_label.setVisible(False)
+            self.auto_size_label.clear()
+            self._on_disk_size_changed()  # snap layout to the GB combo's current value
+
     # ── Event handlers ──────────────────────────────────────────────────
+
+    def _apply_disk_size_bytes(self, disk_size_bytes: int) -> None:
+        """recompute the Workbench+Work default for this exact byte size"""
+        from emu68hatcher.config.schema import create_default_partition_layout
+
+        self._disk_size_bytes = disk_size_bytes
+        # rebuild the Workbench+Work default sized for this exact disk
+        layout = create_default_partition_layout(disk_size_bytes=disk_size_bytes)
+        for mbr in layout.layout:
+            if mbr.type == "fat32":
+                self._boot_size = mbr.size
+                self.boot_spin.blockSignals(True)
+                self.boot_spin.setValue(mbr.size // (1024 * 1024))
+                self.boot_spin.blockSignals(False)
+            elif mbr.type == "id76" and mbr.amiga_partitions:
+                self._amiga_partitions = list(mbr.amiga_partitions)
+        self._refresh_table()
 
     def _on_disk_size_changed(self):
         gb = self.size_combo.currentData()
         if gb is None:
             return
+        # 95% safety factor: destination disk size isnt known when picking GB manually
         self._disk_size_bytes = disk_size_for_gb(gb)
-        # recalculate boot default
+        # recompute boot default
         new_boot = calculate_boot_default(self._disk_size_bytes)
         self._boot_size = new_boot
         self.boot_spin.blockSignals(True)
         self.boot_spin.setValue(new_boot // (1024 * 1024))
         self.boot_spin.blockSignals(False)
 
-        # check if existing partitions still fit
+        # do existing partitions still fit?
         id76 = calculate_id76_size(self._disk_size_bytes, self._boot_size)
         free = calculate_free_space(id76, self._amiga_partitions)
         if free < 0:
-            # partitions don't fit - reset to default
+            # partitions dont fit - reset to default
             self._reset_to_default()
         else:
             self._refresh_table()
@@ -526,7 +580,7 @@ class PartitionsTab(QWidget):
         self._update_status()
 
     def _on_bar_resize(self, left_idx, left_size, right_idx, right_size):
-        """handle partition resize from the bar widget"""
+        """resize from the bar widget drag"""
         if 0 <= left_idx < len(self._amiga_partitions):
             self._amiga_partitions[left_idx].size = left_size
         if 0 <= right_idx < len(self._amiga_partitions):
@@ -543,7 +597,7 @@ class PartitionsTab(QWidget):
             return
         is_checked = state == Qt.CheckState.Checked.value or state == 2
         if is_checked:
-            # uncheck all others
+            # only one bootable - uncheck the rest
             for i, p in enumerate(self._amiga_partitions):
                 p.bootable = i == row
         else:
@@ -553,21 +607,19 @@ class PartitionsTab(QWidget):
     # ── Table sync ──────────────────────────────────────────────────────
 
     def _refresh_table(self):
-        """rebuild the table from internal state"""
+        """rebuild table from internal state"""
         self._updating = True
         try:
             self.part_table.setRowCount(len(self._amiga_partitions))
 
             for i, part in enumerate(self._amiga_partitions):
-                # device
                 device_item = QTableWidgetItem(part.device)
                 self.part_table.setItem(i, COL_DEVICE, device_item)
 
-                # volume
                 volume_item = QTableWidgetItem(part.volume)
                 self.part_table.setItem(i, COL_VOLUME, volume_item)
 
-                # size (MB) - round to nearest rather than truncate
+                # size (MB) - round to nearest, not truncate
                 size_mb = round(part.size / (1024 * 1024))
                 size_item = QTableWidgetItem(str(size_mb))
                 size_item.setTextAlignment(
@@ -575,7 +627,6 @@ class PartitionsTab(QWidget):
                 )
                 self.part_table.setItem(i, COL_SIZE, size_item)
 
-                # filesystem combo
                 fs_combo = QComboBox()
                 for fs in Filesystem:
                     fs_combo.addItem(fs.value)
@@ -586,7 +637,6 @@ class PartitionsTab(QWidget):
                 )
                 self.part_table.setCellWidget(i, COL_FS, fs_combo)
 
-                # bootable checkbox
                 boot_widget = QWidget()
                 boot_layout = QHBoxLayout(boot_widget)
                 boot_layout.setContentsMargins(0, 0, 0, 0)
@@ -599,7 +649,6 @@ class PartitionsTab(QWidget):
                 boot_layout.addWidget(boot_cb)
                 self.part_table.setCellWidget(i, COL_BOOTABLE, boot_widget)
 
-            # update button states
             self.remove_btn.setEnabled(len(self._amiga_partitions) > 1)
 
             id76 = calculate_id76_size(self._disk_size_bytes, self._boot_size)
@@ -614,7 +663,7 @@ class PartitionsTab(QWidget):
         self._update_status()
 
     def _update_bar(self):
-        """update the partition bar visualization"""
+        """refresh the partition bar viz"""
         id76 = calculate_id76_size(self._disk_size_bytes, self._boot_size)
         from emu68hatcher.config.partition_helpers import calculate_usable_amiga_space
 
@@ -631,7 +680,7 @@ class PartitionsTab(QWidget):
         )
 
     def _update_status(self):
-        """update the status and error labels"""
+        """refresh status + error labels"""
         id76 = calculate_id76_size(self._disk_size_bytes, self._boot_size)
         from emu68hatcher.config.partition_helpers import calculate_usable_amiga_space
 
@@ -658,7 +707,7 @@ class PartitionsTab(QWidget):
         self._update_bar()
 
     def _reset_to_default(self):
-        """reset partitions to the default layout for current disk size"""
+        """reset partitions to the default for the current disk size"""
         from emu68hatcher.config.schema import create_default_partition_layout
 
         gb = self.size_combo.currentData()
@@ -668,7 +717,7 @@ class PartitionsTab(QWidget):
         layout = create_default_partition_layout(gb)
         self._disk_size_bytes = layout.disk_size
 
-        # extract boot and amiga partitions from default layout
+        # pull boot + amiga partitions from the default layout
         for mbr in layout.layout:
             if mbr.type == "fat32":
                 self._boot_size = mbr.size
@@ -683,19 +732,19 @@ class PartitionsTab(QWidget):
     # ── Config I/O ──────────────────────────────────────────────────────
 
     def get_config(self) -> PartitionConfig:
-        """build a PartitionConfig from the current editor state"""
+        """PartitionConfig from current editor state"""
         return build_partition_config(
             self._disk_size_bytes, self._boot_size, self._amiga_partitions
         )
 
     def set_config(self, config: PartitionConfig | None):
-        """populate the tab from a PartitionConfig"""
+        """populate tab from a PartitionConfig"""
         if config is None:
             return
 
         self._disk_size_bytes = config.disk_size
 
-        # find closest disk size preset
+        # snap to the closest disk-size preset
         approx_gb = config.disk_size / (1_000_000_000 * 0.95)
         closest_gb = min(COMMON_DISK_SIZES, key=lambda x: abs(x - approx_gb))
         idx = COMMON_DISK_SIZES.index(closest_gb)
@@ -703,7 +752,6 @@ class PartitionsTab(QWidget):
         self.size_combo.setCurrentIndex(idx)
         self.size_combo.blockSignals(False)
 
-        # extract boot and amiga partitions
         for mbr in config.layout:
             if mbr.type == "fat32":
                 self._boot_size = mbr.size
