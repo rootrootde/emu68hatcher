@@ -12,6 +12,8 @@ mandatory: true
 download:
   source: local
 install:
+- from: System/S/HatcherLog.rexx
+  to: S/
 - from: System/S/WifiConfig.rexx
   to: S/
 - from: System/S/NetworkManager.rexx

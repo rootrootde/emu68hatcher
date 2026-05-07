@@ -20,19 +20,23 @@ if TYPE_CHECKING:
 _MENUTOOLS_EXIT_RE = re.compile(r"(?m)^EXIT\b")
 
 
+def _menu_cmd(script: str) -> str:
+    """build the rx invocation injected into MenuTools - /WAIT pins the diagnostic window open"""
+    return f"SYS:Rexxc/rx >CON:0/20/680/400/{script}/AUTO/WAIT s:{script}.rexx"
+
+
 # entries injected into the WB 3.2.x MenuTools ARexx script (network=True ones only when a stack is configured)
 _MENUTOOLS_ENTRIES: tuple[dict, ...] = (
     {
         "name": "NetManager",
         "title": "Network Manager",
-        # CON:.../AUTO redirect: status window self-closes when rx exits
-        "cmd": "SYS:Rexxc/rx >CON:0/20/680/400/NetworkManager/AUTO s:NetworkManager.rexx",
+        "cmd": _menu_cmd("NetworkManager"),
         "network": True,
     },
     {
         "name": "HatcherWifiCfg",
         "title": "Wifi Config",
-        "cmd": "SYS:Rexxc/rx s:WifiConfig.rexx",
+        "cmd": _menu_cmd("WifiConfig"),
         "network": True,
     },
 )

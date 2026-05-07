@@ -1,2 +1,3 @@
-; Network Manager launcher - launched via IconX so a CLI exists for `address command`.
-SYS:Rexxc/rx >CON:0/20/680/400/NetworkManager/AUTO/CLOSE/WAIT s:NetworkManager.rexx
+; Network Manager launcher - launched via IconX so a CLI exists for 'address command'.
+; CLOSE dropped so the window stays open after the script exits.
+SYS:Rexxc/rx >CON:0/20/680/400/NetworkManager/AUTO/WAIT s:NetworkManager.rexx
