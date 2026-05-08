@@ -36,8 +36,8 @@ For questions, feedback, bug reports, feature requests, and project updates:
 
 [Open a GitHub issue](https://github.com/rootrootde/emu68hatcher/issues){ .md-button }
 
-!!! tip "Reporting a build error"
-    If you get a build error (especially on Windows), **please attach the buildlog.txt file** which you can find in the same directory where the image was created. It contains the full build log output incl. error messages and helps a lot with debugging.
+!!! tip "Reporting an error"
+    Attaching the right log file makes debugging way easier. See [Troubleshooting](troubleshooting.md) for which file to grab depending on whether the build itself failed or something went wrong on the AmigaOS side.
 
 ## Credits
 
