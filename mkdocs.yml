@@ -36,6 +36,7 @@ nav:
   - Installation: installation.md
   - Usage: usage.md
   - Flashing: flashing.md
+  - Troubleshooting: troubleshooting.md
 
 markdown_extensions:
   - admonition
