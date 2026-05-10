@@ -43,6 +43,11 @@ jobs:
             os: macos
             arch: arm64
             python: '3.10'
+          - label: macos-x64
+            runner: macos-15-intel
+            os: macos
+            arch: x64
+            python: '3.10'
 
     steps:
       - name: Checkout
@@ -145,12 +150,65 @@ jobs:
           print(f'patched {p}')
           PY
 
+      # secrets: MACOS_CERT_P12_BASE64, MACOS_CERT_PASSWORD
+      - name: Import signing certificate (macOS)
+        if: matrix.os == 'macos'
+        env:
+          MACOS_CERT_P12_BASE64: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+        run: |
+          set -euo pipefail
+          CERT_PATH="$RUNNER_TEMP/cert.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain"
+          KEYCHAIN_PWD="$(openssl rand -base64 24)"
+          echo "$MACOS_CERT_P12_BASE64" | base64 --decode > "$CERT_PATH"
+          security create-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$MACOS_CERT_PASSWORD" \
+              -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+              -s -k "$KEYCHAIN_PWD" "$KEYCHAIN_PATH" >/dev/null
+          # prepend temp keychain so codesign finds the identity ahead of login.keychain
+          existing="$(security list-keychain -d user | sed -e 's/^[[:space:]]*"\(.*\)"$/\1/')"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" $existing
+          rm -f "$CERT_PATH"
+          echo "BUILD_KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+
       - name: Freeze app with fbs
         run: fbs freeze
+
+      # fbs leaves CFBundleIdentifier empty; TCC needs a non-empty id to file FDA grants
+      - name: Patch CFBundleIdentifier (macOS)
+        if: matrix.os == 'macos'
+        run: |
+          set -euo pipefail
+          PLIST="target/Emu68 Hatcher.app/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.emu68hatcher.hatcher" "$PLIST" 2>/dev/null \
+              || /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.emu68hatcher.hatcher" "$PLIST"
+
+      - name: Sign .app (macOS)
+        if: matrix.os == 'macos'
+        env:
+          MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+        run: scripts/macos-sign.sh "target/Emu68 Hatcher.app"
 
       # produces target/<AppName>Setup.exe (windows, NSIS) or target/<AppName>.deb (linux, fpm+dpkg on ubuntu)
       - name: Build installer
         run: fbs installer
+
+      - name: Sign + notarize + staple .dmg (macOS)
+        if: matrix.os == 'macos'
+        env:
+          MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PWD: ${{ secrets.APPLE_APP_PWD }}
+        run: |
+          set -euo pipefail
+          DMG="target/Emu68 Hatcher.dmg"
+          codesign --force --sign "$MACOS_SIGN_IDENTITY" --timestamp "$DMG"
+          scripts/macos-notarize.sh "$DMG"
 
       - name: Rename artifact
         shell: bash
@@ -180,6 +238,13 @@ jobs:
             target/*.rpm
           if-no-files-found: error
           retention-days: 14
+
+      - name: Clean up signing keychain (macOS)
+        if: always() && matrix.os == 'macos'
+        run: |
+          if [[ -n "${BUILD_KEYCHAIN_PATH:-}" && -f "$BUILD_KEYCHAIN_PATH" ]]; then
+            security delete-keychain "$BUILD_KEYCHAIN_PATH" || true
+          fi
 
   release:
     name: Publish GitHub Release
