@@ -110,9 +110,8 @@ def _prepare_sparse_image(workflow: BuildWorkflow) -> None:
 
 
 def _prepare_device_target(workflow: BuildWorkflow) -> None:
-    """unmount, wipe partition table, sanity-check the SD before hst-imager touches it"""
+    """sanity-check + unmount the SD before hst-imager touches it"""
     from emu68hatcher.utils.disk_enum import find_disk
-    from emu68hatcher.utils.platform import OperatingSystem, get_platform_info
 
     device = str(workflow.state.image_path)
     info = find_disk(device)
@@ -132,36 +131,3 @@ def _prepare_device_target(workflow: BuildWorkflow) -> None:
         from emu68hatcher.utils.disk_enum import unmount_disk
 
         unmount_disk(info, workflow.logger, elevation=workflow.state.elevation)
-
-    # macos only: pre-wipe MBR/GPT via /dev/rdiskN so diskarbitrationd sees a blank disk and
-    # stops auto-remounting between hst-imager's internal unmount and its File.Open. without
-    # this, hst-imager gets EPERM on open even as root.
-    if get_platform_info().os == OperatingSystem.MACOS:
-        _wipe_partition_table_macos(workflow, device)
-
-
-def _wipe_partition_table_macos(workflow: BuildWorkflow, device: str) -> None:
-    """zero first 4MB of /dev/rdiskN + 0x55AA at offset 510; required to stop auto-remount"""
-    import shlex
-    import subprocess
-
-    from emu68hatcher.builder.host.elevation import run_elevated
-
-    raw_device = device.replace("/dev/disk", "/dev/rdisk", 1)
-    inner = (
-        f"/bin/dd if=/dev/zero of={shlex.quote(raw_device)} bs=1m count=4 && "
-        f"/usr/bin/printf '\\x55\\xaa' | "
-        f"/bin/dd of={shlex.quote(raw_device)} bs=1 seek=510 count=2 conv=notrunc"
-    )
-    cmd = ["/bin/sh", "-c", inner]
-    workflow.logger.info(f"wiping partition table on {raw_device} (4 MB + MBR sig)")
-    try:
-        result = run_elevated(cmd, workflow.state.elevation, timeout=30)
-    except (subprocess.SubprocessError, OSError) as e:
-        raise BuildError(f"partition-table wipe failed on {raw_device}: {e}") from e
-    if result.returncode != 0:
-        raise BuildError(
-            f"partition-table wipe failed on {raw_device} (rc={result.returncode}): "
-            f"{result.stderr.strip() or result.stdout.strip()}"
-        )
-    workflow.logger.info("partition table wiped")
