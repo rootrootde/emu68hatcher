@@ -13,17 +13,16 @@ Cross-platform Python+Qt app trying to be an [Emu68 Imager](https://github.com/m
 - Network stack (wifipi+genet) via Roadshow Demo + config tools
 - Partition layout editor (PFS3 + FFS)
 - Build configs as JSON (save / load)
+- Build to **.img** file (sparse by default), flash to SD card after build, or write straight to SD card
 
 ## Known issues / limitations
 
 **Still in an early stage** - Only actively tested on my A1200 + pistorm32-lite + CM4 / on macOS. If you run it on different hardware or OS, let me know on the [Discord](https://discord.com/invite/ApTbasXJPE) or open a [GitHub issue](https://github.com/rootrootde/emu68hatcher/issues) - even just "it worked" is useful.
 
-- **needs at least as much free disk space as your sd card size** (32gb sd = 32gb free space) - sparse file support is on the roadmap
 - **Workbench 3.9 not supported yet**
 - **No framethrower / unicam configuration yet**
 - **mostly tested on 3.2(.3)** - expect more potential issues with 3.1
 - **Ethernet (genet.device) connection is set up, but completely untested** (cause my eth port died)
-- **the .app bundle is unsigned/not notarized** so macOS Gatekeeper blocks it on first launch and has to be persuaded to run it anyways (see [Installation](installation.md#macos) for instructions)
 
 ## Support + Feedback
 

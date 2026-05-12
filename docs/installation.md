@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- **macOS 12+** (Apple Silicon, possibly Intel) - the **.app** bundle includes Python, no separate install needed
+- **macOS 12+** (Apple Silicon or Intel) - the **.app** bundle includes Python, no separate install needed
 - **Windows 10/11** (x64 or arm64) - the **.exe** installer includes Python, no separate install needed
 - **Linux** (recent Ubuntu/Debian, Fedora, Arch, …) - **.deb** installer for Debian/Ubuntu (x64 / arm64), manual Python install everywhere else
 - **a SD card**, 4 GB minimum, 32+ GB recommended
@@ -23,19 +23,10 @@
 
     ### Native installer (recommended)
 
-    Download the latest **emu68hatcher-VERSION-macos-arm64.dmg** from the [releases](https://github.com/rootrootde/emu68hatcher/releases) page, open it and drag the **Emu68 Hatcher.app** into /Applications.
+    Download the latest **emu68hatcher-VERSION-macos-arm64.dmg** (Apple Silicon) or **emu68hatcher-VERSION-macos-x64.dmg** (Intel) from the [releases](https://github.com/rootrootde/emu68hatcher/releases) page, open it and drag **Emu68 Hatcher.app** into /Applications.
 
-    !!! danger "If you see (you most likely will) &quot;Emu68 Hatcher.app is damaged and can&#39;t be opened. You should move it to the Trash.&quot;"
-        **Do NOT click &quot;Move to Trash&quot;** - the app is fine, macOS just refuses to run anything that isn&#39;t notarized by an Apple Developer ID. Click **Cancel**, open Terminal and run:
-
-        ```bash
-        sudo xattr -dr com.apple.quarantine "/Applications/Emu68 Hatcher.app"
-        ```
-
-        'sudo' will ask for your admin/root password. Then launch the app normally - it should open from then on.
-
-    !!! note "older macOS (Sonoma 14 and earlier)"
-        On macOS up to Sonoma 14 you can also right-click the app → **Open** → **Open** and click through the &quot;unidentified developer&quot; dialog, or use **System Settings → Privacy & Security → Open Anyway** after the first blocked launch. On Sequoia (15) and later, those routes don&#39;t work for the &quot;damaged&quot; dialog - the terminal command above is the only fix.
+    !!! warning "First run: grant Full Disk Access to hst-imager"
+        Open the app, click **Download Missing Tools** on the Start tab. After **hst-imager** downloads, a dialog asks to register it with macOS - click **Set Up Now**, enter your password, then enable **hst-imager** in the **Full Disk Access** list that opens. This is a one-time step and required: without it, SD card writes fail with a permission error.
 
     ### Install from source
 
@@ -93,7 +84,7 @@
     Download the latest **emu68hatcher-VERSION-windows-x64.exe** (or **-arm64.exe** on a Windows ARM machine) from the [releases](https://github.com/rootrootde/emu68hatcher/releases) page and run it. The installer puts the app + bundled Python in **C:\Program Files\Emu68 Hatcher\\** and adds a Start menu entry
 
     !!! note "SmartScreen"
-        The installer is unsigned, so Windows SmartScreen will likely show a "Windows protected your PC" dialog on first run. Click **More info** → **Run anyway**.
+        On first run Windows SmartScreen may show a "Windows protected your PC" dialog. Click **More info** → **Run anyway**.
 
     ### Install from source
 

@@ -24,7 +24,7 @@
 
 8. **Click "Build image".** On first run downloads a bunch of packages (uses cache after that). Progress and a build log are shown in the dialog. The log is also written to **buildlog.txt** next to the output image.
 
-Both flashing modes will prompt for admin access once at the start of the flash.
+Both flashing modes prompt for admin access once at the start of the build. On macOS the Full Disk Access setup is a separate one-time step on first install - see [Installation](installation.md#macos).
 
 ## Save / load configuration
 

@@ -35,6 +35,7 @@ nav:
   - Download: download.md
   - Installation: installation.md
   - Usage: usage.md
+  - Troubleshooting: troubleshooting.md
 
 markdown_extensions:
   - admonition

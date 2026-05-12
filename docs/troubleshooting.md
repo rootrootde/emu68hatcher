@@ -4,6 +4,10 @@
 
 If the build itself fails (=errors during SD card creation), Emu68 Hatcher writes a **buildlog.txt** to the **output directory**, next to your **.img** file. Please attach it when reporting build issues, it helps a lot to speed things up!
 
+### macOS: build fails with "Operation not permitted" on /dev/disk\*
+
+The first-run dialog should have already set this up, but if **hst-imager** lost its Full Disk Access grant (macOS upgrade, hst-imager re-downloaded, you said Skip on the setup dialog), open **System Settings → Privacy & Security → Full Disk Access** and enable **hst-imager** in the list. If hst-imager isn't in the list yet, run a build once - the failed write triggers the entry to appear.
+
 ## AmigaOS / Workbench
 
 When something goes wrong on the Amiga side, log output and error messages are essential for troubleshooting. The problem: how do you get that output from the Amiga into a Discord message or a GitHub issue? Writing it down by hand is tedious, taking photos of the screen isnt much better.
