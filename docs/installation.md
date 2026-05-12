@@ -23,10 +23,12 @@
 
     ### Native installer (recommended)
 
-    Download the latest **emu68hatcher-VERSION-macos-arm64.dmg** (Apple Silicon) or **emu68hatcher-VERSION-macos-x64.dmg** (Intel) from the [releases](https://github.com/rootrootde/emu68hatcher/releases) page, open it and drag **Emu68 Hatcher.app** into /Applications.
+    Download the latest **.dmg** for your Mac (arm64 for Apple Silicon, x64 for Intel) from the [releases](https://github.com/rootrootde/emu68hatcher/releases) page, open it and drag **Emu68 Hatcher.app** into /Applications.
 
     !!! warning "First run: grant Full Disk Access to hst-imager"
-        Open the app, click **Download Missing Tools** on the Start tab. After **hst-imager** downloads, a dialog asks to register it with macOS - click **Set Up Now**, enter your password, then enable **hst-imager** in the **Full Disk Access** list that opens. This is a one-time step and required: without it, SD card writes fail with a permission error.
+        macOS protects raw disk access, even on removable media like SD cards, so an app needs explicit permission from you to write to one. Emu68 Hatcher uses **hst-imager** to write the card, so it's hst-imager that needs Full Disk Access - not the app itself.
+
+        Open the app, click **Download Missing Tools** on the Start tab. After hst-imager downloads, a dialog asks to register it with macOS - click **Set Up Now**, enter password, then enable **hst-imager** in the settings pane that opens.
 
     ### Install from source
 
@@ -47,7 +49,7 @@
 
     ### Native installer (Debian / Ubuntu)
 
-    Download the latest **emu68hatcher-VERSION-linux-x64.deb** (or **-arm64.deb** on an ARM machine) from the [releases](https://github.com/rootrootde/emu68hatcher/releases) page and install:
+    Download the latest **.deb** for your machine (x64 or arm64) from the [releases](https://github.com/rootrootde/emu68hatcher/releases) page and install:
 
     ```bash
     sudo apt install ./emu68hatcher-*-linux-*.deb
@@ -76,12 +78,10 @@
 
 === "Windows"
 
-    !!! info "Consider using Emu68 Imager"
-        Apart from testing, there's really no reason for Windows users not to use [Emu68 Imager](https://github.com/mja65/Emu68-Imager-Software) which is considerably more mature and well tested!!
 
     ### Native installer (recommended)
 
-    Download the latest **emu68hatcher-VERSION-windows-x64.exe** (or **-arm64.exe** on a Windows ARM machine) from the [releases](https://github.com/rootrootde/emu68hatcher/releases) page and run it. The installer puts the app + bundled Python in **C:\Program Files\Emu68 Hatcher\\** and adds a Start menu entry
+    Download the latest **.exe** for your machine (x64 or arm64) from the [releases](https://github.com/rootrootde/emu68hatcher/releases) page and run it. The installer puts the app + bundled Python in **C:\Program Files\Emu68 Hatcher\\** and adds a Start menu entry.
 
     !!! note "SmartScreen"
         On first run Windows SmartScreen may show a "Windows protected your PC" dialog. Click **More info** → **Run anyway**.

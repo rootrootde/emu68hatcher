@@ -10,7 +10,7 @@ Cross-platform Python+Qt app trying to be an [Emu68 Imager](https://github.com/m
 - Workbench install from stock ADFs (3.1 / 3.2 / 3.2.2.1 / 3.2.3)
 - Customizable package set: MUI, WHDLoad+WHDLoadWrapper, IBrowse, HippoPlayer, ...
 - RTG via Picasso96 (shareware driver)
-- Network stack (wifipi+genet) via Roadshow Demo + config tools
+- Network support: Roadshow TCP/IP stack (demo), wifipi (wifi) + genet (ethernet) drivers, config tools
 - Partition layout editor (PFS3 + FFS)
 - Build configs as JSON (save / load)
 - Build to **.img** file (sparse by default), flash to SD card after build, or write straight to SD card

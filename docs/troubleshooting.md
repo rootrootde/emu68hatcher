@@ -6,7 +6,7 @@ If the build itself fails (=errors during SD card creation), Emu68 Hatcher write
 
 ### macOS: build fails with "Operation not permitted" on /dev/disk\*
 
-The first-run dialog should have already set this up, but if **hst-imager** lost its Full Disk Access grant (macOS upgrade, hst-imager re-downloaded, you said Skip on the setup dialog), open **System Settings → Privacy & Security → Full Disk Access** and enable **hst-imager** in the list. If hst-imager isn't in the list yet, run a build once - the failed write triggers the entry to appear.
+hst-imager needs Full Disk Access. See [Installation → macOS](installation.md#macos).
 
 ## AmigaOS / Workbench
 

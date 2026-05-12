@@ -14,7 +14,8 @@ Cross-platform Python+Qt app trying to be an [Emu68 Imager](https://github.com/m
 - Bootable Emu68 install for pistorm32-lite, pistorm, pistorm16
 - Workbench install from stock ADFs (3.1 / 3.2 / 3.2.2.1 / 3.2.3)
 - Customizable package set: MUI, WHDLoad+WHDLoadWrapper, IBrowse, HippoPlayer, ...
-- RTG (Picasso96), network stack (Roadshow Demo), partition layout editor (PFS3 + FFS)
+- RTG (Picasso96), networking (Roadshow TCP/IP stack + wifipi/genet drivers), partition layout editor (PFS3 + FFS)
+- SD card flashing (direct, or write the **.img** to a card after the build), sparse **.img** by default
 - Build configs as JSON (save / load)
 
 → see [docs](https://rootrootde.github.io/emu68hatcher/) for more
@@ -25,7 +26,7 @@ Cross-platform Python+Qt app trying to be an [Emu68 Imager](https://github.com/m
 
 From [releases](https://github.com/rootrootde/emu68hatcher/releases):
 
-- **macOS:** emu68hatcher-VERSION-macos-arm64.dmg
+- **macOS:** emu68hatcher-VERSION-macos-arm64.dmg (or -macos-x64.dmg on Intel)
 - **Linux** (Debian / Ubuntu): emu68hatcher-VERSION-linux-x64.deb (or -arm64.deb)
 - **Windows:** emu68hatcher-VERSION-windows-x64.exe (or -arm64.exe)
 
@@ -37,7 +38,7 @@ From [releases](https://github.com/rootrootde/emu68hatcher/releases):
 
 ### 3. Launch
 
-- **macOS:** open Emu68 Hatcher from /Applications. Gatekeeper may block on first launch - see the [installation guide](https://rootrootde.github.io/emu68hatcher/installation/#macos).
+- **macOS:** open Emu68 Hatcher from /Applications. First run: grant Full Disk Access to **hst-imager** so SD card writes work - see the [installation guide](https://rootrootde.github.io/emu68hatcher/installation/#macos).
 - **Linux:** emu68hatcher
 - **Windows:** from the Start menu
 
