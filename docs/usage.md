@@ -4,7 +4,7 @@
 
 1. **Launch the app.** It will check whether some required tools are installed.
 
-2. **Start tab - install missing tools.** If required tools are shown as missing, click **Download missing tools** and wait for green checkmarks. If 7z fails to download on macOS, try **brew install p7zip** and hit refresh.
+2. **Start tab - install missing tools.** If required tools are shown as missing, click **Download missing tools** and wait for green checkmarks.
 
 3. **Amiga Files tab - pick the Workbench version to install.** Select the folder containing your ROMs. emu68hatcher will automatically look in the same folder for the Workbench ADF files, but you can also point it somewhere else. ROMs and ADFs are identified by hash, so the filenames don't matter.
 
