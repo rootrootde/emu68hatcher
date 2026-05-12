@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QProgressBar,
     QPushButton,
     QVBoxLayout,
@@ -63,14 +64,11 @@ class StartTab(QWidget):
         super().__init__(parent)
         self._worker = None
         self._row_widgets: dict[str, tuple[QLabel, QLabel]] = {}
+        self._fresh_downloads: set[str] = set()
         self._setup_ui()
         self.refresh_status()
 
-    # ------------------------------------------------------------------
-    ########
-    #  UI  #
-    ########
-
+    # --- UI ---
     def _setup_ui(self):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 24, 24, 24)
@@ -190,11 +188,7 @@ class StartTab(QWidget):
 
         layout.addStretch()
 
-    # ------------------------------------------------------------------
-    ###############
-    # tool status #
-    ###############
-
+    # --- tool status ---
     @Slot()
     def refresh_status(self):
         """re-query tool install state and repaint the rows"""
@@ -223,11 +217,7 @@ class StartTab(QWidget):
             "Download Missing Tools…" if any_missing else "All Tools Installed"
         )
 
-    # ------------------------------------------------------------------
-    #################
-    # download flow #
-    #################
-
+    # --- download flow ---
     @Slot()
     def start_download(self):
         from emu68hatcher.gui.workers import ToolDownloadWorker
@@ -241,6 +231,7 @@ class StartTab(QWidget):
         self.progress_status.setText("Preparing download…")
         self.progress_bar.setValue(0)
 
+        self._fresh_downloads.clear()
         self._worker = ToolDownloadWorker(self)
         self._worker.tool_started.connect(self._on_tool_started)
         self._worker.tool_progress.connect(self._on_tool_progress)
@@ -275,6 +266,8 @@ class StartTab(QWidget):
     def _on_tool_finished(self, tool_name: str, success: bool):
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(100 if success else 0)
+        if success:
+            self._fresh_downloads.add(tool_name)
 
     @Slot(bool, list)
     def _on_download_finished(self, success: bool, failed: list):
@@ -295,3 +288,35 @@ class StartTab(QWidget):
                 hint = " (macOS: install with <code>brew install p7zip</code>)"
             self.progress_status.setText(f"Failed to download: {failed_list}.{hint}")
             self.progress_status.setTextFormat(Qt.TextFormat.RichText)
+
+        if sys.platform == "darwin" and "hst-imager" in self._fresh_downloads:
+            self._offer_macos_tcc_registration()
+
+    def _offer_macos_tcc_registration(self):
+        """ask whether to file hst-imager with tccd now; deferring just means the first build does it"""
+        from emu68hatcher.builder.host.macos_tcc import (
+            open_full_disk_access_pane,
+            register_hst_imager_with_tcc,
+        )
+        from emu68hatcher.utils.paths import get_tools_dir
+
+        hst = get_tools_dir() / "hst-imager"
+        if not hst.is_file():
+            return
+
+        box = QMessageBox(self)
+        box.setWindowTitle("Enable disk access for hst-imager")
+        box.setIcon(QMessageBox.Icon.Information)
+        box.setText("hst-imager needs Full Disk Access to write SD cards.")
+        box.setInformativeText(
+            "You'll get a password prompt, then System Settings opens - enable "
+            "<b>hst-imager</b> there. You can skip and do it on the first build."
+        )
+        setup_btn = box.addButton("Set Up Now", QMessageBox.ButtonRole.AcceptRole)
+        box.addButton("Skip", QMessageBox.ButtonRole.RejectRole)
+        box.exec()
+        if box.clickedButton() is not setup_btn:
+            return
+
+        if register_hst_imager_with_tcc(hst):
+            open_full_disk_access_pane()
