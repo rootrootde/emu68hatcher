@@ -1,6 +1,6 @@
 # <img src="assets/emu-icon.svg" width="96" height="96" alt="logo"> Emu68 Hatcher
 
-Build ready-to-run SD cards with pre-configured Workbench installation for [PiStorm](https://github.com/captain-amygdala/pistorm)-accelerated Amigas. 
+Build ready-to-run SD cards with pre-configured Workbench installation (+batteries included) for [PiStorm](https://github.com/captain-amygdala/pistorm)-accelerated Amigas. 
 
 Cross-platform Python+Qt app trying to be an [Emu68 Imager](https://github.com/mja65/Emu68-Imager-Software) alternative for Mac and Linux users
 
