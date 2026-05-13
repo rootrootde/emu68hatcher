@@ -42,12 +42,12 @@ For questions, feedback, bug reports, feature requests, and project updates:
 Thanks to:
 
 - [mja65](https://github.com/mja65)'s fantastic work on the [Emu68 Imager](https://github.com/mja65/Emu68-Imager-Software) project
-- [Emu68](https://github.com/michalsc/Emu68) and [Emu68-tools](https://github.com/michalsc/Emu68-tools) by Michal Schulz (MPL-2.0) - the m68k JIT and the on-Amiga companion tools (EmuControl, VideoCore.card, WiFiPi.device, ...)
+- [Emu68](https://github.com/michalsc/Emu68) and [Emu68-tools](https://github.com/michalsc/Emu68-tools) by Michal Schulz (MPL-2.0) - m68k emulation and the on-Amiga companion tools (EmuControl, VideoCore.card, WiFiPi.device, ...)
 - [hst-imager](https://github.com/henrikstengaard/hst-imager) and [hst-amiga](https://github.com/henrikstengaard/hst-amiga) by Henrik Stengaard (MIT) - disk image + RDB tooling
 
 Bundled / downloaded at build time:
 
-- [WHDLoad](http://whdload.de/) by Bert Jahn - donationware; please [donate](http://whdload.de/whdload/donations.html) if you use it
+- [WHDLoad](http://whdload.de/)
 - [Roadshow Demo](https://www.amigashop.org/product_info.php?cPath=2_34&products_id=200&language=de) bundled with permission from A. Magerl (APC&TCP)
 - [7-Zip](https://github.com/ip7z/7zip) (GNU LGPL) - downloaded at install time, License.txt copied alongside the binary
 - Aminet packages (MUI, HippoPlayer, IBrowse, akDatatypes, Picasso96, ...) - downloaded from [aminet.net](https://aminet.net) at build time; each ships its own readme with license
