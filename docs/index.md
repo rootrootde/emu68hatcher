@@ -22,7 +22,6 @@ Runs on macOS, Linux and Windows.
 - **Workbench 3.9 not supported yet**
 - **No framethrower / unicam configuration yet**
 - **mostly tested on 3.2(.3)** - expect more potential issues with 3.1
-- **Ethernet (genet.device) connection is set up, but completely untested** (cause my eth port died)
 
 ## Support + Feedback
 
