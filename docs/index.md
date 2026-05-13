@@ -40,10 +40,9 @@ For questions, feedback, bug reports, feature requests, and project updates:
 
 ## Credits
 
-**This project would have never been possible without [mja65](https://github.com/mja65)'s work on the fantastic [Emu68 Imager](https://github.com/mja65/Emu68-Imager-Software) project.** The code in this repo borrows heavily from emu68 imager, and the overall design and workflow is similar.
+Thanks to:
 
-Built on top of:
-
+- [mja65](https://github.com/mja65)'s fantastic work on the [Emu68 Imager](https://github.com/mja65/Emu68-Imager-Software) project
 - [Emu68](https://github.com/michalsc/Emu68) and [Emu68-tools](https://github.com/michalsc/Emu68-tools) by Michal Schulz (MPL-2.0) - the m68k JIT and the on-Amiga companion tools (EmuControl, VideoCore.card, WiFiPi.device, ...)
 - [hst-imager](https://github.com/henrikstengaard/hst-imager) and [hst-amiga](https://github.com/henrikstengaard/hst-amiga) by Henrik Stengaard (MIT) - disk image + RDB tooling
 

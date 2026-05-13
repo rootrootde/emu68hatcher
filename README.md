@@ -2,7 +2,7 @@
 
 Build ready-to-run SD cards with pre-configured Workbench installation for [PiStorm](https://github.com/captain-amygdala/pistorm)-accelerated Amigas. 
 
-Cross-platform Python+Qt app trying to be an [Emu68 Imager](https://github.com/mja65/Emu68-Imager-Software) alternative for Mac and Linux users
+Cross-platform Python+Qt app trying to simplify the 
 
 <img src="docs/assets/screenshot_macos.png" alt="Emu68 Hatcher main window (macOS, light + dark)" width="600">
 
@@ -55,11 +55,10 @@ For usage see → [docs](https://rootrootde.github.io/emu68hatcher/).
 
 ## Credits
 
-This project would have never been possible without [mja65](https://github.com/mja65)'s work on the fantastic [Emu68 Imager](https://github.com/mja65/Emu68-Imager-Software) project. The code in this repo borrows heavily from emu68 imager, and the overall design and workflow is similar.
+Thanks to:
 
-Built on top of:
-
-- [Emu68](https://github.com/michalsc/Emu68) and [Emu68-tools](https://github.com/michalsc/Emu68-tools) by Michal Schulz (MPL-2.0) - the m68k JIT and the on-Amiga companion tools (EmuControl, VideoCore.card, WiFiPi.device, ...)
+- [mja65](https://github.com/mja65)'s fantastic work on the [Emu68 Imager](https://github.com/mja65/Emu68-Imager-Software) project
+- [Emu68](https://github.com/michalsc/Emu68) and [Emu68-tools](https://github.com/michalsc/Emu68-tools) by Michal Schulz (MPL-2.0)
 - [hst-imager](https://github.com/henrikstengaard/hst-imager) and [hst-amiga](https://github.com/henrikstengaard/hst-amiga) by Henrik Stengaard (MIT) - disk image + RDB tooling
 
 Bundled / downloaded at build time:
@@ -67,7 +66,7 @@ Bundled / downloaded at build time:
 - [WHDLoad](http://whdload.de/) by Bert Jahn - donationware; please [donate](http://whdload.de/whdload/donations.html) if you use it
 - [Roadshow Demo](https://www.amigashop.org/product_info.php?cPath=2_34&products_id=200&language=de) bundled with permission from A. Magerl (APC&TCP)
 - [7-Zip](https://github.com/ip7z/7zip) (GNU LGPL) - downloaded at install time, License.txt copied alongside the binary
-- Aminet packages (MUI, HippoPlayer, IBrowse, akDatatypes, Picasso96, ...) - downloaded from [aminet.net](https://aminet.net) at build time; each ships its own readme with license
+- Aminet packages (MUI, HippoPlayer, IBrowse, akDatatypes, Picasso96, ...) - downloaded from [aminet.net](https://aminet.net) at build time
 
 ## License
 
