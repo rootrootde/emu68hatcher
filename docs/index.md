@@ -2,7 +2,7 @@
 
 Build ready-to-run SD cards with pre-configured Workbench installation (+batteries included) for [PiStorm](https://github.com/captain-amygdala/pistorm)-accelerated Amigas. 
 
-Cross-platform Python+Qt app trying to be an [Emu68 Imager](https://github.com/mja65/Emu68-Imager-Software) alternative for Mac and Linux users
+Runs on macOS, Linux and Windows.
 
 <img src="assets/screenshot_macos.png" alt="Emu68 Hatcher main window (macOS, light + dark)" width="600">
 
