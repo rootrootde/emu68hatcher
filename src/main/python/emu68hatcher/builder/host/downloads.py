@@ -409,7 +409,10 @@ def get_package_downloads(package_names: list[str]) -> list[DownloadItem]:
                 logger.error(f"refusing malformed GitHub repo for {pkg_name}: {repo!r}")
                 continue
 
-            api_url = f"https://api.github.com/repos/{repo}/releases"
+            if pkg.download.tag:
+                api_url = f"https://api.github.com/repos/{repo}/releases/tags/{pkg.download.tag}"
+            else:
+                api_url = f"https://api.github.com/repos/{repo}/releases"
             download_url = _resolve_github_download(api_url, filename, logger)
             if download_url:
                 items.append(
@@ -449,7 +452,9 @@ def get_package_downloads(package_names: list[str]) -> list[DownloadItem]:
     return items
 
 
-def get_mandatory_packages(kickstart_version: str = "3.1") -> list[str]:
+def get_mandatory_packages(
+    kickstart_version: str = "3.1", emu68_version: str | None = None
+) -> list[str]:
     """names of mandatory=true packages with downloadable sources"""
     import logging
 
@@ -458,7 +463,7 @@ def get_mandatory_packages(kickstart_version: str = "3.1") -> list[str]:
     mandatory = []
     seen = set()
 
-    mandatory_pkgs = get_mandatory_package_objs(kickstart_version)
+    mandatory_pkgs = get_mandatory_package_objs(kickstart_version, emu68_version)
 
     for pkg in mandatory_pkgs:
         if not pkg.download:

@@ -189,7 +189,8 @@ def _extract_adfs_with_rules(
     enabled_packages = {p.name.lower() for p in workflow.config.packages if p.enabled}
     from emu68hatcher.data.package_loader import get_mandatory_packages as get_mandatory_pkg_objs
 
-    mandatory_pkgs = get_mandatory_pkg_objs(ks_version)
+    emu68_version = workflow.config.emu68_version.value
+    mandatory_pkgs = get_mandatory_pkg_objs(ks_version, emu68_version)
     enabled_packages.update(pkg.name.lower() for pkg in mandatory_pkgs)
     workflow.logger.debug(f"Enabled packages for ADF rules: {enabled_packages}")
 

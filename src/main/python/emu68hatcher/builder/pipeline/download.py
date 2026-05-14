@@ -223,7 +223,8 @@ def stage_download(workflow: BuildWorkflow) -> None:
 
     # get mandatory packages (all System group + any mandatory=True)
     ks_version = workflow.config.kickstart.version.value
-    mandatory_names = get_mandatory_packages(ks_version)
+    emu68_version = workflow.config.emu68_version.value
+    mandatory_names = get_mandatory_packages(ks_version, emu68_version)
 
     # dict.fromkeys dedupes while preserving order (set() would shuffle via hash randomisation)
     all_package_names = list(dict.fromkeys(user_package_names + mandatory_names))
@@ -406,7 +407,8 @@ def stage_extract(workflow: BuildWorkflow) -> None:
         if stack_name not in user_lower:
             user_package_names.append(stack_name)
     ks_version = workflow.config.kickstart.version.value
-    mandatory_names = get_mandatory_packages(ks_version)
+    emu68_version = workflow.config.emu68_version.value
+    mandatory_names = get_mandatory_packages(ks_version, emu68_version)
     all_package_names = list(dict.fromkeys(user_package_names + mandatory_names))
 
     local_extracted = 0

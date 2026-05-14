@@ -69,10 +69,16 @@ def load_all_packages() -> list[Package]:
     return list(_packages_cache)
 
 
-def get_packages_for_version(kickstart_version: str) -> list[Package]:
-    """get all packages compatible with a Kickstart version"""
+def get_packages_for_version(
+    kickstart_version: str, emu68_version: str | None = None
+) -> list[Package]:
+    """get all packages compatible with a Kickstart version (and optionally an Emu68 release)"""
     packages = load_all_packages()
-    compatible = [p for p in packages if p.matches_version(kickstart_version)]
+    compatible = [
+        p
+        for p in packages
+        if p.matches_version(kickstart_version) and p.matches_emu68(emu68_version)
+    ]
 
     # sort by group order, then by name
     def sort_key(pkg: Package) -> tuple:
@@ -85,15 +91,17 @@ def get_packages_for_version(kickstart_version: str) -> list[Package]:
     return sorted(compatible, key=sort_key)
 
 
-def get_mandatory_packages(kickstart_version: str) -> list[Package]:
+def get_mandatory_packages(
+    kickstart_version: str, emu68_version: str | None = None
+) -> list[Package]:
     """packages that must be installed for a version (System group + anything mandatory=True)"""
-    packages = get_packages_for_version(kickstart_version)
+    packages = get_packages_for_version(kickstart_version, emu68_version)
     return [p for p in packages if p.mandatory or p.group == "System"]
 
 
-def get_default_packages(kickstart_version: str) -> list[Package]:
+def get_default_packages(kickstart_version: str, emu68_version: str | None = None) -> list[Package]:
     """get packages enabled by default for a version"""
-    return [p for p in get_packages_for_version(kickstart_version) if p.default]
+    return [p for p in get_packages_for_version(kickstart_version, emu68_version) if p.default]
 
 
 def get_package_by_name(name: str) -> Package | None:

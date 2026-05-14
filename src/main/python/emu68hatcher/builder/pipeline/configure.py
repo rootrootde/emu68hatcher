@@ -67,5 +67,6 @@ def _collect_enabled_packages(workflow: BuildWorkflow) -> set[str]:
 
     enabled = {p.name.lower() for p in workflow.config.packages if p.enabled}
     ks_version = workflow.config.kickstart.version.value
-    mandatory = {p.name.lower() for p in get_mandatory_packages(ks_version)}
+    emu68_version = workflow.config.emu68_version.value
+    mandatory = {p.name.lower() for p in get_mandatory_packages(ks_version, emu68_version)}
     return enabled | mandatory

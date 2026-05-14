@@ -34,6 +34,7 @@ class DownloadInfo(BaseModel):
 
     # for GitHub sources
     repo: str | None = None  # format: "owner/repo"
+    tag: str | None = None  # pin a specific release tag (default: latest)
 
     # verification
     hash: str | None = None  # MD5 hash for verification
@@ -90,6 +91,7 @@ class Package(BaseModel):
 
     # compatibility
     versions: list[str] = Field(default_factory=list)  # kickstart versions
+    emu68_versions: list[str] | None = None  # if set, gate on the chosen Emu68 release
 
     # installation behavior
     mandatory: bool = False  # must be installed
@@ -112,6 +114,14 @@ class Package(BaseModel):
         if not self.versions:
             return True  # no version restriction
         return kickstart_version in self.versions
+
+    def matches_emu68(self, emu68_version: str | None) -> bool:
+        """check if package applies to the selected Emu68 release; None = no restriction"""
+        if not self.emu68_versions:
+            return True
+        if emu68_version is None:
+            return True
+        return emu68_version in self.emu68_versions
 
 
 class Bundle(BaseModel):

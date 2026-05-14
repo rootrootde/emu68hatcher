@@ -125,8 +125,9 @@ def _check_optional_package_adfs(
         get_mandatory_packages,
     )
 
+    emu68_version = workflow.config.emu68_version.value
     enabled = {p.name.lower() for p in workflow.config.packages if p.enabled}
-    enabled.update(p.name.lower() for p in get_mandatory_packages(kickstart_version))
+    enabled.update(p.name.lower() for p in get_mandatory_packages(kickstart_version, emu68_version))
 
     # core required-disk set is checked by check_install_media_complete; here only
     # ADFs gated behind an optional package

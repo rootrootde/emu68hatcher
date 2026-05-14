@@ -1,7 +1,7 @@
-name: genet_device
-friendly_name: genet.device
+name: genet_device_legacy
+friendly_name: genet.device (legacy)
 group: System
-description: 'ethernet driver (Pi4/CM4) - interrupt-driven, requires Emu68 1.1+ and gic400.library'
+description: 'ethernet driver (Pi4/CM4) - polled IO, last release before the gic400.library dependency'
 versions:
 - '3.1'
 - '3.2'
@@ -9,11 +9,12 @@ versions:
 - 3.2.3
 - '3.9'
 emu68_versions:
-- 1.1.0-alpha.1
+- 1.0.7
 mandatory: true
 download:
   source: github
   repo: rondoval/emu68-genet-driver
+  tag: v1.3
   filename: genet.device
 install:
 - from: genet.device

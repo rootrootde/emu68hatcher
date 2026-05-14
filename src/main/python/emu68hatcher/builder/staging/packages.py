@@ -84,14 +84,16 @@ class PackageInstaller:
         staging_dir: Path,
         extracted_packages_dir: Path,
         local_packages_dir: Path | None = None,
+        emu68_version: str | None = None,
     ):
         self.kickstart_version = kickstart_version
+        self.emu68_version = emu68_version
         self.staging_dir = staging_dir
         self.extracted_dir = extracted_packages_dir
         self.local_packages_dir = local_packages_dir
         self.logger = get_logger()
 
-        self.packages = get_packages_for_version(kickstart_version)
+        self.packages = get_packages_for_version(kickstart_version, emu68_version)
 
         self.pending_scripts: list[tuple[Package, ScriptModification]] = []
 
@@ -104,11 +106,11 @@ class PackageInstaller:
 
     def get_mandatory_packages(self) -> list[str]:
         """get list of mandatory package names"""
-        return [p.name for p in _get_mandatory(self.kickstart_version)]
+        return [p.name for p in _get_mandatory(self.kickstart_version, self.emu68_version)]
 
     def get_default_packages(self) -> list[str]:
         """get list of default package names"""
-        return [p.name for p in _get_default(self.kickstart_version)]
+        return [p.name for p in _get_default(self.kickstart_version, self.emu68_version)]
 
     def install_package(
         self,

@@ -35,11 +35,13 @@ def stage_install_packages(workflow: BuildWorkflow) -> None:
     local_packages_dir = get_local_packages_dir()
 
     ks_version = workflow.config.kickstart.version.value
+    emu68_version = workflow.config.emu68_version.value
     installer = PackageInstaller(
         kickstart_version=ks_version,
         staging_dir=workflow.state.staging_dir,
         extracted_packages_dir=extracted_dir,
         local_packages_dir=local_packages_dir if local_packages_dir.exists() else None,
+        emu68_version=emu68_version,
     )
 
     # dict.fromkeys dedupes while preserving order - install order matters for some amiga packages
