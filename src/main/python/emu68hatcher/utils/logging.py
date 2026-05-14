@@ -30,11 +30,16 @@ def attach_file_handler(
     fmt: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt: str | None = None,
 ) -> logging.FileHandler | None:
-    """attach a FileHandler to logger;return None if open failed"""
+    """attach a FileHandler to logger; return None if open failed (failure logged via logger)"""
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         handler = logging.FileHandler(path, mode=mode, encoding="utf-8")
-    except OSError:
+    except Exception as e:
+        # broad except: TCC/sandbox failures on macOS Tahoe don't always raise OSError
+        logger.warning(
+            f"could not open log file at {path}: {type(e).__name__}: {e}",
+            exc_info=True,
+        )
         return None
     handler.setLevel(level)
     handler.setFormatter(logging.Formatter(fmt, datefmt))

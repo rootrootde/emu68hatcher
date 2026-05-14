@@ -164,6 +164,8 @@ class BuildWorkflow:
         from emu68hatcher.utils.logging import attach_file_handler
 
         path = self._buildlog_path()
+        # log the chosen path BEFORE attach so the GUI log records it even if open fails
+        self.logger.info(f"buildlog target: {path}")
         handler = attach_file_handler(
             self.logger.logger,
             path,
@@ -174,6 +176,12 @@ class BuildWorkflow:
         if handler is None:
             self.logger.warning(f"Could not open buildlog at {path}")
             return None, None
+        # marker + flush so the file is non-empty if the build crashes early
+        self.logger.info(f"buildlog opened: {path}")
+        try:
+            handler.flush()
+        except Exception:
+            pass
         return handler, path
 
     def _check_cancelled(self) -> None:
