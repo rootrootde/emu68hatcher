@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 # stdout/stderr stream through reader threads -> chunk files; consumer drains them live.
 _WORKER_SCRIPT = '''
 """worker - reads cmd-N.json from ipc_dir, writes .result.json + chunked .out/.err files"""
-import json, subprocess, sys, threading, time
+import json, os, subprocess, sys, threading, time
 from pathlib import Path
 
 
@@ -113,6 +113,14 @@ def run_one(argv, timeout, ipc_dir, cancel_file, seq):
     stderr_buf = bytearray()
     trace(f"seq={seq} run_one start argv0={argv[0] if argv else ''!r}")
     creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    # pin .NET single-file extraction inside ipc_dir; root context $HOME (/var/root) may be unwritable
+    env = os.environ.copy()
+    dotnet_dir = Path(ipc_dir) / "dotnet"
+    try:
+        dotnet_dir.mkdir(parents=True, exist_ok=True)
+        env["DOTNET_BUNDLE_EXTRACT_BASE_DIR"] = str(dotnet_dir)
+    except OSError as e:
+        trace(f"seq={seq} dotnet dir setup failed: {e}")
     trace(f"seq={seq} popen begin")
     try:
         proc = subprocess.Popen(
@@ -122,6 +130,7 @@ def run_one(argv, timeout, ipc_dir, cancel_file, seq):
             stderr=subprocess.PIPE,
             bufsize=0,
             creationflags=creation_flags,
+            env=env,
         )
     except (OSError, subprocess.SubprocessError) as e:
         trace(f"seq={seq} popen failed: {e}")

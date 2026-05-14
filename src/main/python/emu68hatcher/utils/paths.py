@@ -8,6 +8,10 @@ from pathlib import Path
 
 from emu68hatcher.utils.platform import OperatingSystem, get_platform_info
 
+# .NET single-file extraction target override - bypasses default ~/.net which is unwritable under
+# root context ($HOME=/var/root) and under macOS Tahoe sandbox/translocation for user context
+DOTNET_BUNDLE_ENV_VAR = "DOTNET_BUNDLE_EXTRACT_BASE_DIR"
+
 
 def _user_data_dir() -> Path:
     """return the OS-standard per-user data directory for this app"""
@@ -64,6 +68,12 @@ def get_downloads_dir() -> Path:
 def get_extracted_dir() -> Path:
     """dir for extracted package contents"""
     return _ensure(get_cache_dir() / "extracted")
+
+
+@cache
+def get_dotnet_bundle_dir() -> Path:
+    """target for .NET single-file extraction (hst-imager bundle cache)"""
+    return _ensure(get_cache_dir() / "dotnet-bundle")
 
 
 def make_temp_workdir() -> Path:

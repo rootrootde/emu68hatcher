@@ -12,6 +12,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
+from emu68hatcher.utils.paths import DOTNET_BUNDLE_ENV_VAR, get_dotnet_bundle_dir
 from emu68hatcher.utils.platform import OperatingSystem, get_platform_info, is_root
 
 logger = logging.getLogger(__name__)
@@ -51,18 +52,28 @@ def _ps_quote(s: str) -> str:
     return "'" + str(s).replace("'", "''") + "'"
 
 
+def _dotnet_env_prefix() -> str:
+    """shell fragment that pins .NET single-file extraction to a writable dir"""
+    return f"{DOTNET_BUNDLE_ENV_VAR}={shlex.quote(str(get_dotnet_bundle_dir()))}"
+
+
 def wrap_for_elevation(cmd: list[str], token: ElevationToken | None) -> list[str]:
     """rewrite argv so running it executes elevated under the given token"""
     if token is None or token.method == "noop":
         return cmd
     if token.method == "pkexec":
-        return ["pkexec", *cmd]
+        # pkexec strips most env; bake the .NET var into the elevated shell
+        inner = f"{_dotnet_env_prefix()} exec " + " ".join(shlex.quote(a) for a in cmd)
+        return ["pkexec", "/bin/sh", "-c", inner]
     if token.method == "sudo":
         return _wrap_sudo(cmd)
     if token.method == "runas":
         ps_args = ", ".join(_ps_quote(a) for a in cmd[1:]) if len(cmd) > 1 else ""
         # RunAs cant pipe child stdout/stderr - dump to temp files and replay
+        # $env: assignment propagates to Start-Process children (incl. -Verb RunAs)
+        dotnet_path = _ps_quote(str(get_dotnet_bundle_dir()))
         ps = (
+            f"$env:{DOTNET_BUNDLE_ENV_VAR} = {dotnet_path}; "
             "$o = [System.IO.Path]::GetTempFileName(); "
             "$e = [System.IO.Path]::GetTempFileName(); "
             f"$p = Start-Process -FilePath {_ps_quote(cmd[0])} "
@@ -86,14 +97,18 @@ def _wrap_sudo(cmd: list[str]) -> list[str]:
         if m:
             base_device = m.group(1).replace("/dev/rdisk", "/dev/disk")
             break
+    cmd_quoted = " ".join(shlex.quote(a) for a in cmd)
     if base_device and get_platform_info().os == OperatingSystem.MACOS:
         # chain unmount + cmd in one sudo bash -c so they share auth
         inner = (
             f"/usr/sbin/diskutil unmountDisk force {shlex.quote(base_device)} "
-            f">/dev/null 2>&1 ; true ; " + " ".join(shlex.quote(a) for a in cmd)
+            f">/dev/null 2>&1 ; true ; "
+            f"{_dotnet_env_prefix()} exec {cmd_quoted}"
         )
         return ["sudo", "-n", "/bin/bash", "-c", inner]
-    return ["sudo", "-n", *cmd]
+    # sudo strips env by default; set it inside the elevated shell
+    inner = f"{_dotnet_env_prefix()} exec {cmd_quoted}"
+    return ["sudo", "-n", "/bin/sh", "-c", inner]
 
 
 _DEVICE_RE = re.compile(r"^(/dev/(?:r?disk|sd|mmcblk)\d+)")
@@ -115,6 +130,9 @@ def run_elevated(
     if token is not None and token.method.endswith("-helper") and token.helper is not None:
         return token.helper.run(cmd, timeout=timeout, cancel_check=cancel_check, on_line=on_line)
     wrapped = wrap_for_elevation(cmd, token)
+    # noop/None path inherits this directly; wrapped paths re-set it inside the elevated shell
+    env = os.environ.copy()
+    env[DOTNET_BUNDLE_ENV_VAR] = str(get_dotnet_bundle_dir())
     result = subprocess.run(
         wrapped,
         capture_output=capture_output,
@@ -122,6 +140,7 @@ def run_elevated(
         timeout=timeout,
         encoding=encoding,
         errors=errors,
+        env=env,
     )
     # non-helper paths buffer the whole subprocess; replay lines so callers get the same contract
     if on_line is not None:
