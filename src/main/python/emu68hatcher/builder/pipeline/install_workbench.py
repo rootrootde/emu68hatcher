@@ -124,6 +124,7 @@ def _extract_adfs_with_rules(
 ) -> tuple[int, list[str]]:
     """extract ADFs per adf_rules.yaml - mirrors upstream Emu68 Imager file/folder picks per ADF"""
     from emu68hatcher.data.package_loader import get_filtered_adf_rules
+    from emu68hatcher.utils.paths import get_hst_imager_env
     from emu68hatcher.utils.platform import find_hst_imager
 
     hst_imager = find_hst_imager()
@@ -273,6 +274,7 @@ def _extract_adfs_with_rules(
                 encoding="utf-8",
                 errors="replace",
                 timeout=60,
+                env=get_hst_imager_env(),
             )
 
             if result.returncode == 0:

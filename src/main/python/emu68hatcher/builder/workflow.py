@@ -212,7 +212,7 @@ class BuildWorkflow:
 
     def _log_platform_info(self) -> None:
         """dump build env + tool paths to buildlog.txt; helps cross-platform debugging"""
-        from emu68hatcher.utils.paths import get_tools_dir
+        from emu68hatcher.utils.paths import get_hst_imager_env, get_tools_dir
         from emu68hatcher.utils.platform import find_hst_imager
 
         log = self.logger.info
@@ -230,6 +230,7 @@ class BuildWorkflow:
                     capture_output=True,
                     text=True,
                     timeout=5,
+                    env=get_hst_imager_env(),
                 )
                 first_line = (ver.stdout or ver.stderr or "").strip().splitlines()
                 log(

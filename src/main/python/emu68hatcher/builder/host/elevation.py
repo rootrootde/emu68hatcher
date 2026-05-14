@@ -12,7 +12,11 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from emu68hatcher.utils.paths import DOTNET_BUNDLE_ENV_VAR, get_dotnet_bundle_dir
+from emu68hatcher.utils.paths import (
+    DOTNET_BUNDLE_ENV_VAR,
+    get_dotnet_bundle_dir,
+    get_hst_imager_env,
+)
 from emu68hatcher.utils.platform import OperatingSystem, get_platform_info, is_root
 
 logger = logging.getLogger(__name__)
@@ -131,8 +135,6 @@ def run_elevated(
         return token.helper.run(cmd, timeout=timeout, cancel_check=cancel_check, on_line=on_line)
     wrapped = wrap_for_elevation(cmd, token)
     # noop/None path inherits this directly; wrapped paths re-set it inside the elevated shell
-    env = os.environ.copy()
-    env[DOTNET_BUNDLE_ENV_VAR] = str(get_dotnet_bundle_dir())
     result = subprocess.run(
         wrapped,
         capture_output=capture_output,
@@ -140,7 +142,7 @@ def run_elevated(
         timeout=timeout,
         encoding=encoding,
         errors=errors,
-        env=env,
+        env=get_hst_imager_env(),
     )
     # non-helper paths buffer the whole subprocess; replay lines so callers get the same contract
     if on_line is not None:
