@@ -24,8 +24,8 @@ def stage_flash(workflow: BuildWorkflow) -> None:
     if not workflow.state.image_path or not workflow.state.image_path.exists():
         raise BuildError("image not found - cannot flash")
 
+    from emu68hatcher.builder.host.disk_enum import find_disk
     from emu68hatcher.builder.host.disk_writer import flash_image_to_disk
-    from emu68hatcher.utils.disk_enum import find_disk
 
     info = find_disk(output.flash_target)
     if info is None:
@@ -34,12 +34,12 @@ def stage_flash(workflow: BuildWorkflow) -> None:
         raise BuildError(f"refusing to flash to system disk {output.flash_target}")
 
     if info.mounted_partitions:
-        from emu68hatcher.utils.disk_enum import unmount_disk
+        from emu68hatcher.builder.host.disk_enum import unmount_disk
 
         unmount_disk(info, workflow.logger, elevation=workflow.state.elevation)
 
     # online_disk() is a no-op on macos/linux; windows-only re-online after unmount
-    from emu68hatcher.utils.disk_enum import online_disk
+    from emu68hatcher.builder.host.disk_enum import online_disk
 
     online_disk(info, workflow.logger, elevation=workflow.state.elevation)
 

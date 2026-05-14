@@ -55,7 +55,7 @@ def _ensure_device_unmounted(workflow: BuildWorkflow) -> None:
 
     if workflow.config.output is None or workflow.config.output.type != OutputType.DEVICE:
         return
-    from emu68hatcher.utils.disk_enum import find_disk, unmount_disk
+    from emu68hatcher.builder.host.disk_enum import find_disk, unmount_disk
 
     info = find_disk(str(workflow.config.output.path))
     if info is None or not info.mounted_partitions:

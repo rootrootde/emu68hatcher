@@ -111,7 +111,7 @@ def _prepare_sparse_image(workflow: BuildWorkflow) -> None:
 
 def _prepare_device_target(workflow: BuildWorkflow) -> None:
     """sanity-check + unmount the SD before hst-imager touches it"""
-    from emu68hatcher.utils.disk_enum import find_disk
+    from emu68hatcher.builder.host.disk_enum import find_disk
 
     device = str(workflow.state.image_path)
     info = find_disk(device)
@@ -128,6 +128,6 @@ def _prepare_device_target(workflow: BuildWorkflow) -> None:
             f"{required:,} bytes (card too small)"
         )
     if info.mounted_partitions:
-        from emu68hatcher.utils.disk_enum import unmount_disk
+        from emu68hatcher.builder.host.disk_enum import unmount_disk
 
         unmount_disk(info, workflow.logger, elevation=workflow.state.elevation)

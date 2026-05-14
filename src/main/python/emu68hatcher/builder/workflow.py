@@ -191,8 +191,8 @@ class BuildWorkflow:
 
     def _bring_target_disk_online(self) -> None:
         """windows: undo the Set-Disk -IsOffline applied at unmount"""
+        from emu68hatcher.builder.host.disk_enum import find_disk, online_disk
         from emu68hatcher.config.schema import OutputType
-        from emu68hatcher.utils.disk_enum import find_disk, online_disk
 
         if self.config.output is None:
             return

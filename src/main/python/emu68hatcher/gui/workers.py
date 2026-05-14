@@ -164,7 +164,7 @@ class DiskListWorker(QThread):
     disks_loaded = Signal(list)  # list[DiskInfo]
 
     def run(self):
-        from emu68hatcher.utils.disk_enum import list_removable_disks
+        from emu68hatcher.builder.host.disk_enum import list_removable_disks
 
         try:
             disks = list_removable_disks()

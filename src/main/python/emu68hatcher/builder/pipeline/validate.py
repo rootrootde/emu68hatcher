@@ -162,8 +162,8 @@ def _check_optional_package_adfs(
 
 def _check_output_target(workflow: BuildWorkflow) -> None:
     """check output target (file/device); acquire elevation when needed"""
+    from emu68hatcher.builder.host.disk_enum import find_disk
     from emu68hatcher.config.schema import OutputType
-    from emu68hatcher.utils.disk_enum import find_disk
 
     output = workflow.config.output
     required_size = workflow.config.partitions.disk_size
