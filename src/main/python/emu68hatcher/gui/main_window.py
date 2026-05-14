@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from emu68hatcher import __version__
 from emu68hatcher.config.defaults import create_default_config
 from emu68hatcher.config.loader import load_config, save_config
 from emu68hatcher.config.schema import (
@@ -42,7 +43,7 @@ class MainWindow(QMainWindow):
         self.setup_ui()
 
     def setup_ui(self):
-        self.setWindowTitle("Emu68 Hatcher")
+        self.setWindowTitle(f"Emu68 Hatcher {__version__}")
         self.setMinimumSize(800, 600)
 
         # central widget
