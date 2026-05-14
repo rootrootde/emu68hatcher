@@ -237,7 +237,7 @@ def _acquire_for_workflow(workflow: BuildWorkflow) -> None:
         acquire_elevation,
         run_elevated,
     )
-    from emu68hatcher.utils.platform import find_hst_imager
+    from emu68hatcher.utils.host_tools import find_hst_imager
 
     if workflow.state.elevation is not None:
         return  # already have one

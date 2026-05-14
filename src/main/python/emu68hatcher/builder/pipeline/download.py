@@ -76,7 +76,7 @@ def _extract_ffs_handler_if_needed(workflow: BuildWorkflow) -> None:
     import subprocess
     from pathlib import Path
 
-    from emu68hatcher.utils.platform import find_hst_imager
+    from emu68hatcher.utils.host_tools import find_hst_imager
 
     # match KS and WB on parsed version tuples (string startswith would treat "3.1" as a prefix of "3.10")
     ks_version = workflow.config.kickstart.version.value

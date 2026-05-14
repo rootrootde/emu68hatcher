@@ -353,7 +353,7 @@ def download_all_tools(force: bool = False) -> dict[str, Path | None]:
 
 
 if __name__ == "__main__":
-    from emu68hatcher.utils.platform import check_dependencies
+    from emu68hatcher.utils.host_tools import check_dependencies
 
     print("Checking installed tools...")
     for tool, installed in check_dependencies().items():

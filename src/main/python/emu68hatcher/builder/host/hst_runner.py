@@ -15,7 +15,7 @@ from emu68hatcher.builder.host.hst_commands import (
     HSTCommandLine,
     HSTScript,
 )
-from emu68hatcher.utils.platform import find_hst_imager
+from emu68hatcher.utils.host_tools import find_hst_imager
 
 _logger = logging.getLogger("emu68hatcher")
 

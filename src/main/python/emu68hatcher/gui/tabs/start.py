@@ -192,7 +192,7 @@ class StartTab(QWidget):
     @Slot()
     def refresh_status(self):
         """re-query tool install state and repaint the rows"""
-        from emu68hatcher.utils.platform import find_7z, find_hst_amiga, find_hst_imager
+        from emu68hatcher.utils.host_tools import find_7z, find_hst_amiga, find_hst_imager
 
         finders = {
             "hst-imager": find_hst_imager,

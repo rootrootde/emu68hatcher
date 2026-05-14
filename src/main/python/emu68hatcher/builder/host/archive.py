@@ -10,8 +10,8 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
+from emu68hatcher.utils.host_tools import find_7z, find_hst_imager
 from emu68hatcher.utils.paths import get_extracted_dir
-from emu68hatcher.utils.platform import find_7z, find_hst_imager
 
 
 class ArchiveFormat(str, Enum):

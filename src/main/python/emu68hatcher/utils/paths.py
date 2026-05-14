@@ -76,13 +76,6 @@ def get_dotnet_bundle_dir() -> Path:
     return _ensure(get_cache_dir() / "dotnet-bundle")
 
 
-def get_hst_imager_env() -> dict[str, str]:
-    """parent env + DOTNET_BUNDLE_EXTRACT_BASE_DIR; pass to subprocess.run(env=...) for direct hst-imager calls"""
-    env = os.environ.copy()
-    env[DOTNET_BUNDLE_ENV_VAR] = str(get_dotnet_bundle_dir())
-    return env
-
-
 def make_temp_workdir() -> Path:
     """create a fresh temp dir under cache"""
     temp_base = _ensure(get_cache_dir() / "temp")

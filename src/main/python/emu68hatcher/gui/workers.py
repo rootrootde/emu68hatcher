@@ -84,7 +84,7 @@ class ToolDownloadWorker(QThread):
     def run(self):
         """download each missing tool, emit per-tool progress"""
         from emu68hatcher.builder.host.tools import download_7zip, download_tool
-        from emu68hatcher.utils.platform import check_dependencies
+        from emu68hatcher.utils.host_tools import check_dependencies
 
         status = check_dependencies()
         missing = [t for t, ok in status.items() if not ok]

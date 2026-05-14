@@ -12,11 +12,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from emu68hatcher.utils.paths import (
-    DOTNET_BUNDLE_ENV_VAR,
-    get_dotnet_bundle_dir,
-    get_hst_imager_env,
-)
+from emu68hatcher.utils.host_tools import get_hst_imager_env
+from emu68hatcher.utils.paths import DOTNET_BUNDLE_ENV_VAR, get_dotnet_bundle_dir
 from emu68hatcher.utils.platform import OperatingSystem, get_platform_info, is_root
 
 logger = logging.getLogger(__name__)

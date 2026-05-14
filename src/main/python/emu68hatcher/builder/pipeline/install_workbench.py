@@ -124,8 +124,7 @@ def _extract_adfs_with_rules(
 ) -> tuple[int, list[str]]:
     """extract ADFs per adf_rules.yaml - mirrors upstream Emu68 Imager file/folder picks per ADF"""
     from emu68hatcher.data.package_loader import get_filtered_adf_rules
-    from emu68hatcher.utils.paths import get_hst_imager_env
-    from emu68hatcher.utils.platform import find_hst_imager
+    from emu68hatcher.utils.host_tools import find_hst_imager, get_hst_imager_env
 
     hst_imager = find_hst_imager()
     if not hst_imager:
@@ -317,7 +316,7 @@ def _extract_adfs_with_rules(
 
 def _decompress_z_files(workflow: BuildWorkflow, directory: Path) -> None:
     """decompress .Z files (Unix compress) used in Workbench 3.2.x, via 7-Zip"""
-    from emu68hatcher.utils.platform import find_7z
+    from emu68hatcher.utils.host_tools import find_7z
 
     z_files = list(directory.rglob("*.Z"))
     if not z_files:

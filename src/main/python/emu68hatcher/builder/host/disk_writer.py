@@ -13,7 +13,7 @@ from pathlib import Path
 
 from emu68hatcher.builder.errors import BuildCancelledError, BuildError
 from emu68hatcher.builder.host.elevation import ElevationToken, wrap_for_elevation
-from emu68hatcher.utils.platform import find_hst_imager
+from emu68hatcher.utils.host_tools import find_hst_imager
 
 logger = logging.getLogger(__name__)
 

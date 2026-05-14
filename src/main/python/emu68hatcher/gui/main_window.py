@@ -254,7 +254,7 @@ class MainWindow(QMainWindow):
             return
 
         # check if HST Imager is available
-        from emu68hatcher.utils.platform import find_hst_imager
+        from emu68hatcher.utils.host_tools import find_hst_imager
 
         if not find_hst_imager():
             reply = QMessageBox.question(
