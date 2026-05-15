@@ -342,6 +342,9 @@ class BuildConfig(BaseModel):
     kickstart: KickstartConfig = Field(default_factory=KickstartConfig)
     install_media: InstallMediaConfig = Field(default_factory=InstallMediaConfig)
 
+    # directories scanned for both ROMs and ADFs/ISOs - the single source of truth
+    asset_directories: list[Path] = Field(default_factory=list)
+
     # display settings
     display: DisplayConfig = Field(default_factory=DisplayConfig)
 
@@ -366,6 +369,34 @@ class BuildConfig(BaseModel):
         default=Emu68Version.V1_0_7,
         description="upstream Emu68 release to bundle on the boot partition",
     )
+
+    @field_validator("asset_directories", mode="before")
+    @classmethod
+    def _convert_asset_directories(cls, v):
+        if v is None:
+            return []
+        return [Path(p) if isinstance(p, str) else p for p in v]
+
+    @model_validator(mode="after")
+    def _migrate_legacy_asset_paths(self):
+        # fold the old single rom_directory + install_media.directory fields into the new list
+        # so configs from 0.2.x keep loading; dedupe by string identity to preserve order
+        if self.asset_directories:
+            return self
+        merged: list[Path] = []
+        seen: set[str] = set()
+        for legacy in (self.kickstart.rom_directory, self.install_media.directory):
+            if legacy is None:
+                continue
+            key = str(legacy)
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(legacy)
+        if merged:
+            self.asset_directories = merged
+        return self
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {

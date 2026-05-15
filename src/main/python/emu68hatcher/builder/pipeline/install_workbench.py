@@ -51,16 +51,14 @@ def stage_install_workbench(workflow: BuildWorkflow) -> None:
     # last resort: try scanning again if validation didn't find anything
     if not adf_paths:
         workflow.logger.info("No pre-resolved media, attempting direct ADF scan...")
-        # try install_media.directory first, then ROM directory
-        scan_dir = None
-        if workflow.config.install_media and workflow.config.install_media.directory:
-            scan_dir = Path(workflow.config.install_media.directory)
-        elif workflow.config.kickstart.rom_directory:
-            scan_dir = Path(workflow.config.kickstart.rom_directory)
+        scan_dirs = [Path(p) for p in workflow.config.asset_directories if Path(p).exists()]
 
-        if scan_dir and scan_dir.exists():
-            workflow.logger.info(f"Scanning {scan_dir} for ADFs...")
-            found_media, _ = scan_install_media_by_hash(scan_dir)
+        if scan_dirs:
+            workflow.logger.info(
+                f"Scanning {len(scan_dirs)} asset director"
+                f"{'ies' if len(scan_dirs) != 1 else 'y'} for ADFs..."
+            )
+            found_media, _ = scan_install_media_by_hash(scan_dirs)
             if found_media:
                 from emu68hatcher.data.package_loader import get_adf_rules_for_version as _get_rules
 
@@ -79,8 +77,7 @@ def stage_install_workbench(workflow: BuildWorkflow) -> None:
     if not adf_paths:
         raise BuildError(
             "No Workbench disks detected. "
-            "Set 'install_media.directory' in your config "
-            "to point to a folder containing your Workbench ADF files."
+            "Add a directory containing your Workbench ADF files to the Amiga Files tab."
         )
 
     workflow._update_state(progress=10.0)

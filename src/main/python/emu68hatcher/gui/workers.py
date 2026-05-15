@@ -119,40 +119,40 @@ class ToolDownloadWorker(QThread):
 
 
 class ROMScanWorker(QThread):
-    """scan a directory for Kickstart ROMs"""
+    """scan one or more directories for Kickstart ROMs"""
 
     scan_finished = Signal(list, bool)  # (found ROMs, truncated)
 
-    def __init__(self, directory: Path, parent=None):
+    def __init__(self, directories: Path | list[Path], parent=None):
         super().__init__(parent)
-        self.directory = directory
+        self.directories = [directories] if isinstance(directories, Path) else list(directories)
 
     def run(self):
         """scan + emit"""
         from emu68hatcher.data.rom_detection import scan_for_kickstart_roms
 
         try:
-            found_roms, truncated = scan_for_kickstart_roms(self.directory)
+            found_roms, truncated = scan_for_kickstart_roms(self.directories)
         except Exception:
             found_roms, truncated = [], False
         self.scan_finished.emit(found_roms, truncated)
 
 
 class ADFScanWorker(QThread):
-    """scan a directory for Workbench ADFs"""
+    """scan one or more directories for Workbench ADFs"""
 
     scan_finished = Signal(list, bool)  # (found media, truncated)
 
-    def __init__(self, directory: Path, parent=None):
+    def __init__(self, directories: Path | list[Path], parent=None):
         super().__init__(parent)
-        self.directory = directory
+        self.directories = [directories] if isinstance(directories, Path) else list(directories)
 
     def run(self):
         """scan + emit"""
         from emu68hatcher.data.install_media import scan_install_media_by_hash
 
         try:
-            found_media, truncated = scan_install_media_by_hash(self.directory)
+            found_media, truncated = scan_install_media_by_hash(self.directories)
         except Exception:
             found_media, truncated = [], False
         self.scan_finished.emit(found_media, truncated)
