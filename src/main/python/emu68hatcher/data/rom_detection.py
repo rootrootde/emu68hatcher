@@ -253,44 +253,51 @@ def identify_kickstart(path: Path) -> dict | None:
 
 
 def scan_for_kickstart_roms(
-    directory: Path,
+    directories: Path | list[Path] | tuple[Path, ...],
     max_files: int = 5000,
 ) -> tuple[list[dict], bool]:
-    """scan dir for Kickstart ROMs (cap at max_files ) returns (results, truncated)"""
-    if not directory.exists() or not directory.is_dir():
-        return [], False
+    """scan one or more dirs for Kickstart ROMs (cap at max_files per dir); returns (results, truncated)"""
+    dirs = [directories] if isinstance(directories, Path) else list(directories)
 
     results = []
     rom_extensions = {".rom", ".bin", ".kick", ".a500", ".a600", ".a1200", ".a4000"}
     truncated = False
+    seen_paths: set[Path] = set()
 
-    seen_count = 0
-    for path, ext in walk_files_capped(directory, max_files):
-        seen_count += 1
-        try:
-            size = path.stat().st_size
-        except OSError:
+    for directory in dirs:
+        if not directory.exists() or not directory.is_dir():
             continue
 
-        if ext in rom_extensions or size in KICKSTART_ROM_SIZES:
-            info = identify_kickstart(path)
-            if info:
-                entry = {
-                    "path": path,
-                    "version": info["version"],
-                    # revision / model are best-effort; upstream hash table only fills them for known A1200 dumps
-                    "revision": info.get("revision", ""),
-                    "model": info.get("model", "Unknown"),
-                    "size": info["size"],
-                }
-                if info.get("whdload_name"):
-                    entry["whdload_name"] = info["whdload_name"]
-                if info.get("excluded"):
-                    entry["excluded"] = True
-                    entry["exclude_message"] = info.get("exclude_message", "")
-                results.append(entry)
-    if seen_count >= max_files:
-        truncated = True
+        seen_count = 0
+        for path, ext in walk_files_capped(directory, max_files):
+            seen_count += 1
+            if path in seen_paths:
+                continue
+            seen_paths.add(path)
+            try:
+                size = path.stat().st_size
+            except OSError:
+                continue
+
+            if ext in rom_extensions or size in KICKSTART_ROM_SIZES:
+                info = identify_kickstart(path)
+                if info:
+                    entry = {
+                        "path": path,
+                        "version": info["version"],
+                        # revision / model are best-effort; upstream hash table only fills them for known A1200 dumps
+                        "revision": info.get("revision", ""),
+                        "model": info.get("model", "Unknown"),
+                        "size": info["size"],
+                    }
+                    if info.get("whdload_name"):
+                        entry["whdload_name"] = info["whdload_name"]
+                    if info.get("excluded"):
+                        entry["excluded"] = True
+                        entry["exclude_message"] = info.get("exclude_message", "")
+                    results.append(entry)
+        if seen_count >= max_files:
+            truncated = True
 
     # newer ROMs first - parse the version string so "3.10" sorts above "3.2"
     results.sort(key=lambda x: _version_sort_key(x["version"]), reverse=True)
@@ -321,9 +328,11 @@ def find_whdload_kickstarts(directory: Path) -> dict[str, Path]:
     return matched
 
 
-def find_kickstart_for_version(directory: Path, version: str) -> Path | None:
-    """find a Kickstart ROM matching the specified version, preferring A1200 variants"""
-    roms, _ = scan_for_kickstart_roms(directory)
+def find_kickstart_for_version(
+    directories: Path | list[Path] | tuple[Path, ...], version: str
+) -> Path | None:
+    """find a Kickstart ROM matching the specified version (across one or more dirs), preferring A1200 variants"""
+    roms, _ = scan_for_kickstart_roms(directories)
 
     matching = [r for r in roms if r["version"] == version and not r.get("excluded")]
     if not matching:

@@ -34,34 +34,41 @@ class IdentifiedInstallMedia:
 
 
 def scan_install_media_by_hash(
-    directory: Path,
+    directories: Path | list[Path] | tuple[Path, ...],
     max_files: int = 5000,
 ) -> tuple[list["IdentifiedInstallMedia"], bool]:
-    """scan directory for install media, MD5-identify via install_media_hashes.yaml"""
+    """scan one or more dirs for install media, MD5-identify via install_media_hashes.yaml"""
     from emu68hatcher.data.data_manager import get_install_media_db
     from emu68hatcher.utils.hashing import HashAlgorithm, calculate_hash
 
-    if not directory.exists() or not directory.is_dir():
-        return [], False
+    dirs = [directories] if isinstance(directories, Path) else list(directories)
 
     media_extensions = {".adf", ".iso", ".lha"}
     candidates: list[Path] = []
+    seen_paths: set[Path] = set()
     truncated = False
 
-    seen_count = 0
-    for path, ext in walk_files_capped(directory, max_files):
-        seen_count += 1
-        if ext not in media_extensions:
+    for directory in dirs:
+        if not directory.exists() or not directory.is_dir():
             continue
-        try:
-            # ADF must be standard floppy size (880KB)
-            if ext == ".adf" and path.stat().st_size != 901120:
+
+        seen_count = 0
+        for path, ext in walk_files_capped(directory, max_files):
+            seen_count += 1
+            if ext not in media_extensions:
                 continue
-        except OSError:
-            continue
-        candidates.append(path)
-    if seen_count >= max_files:
-        truncated = True
+            if path in seen_paths:
+                continue
+            try:
+                # ADF must be standard floppy size (880KB)
+                if ext == ".adf" and path.stat().st_size != 901120:
+                    continue
+            except OSError:
+                continue
+            seen_paths.add(path)
+            candidates.append(path)
+        if seen_count >= max_files:
+            truncated = True
 
     identified = []
     for path in candidates:

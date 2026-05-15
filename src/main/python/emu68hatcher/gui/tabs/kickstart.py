@@ -1,15 +1,16 @@
-"""Kickstart/Workbench version + Amiga files config tab"""
+"""Kickstart/Workbench version + Amiga asset directories tab"""
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer, Signal, Slot
+from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
     QGroupBox,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -29,33 +30,16 @@ _DEFAULT_VERSION: str = KickstartVersion.V3_2_3.value
 
 
 class KickstartTab(QWidget):
-    """workbench version and ROM configuration tab"""
+    """workbench version + multi-directory asset configuration"""
 
     # signal emitted when WB version changes
     version_changed = Signal(str)
-
-    # debounce textChanged scans (skip per-keystroke worker spawn)
-    _SCAN_DEBOUNCE_MS = 300
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._rom_scan_worker = None
         self._adf_scan_worker = None
-        self._last_rom_dir = ""
-        self._last_adf_dir = ""
         self._active_scans = 0
-
-        # debounce timers for the rom/adf path edits
-        self._rom_debounce = QTimer(self)
-        self._rom_debounce.setSingleShot(True)
-        self._rom_debounce.setInterval(self._SCAN_DEBOUNCE_MS)
-        self._rom_debounce.timeout.connect(self._fire_rom_scan)
-
-        self._adf_debounce = QTimer(self)
-        self._adf_debounce.setSingleShot(True)
-        self._adf_debounce.setInterval(self._SCAN_DEBOUNCE_MS)
-        self._adf_debounce.timeout.connect(self._fire_adf_scan)
-
         self.setup_ui()
 
     def setup_ui(self):
@@ -79,156 +63,173 @@ class KickstartTab(QWidget):
 
         layout.addWidget(version_group)
 
-        #################
-        # kickstart ROM #
-        #################
-        rom_group = QGroupBox("Kickstart ROM")
-        rom_layout = QVBoxLayout(rom_group)
+        #####################
+        # asset Directories #
+        #####################
+        dir_group = QGroupBox("Asset Directories (Kickstart ROMs + Workbench ADFs)")
+        dir_layout = QVBoxLayout(dir_group)
 
-        # ROM directory path
-        rom_path_layout = QHBoxLayout()
-        rom_path_layout.addWidget(QLabel("ROM Directory:"))
-        self.rom_dir = QLineEdit()
-        self.rom_dir.setPlaceholderText("Directory containing Kickstart ROM files...")
-        self.rom_dir.textChanged.connect(lambda _t: self._rom_debounce.start())
-        rom_path_layout.addWidget(self.rom_dir)
-        self.browse_btn = QPushButton("Browse...")
-        self.browse_btn.clicked.connect(self.browse_rom_directory)
-        rom_path_layout.addWidget(self.browse_btn)
-        rom_layout.addLayout(rom_path_layout)
+        self.dir_list = QListWidget()
+        self.dir_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
+        self.dir_list.setMinimumHeight(80)
+        dir_layout.addWidget(self.dir_list)
 
-        # ROM status - boot ROM line
-        self.rom_status = QLabel("Select a directory containing ROM files")
+        btn_row = QHBoxLayout()
+        self.add_dir_btn = QPushButton("Add...")
+        self.add_dir_btn.clicked.connect(self._add_directory)
+        btn_row.addWidget(self.add_dir_btn)
+        self.remove_dir_btn = QPushButton("Remove")
+        self.remove_dir_btn.clicked.connect(self._remove_directory)
+        btn_row.addWidget(self.remove_dir_btn)
+        self.rescan_btn = QPushButton("Rescan")
+        self.rescan_btn.clicked.connect(self._fire_scans)
+        btn_row.addWidget(self.rescan_btn)
+        btn_row.addStretch()
+        dir_layout.addLayout(btn_row)
+
+        layout.addWidget(dir_group)
+
+        #################
+        # detected files #
+        #################
+        detected_group = QGroupBox("Detected Files")
+        detected_layout = QVBoxLayout(detected_group)
+
+        self.rom_status = QLabel("Add at least one directory above to scan for ROMs and ADFs")
         self.rom_status.setStyleSheet("color: gray;")
         self.rom_status.setWordWrap(True)
         self.rom_status.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        rom_layout.addWidget(self.rom_status)
+        detected_layout.addWidget(self.rom_status)
 
         # WHDLoad ROM inventory (kick*.* ROMs staged to DEVS:Kickstarts/)
         self.whdload_status = QLabel("")
         self.whdload_status.setStyleSheet("color: gray;")
         self.whdload_status.setWordWrap(True)
         self.whdload_status.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        rom_layout.addWidget(self.whdload_status)
+        detected_layout.addWidget(self.whdload_status)
 
-        layout.addWidget(rom_group)
-
-        ################################
-        # workbench Installation Media #
-        ################################
-        wb_group = QGroupBox("Workbench Installation Disks")
-        wb_layout = QVBoxLayout(wb_group)
-
-        # ADF directory path
-        adf_path_layout = QHBoxLayout()
-        adf_path_layout.addWidget(QLabel("ADF Directory:"))
-        self.adf_dir = QLineEdit()
-        self.adf_dir.setPlaceholderText("Directory containing Workbench ADF files...")
-        self.adf_dir.textChanged.connect(lambda _t: self._adf_debounce.start())
-        adf_path_layout.addWidget(self.adf_dir)
-        self.browse_adf_btn = QPushButton("Browse...")
-        self.browse_adf_btn.clicked.connect(self.browse_adf_directory)
-        adf_path_layout.addWidget(self.browse_adf_btn)
-        wb_layout.addLayout(adf_path_layout)
-
-        # ADF status - one-line summary + button for the detailed table
         adf_status_row = QHBoxLayout()
-        self.adf_status = QLabel("Select a directory containing Workbench ADF files")
+        self.adf_status = QLabel("")
         self.adf_status.setStyleSheet("color: gray;")
         self.adf_status.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         adf_status_row.addWidget(self.adf_status, 1)
         self._adf_details_btn = QPushButton("Show details…")
         self._adf_details_btn.setEnabled(False)
-        self._adf_details_btn.clicked.connect(self._show_adf_details)
+        self._adf_details_btn.clicked.connect(self._show_details)
         adf_status_row.addWidget(self._adf_details_btn)
-        wb_layout.addLayout(adf_status_row)
-        # populated by _on_adf_scan_finished so the dialog can render on demand
+        detected_layout.addLayout(adf_status_row)
+
+        # populated by the scan-finished slots so the details dialog can render on demand
+        self._rom_rows: list[tuple[str, str, str, str, str]] = []
+        self._whdload_rows: list[tuple[str, str, str]] = []
         self._adf_rows: list[tuple[str, str, str, str, bool]] = []
         self._adf_dialog_title: str = ""
 
-        layout.addWidget(wb_group)
+        layout.addWidget(detected_group)
         layout.addStretch()
 
     #####################
     # directory Methods #
     #####################
 
-    def browse_rom_directory(self):
-        path = QFileDialog.getExistingDirectory(
-            self,
-            "Select ROM Directory",
-            self.rom_dir.text() or "",
-            QFileDialog.Option.DontUseNativeDialog,
-        )
-        if path:
-            self.rom_dir.setText(path)
-            # auto-populate ADF directory if not set
-            if not self.adf_dir.text().strip():
-                self.adf_dir.setText(path)
+    def _list_dirs(self) -> list[Path]:
+        """current directory entries as Paths"""
+        return [Path(self.dir_list.item(i).text()) for i in range(self.dir_list.count())]
 
-    def browse_adf_directory(self):
+    def _set_dirs(self, dirs: list[Path | str]):
+        """replace the list, ignoring duplicates and non-string-equal entries"""
+        self.dir_list.clear()
+        seen: set[str] = set()
+        for d in dirs:
+            s = str(d)
+            if s in seen:
+                continue
+            seen.add(s)
+            self.dir_list.addItem(QListWidgetItem(s))
+
+    def _add_directory(self):
         path = QFileDialog.getExistingDirectory(
             self,
-            "Select Workbench ADF Directory",
-            self.adf_dir.text() or self.rom_dir.text() or "",
+            "Add directory containing ROMs / ADFs",
+            "",
             QFileDialog.Option.DontUseNativeDialog,
         )
-        if path:
-            self.adf_dir.setText(path)
+        if not path:
+            return
+        # dedupe against existing entries
+        existing = {self.dir_list.item(i).text() for i in range(self.dir_list.count())}
+        if path in existing:
+            return
+        self.dir_list.addItem(QListWidgetItem(path))
+        self._fire_scans()
+
+    def _remove_directory(self):
+        row = self.dir_list.currentRow()
+        if row < 0:
+            return
+        self.dir_list.takeItem(row)
+        self._fire_scans()
 
     def _set_scanning(self, started: bool):
-        """track active scans and disable version combo while any scan is running"""
+        """track active scans and disable controls while any scan is running"""
         if started:
             self._active_scans += 1
         else:
             self._active_scans = max(0, self._active_scans - 1)
-        self.version_combo.setEnabled(self._active_scans == 0)
+        scanning = self._active_scans > 0
+        self.version_combo.setEnabled(not scanning)
+        self.add_dir_btn.setEnabled(not scanning)
+        self.remove_dir_btn.setEnabled(not scanning)
+        self.rescan_btn.setEnabled(not scanning)
 
     def on_version_changed(self):
         """re-scan when version selection changes"""
         self.version_changed.emit(self.get_selected_version())
-        if self.rom_dir.text():
-            self._last_rom_dir = ""  # force rescan
-            self._fire_rom_scan()
-        if self.adf_dir.text():
-            self._last_adf_dir = ""
-            self._fire_adf_scan()
+        self._fire_scans()
 
-    def _fire_rom_scan(self):
-        """debounce timer expired - validate the path and start a worker"""
-        path = self.rom_dir.text().strip()
-        if not path:
-            self.rom_status.setText("Select a directory containing ROM files")
+    def _fire_scans(self):
+        """kick off ROM + ADF scans across the current directory list"""
+        dirs = [d for d in self._list_dirs() if d.exists() and d.is_dir()]
+        if not dirs:
+            self.rom_status.setText("Add at least one directory above to scan for ROMs and ADFs")
             self.rom_status.setStyleSheet("color: gray;")
-            return
-        if path == self._last_rom_dir:
-            return
-        self._last_rom_dir = path
-        p = Path(path).expanduser().resolve()
-        if not p.exists():
-            self.rom_status.setText("Directory not found")
-            self.rom_status.setStyleSheet("color: red;")
-            return
-        if not p.is_dir():
-            self.rom_status.setText("Path is not a directory")
-            self.rom_status.setStyleSheet("color: red;")
+            self.whdload_status.setText("")
+            self.adf_status.setText("")
+            self.adf_status.setStyleSheet("color: gray;")
+            self._rom_rows = []
+            self._whdload_rows = []
+            self._adf_rows = []
+            self._refresh_details_button()
             return
 
-        # disconnect any in-flight worker's signal; let it drain and gc on its own
+        # cancel any in-flight workers
         if self._rom_scan_worker and self._rom_scan_worker.isRunning():
             try:
                 self._rom_scan_worker.scan_finished.disconnect(self._on_rom_scan_finished)
             except (TypeError, RuntimeError):
                 pass
             self._set_scanning(False)
+        if self._adf_scan_worker and self._adf_scan_worker.isRunning():
+            try:
+                self._adf_scan_worker.scan_finished.disconnect(self._on_adf_scan_finished)
+            except (TypeError, RuntimeError):
+                pass
+            self._set_scanning(False)
 
         self.rom_status.setText("Scanning for ROMs...")
         self.rom_status.setStyleSheet("color: blue;")
-        self._set_scanning(True)
+        self.adf_status.setText("Scanning for ADFs...")
+        self.adf_status.setStyleSheet("color: blue;")
 
-        self._rom_scan_worker = ROMScanWorker(p, self)
+        self._set_scanning(True)
+        self._rom_scan_worker = ROMScanWorker(dirs, self)
         self._rom_scan_worker.scan_finished.connect(self._on_rom_scan_finished)
         self._rom_scan_worker.start()
+
+        self._set_scanning(True)
+        self._adf_scan_worker = ADFScanWorker(dirs, self)
+        self._adf_scan_worker.scan_finished.connect(self._on_adf_scan_finished)
+        self._adf_scan_worker.start()
 
     @Slot(list, bool)
     def _on_rom_scan_finished(self, found_roms: list, truncated: bool = False):
@@ -236,35 +237,32 @@ class KickstartTab(QWidget):
         self._set_scanning(False)
         from emu68hatcher.data.rom_detection import find_kickstart_for_version
 
-        # always update teh WHDLoad inventory, regardless of boot-ROM outcome
+        version = self.get_selected_version()
+        dirs = [d for d in self._list_dirs() if d.exists() and d.is_dir()]
+        boot_path = find_kickstart_for_version(dirs, version) if found_roms else None
+
+        self._rom_rows = self._build_rom_rows(found_roms, version, boot_path)
         self._update_whdload_status(found_roms)
+        self._refresh_details_button()
 
         if not found_roms:
             if truncated:
                 self.rom_status.setText(
-                    "No ROMs found (scan stopped - too many files, pick a smaller folder)"
+                    "No ROMs found (scan stopped - too many files, narrow the directories)"
                 )
                 self.rom_status.setStyleSheet("color: red;")
             else:
-                self.rom_status.setText("No valid Kickstart ROMs found in this directory")
+                self.rom_status.setText(
+                    "No valid Kickstart ROMs found in the configured directories"
+                )
                 self.rom_status.setStyleSheet("color: orange;")
             return
 
-        # get selected version
-        version = self.get_selected_version()
-
-        # get directory from last scanned path
-        p = Path(self._last_rom_dir).expanduser().resolve()
-
-        # check if a ROM exists for the selected version
-        rom_path = find_kickstart_for_version(p, version)
-
-        if rom_path:
-            # find the info for this ROM
+        if boot_path:
             for rom in found_roms:
-                if rom["path"] == rom_path:
+                if rom["path"] == boot_path:
                     self.rom_status.setText(
-                        f"Boot ROM: {rom_path.name} - Kickstart {rom['version']} ({rom['model']})"
+                        f"Boot ROM: {boot_path.name} - Kickstart {rom['version']} ({rom['model']})"
                     )
                     self.rom_status.setStyleSheet("color: green;")
                     return
@@ -282,28 +280,54 @@ class KickstartTab(QWidget):
         self.rom_status.setText(f"No {version} ROM. Available: {', '.join(versions)}")
         self.rom_status.setStyleSheet("color: orange;")
 
+    @staticmethod
+    def _build_rom_rows(found_roms: list, version: str, boot_path) -> list[tuple]:
+        """(status, filename, version, model, path) per ROM"""
+        rows: list[tuple] = []
+        for rom in found_roms:
+            path = rom["path"]
+            if rom.get("excluded"):
+                status = "excluded"
+            elif boot_path is not None and path == boot_path:
+                status = "boot"
+            elif rom["version"] == version:
+                status = "available"
+            else:
+                status = "other_version"
+            rows.append((status, path.name, rom["version"], rom.get("model", ""), str(path)))
+        return rows
+
     def _update_whdload_status(self, found_roms: list) -> None:
         """show which kick*.* ROMs will be staged for WHDLoad under DEVS:Kickstarts/"""
         from emu68hatcher.data.rom_detection import WHDLOAD_ROM_NAMES
 
-        found = sorted({r["whdload_name"] for r in found_roms if r.get("whdload_name")})
-        missing = [n for n in WHDLOAD_ROM_NAMES if n not in found]
+        # path per whdload name; first occurrence wins (matches find_whdload_kickstarts)
+        whdload_path: dict[str, str] = {}
+        for rom in found_roms:
+            name = rom.get("whdload_name")
+            if not name or rom.get("excluded"):
+                continue
+            whdload_path.setdefault(name, str(rom["path"]))
+
+        self._whdload_rows = [
+            (
+                "found" if name in whdload_path else "missing",
+                name,
+                whdload_path.get(name, ""),
+            )
+            for name in WHDLOAD_ROM_NAMES
+        ]
+
+        found = sorted(whdload_path.keys())
+        missing = [n for n in WHDLOAD_ROM_NAMES if n not in whdload_path]
 
         if not found:
-            self.whdload_status.setText(
-                "WHDLoad ROMs → DEVS:Kickstarts/ : none found\n"
-                f"  (looking for: {', '.join(WHDLOAD_ROM_NAMES)})"
-            )
+            self.whdload_status.setText("WHDLoad ROMs → DEVS:Kickstarts/ : none found")
             self.whdload_status.setStyleSheet("color: gray;")
             return
 
-        lines = [
-            f"WHDLoad ROMs → DEVS:Kickstarts/ ({len(found)}/{len(WHDLOAD_ROM_NAMES)} will be copied):",
-            f"  {', '.join(found)}",
-        ]
-        if missing:
-            lines.append(f"  missing: {', '.join(missing)}")
-        self.whdload_status.setText("\n".join(lines))
+        line = f"WHDLoad ROMs → DEVS:Kickstarts/ ({len(found)}/{len(WHDLOAD_ROM_NAMES)} will be copied)"
+        self.whdload_status.setText(line)
         self.whdload_status.setStyleSheet("color: green;" if not missing else "color: gray;")
 
     def get_selected_version(self) -> str:
@@ -317,41 +341,6 @@ class KickstartTab(QWidget):
     # workbench ADF Methods #
     #########################
 
-    def _fire_adf_scan(self):
-        """debounce timer expired - validate the path and start a worker"""
-        path = self.adf_dir.text().strip()
-        if not path:
-            self.adf_status.setText("Select a directory containing Workbench ADF files")
-            self.adf_status.setStyleSheet("color: gray;")
-            return
-        if path == self._last_adf_dir:
-            return
-        self._last_adf_dir = path
-        p = Path(path).expanduser().resolve()
-        if not p.exists():
-            self.adf_status.setText("Directory not found")
-            self.adf_status.setStyleSheet("color: red;")
-            return
-        if not p.is_dir():
-            self.adf_status.setText("Path is not a directory")
-            self.adf_status.setStyleSheet("color: red;")
-            return
-
-        if self._adf_scan_worker and self._adf_scan_worker.isRunning():
-            try:
-                self._adf_scan_worker.scan_finished.disconnect(self._on_adf_scan_finished)
-            except (TypeError, RuntimeError):
-                pass
-            self._set_scanning(False)
-
-        self.adf_status.setText("Scanning for ADFs...")
-        self.adf_status.setStyleSheet("color: blue;")
-        self._set_scanning(True)
-
-        self._adf_scan_worker = ADFScanWorker(p, self)
-        self._adf_scan_worker.scan_finished.connect(self._on_adf_scan_finished)
-        self._adf_scan_worker.start()
-
     @Slot(list, bool)
     def _on_adf_scan_finished(self, found_media: list, truncated: bool = False):
         """handle ADF scan results - build the per-ADF table and a summary."""
@@ -359,18 +348,20 @@ class KickstartTab(QWidget):
         from emu68hatcher.data.install_media import get_required_install_media
         from emu68hatcher.data.package_loader import get_adf_rules_for_version
 
-        # disable details button until data arrives
+        # reset the ADF tab data; button stays enabled if other tabs have content
         self._adf_rows = []
-        self._adf_details_btn.setEnabled(False)
+        self._refresh_details_button()
 
         if not found_media:
             if truncated:
                 self.adf_status.setText(
-                    "No ADFs found (scan stopped - too many files, pick a smaller folder)"
+                    "No ADFs found (scan stopped - too many files, narrow the directories)"
                 )
                 self.adf_status.setStyleSheet("color: red;")
             else:
-                self.adf_status.setText("No recognized Workbench ADFs found in this directory")
+                self.adf_status.setText(
+                    "No recognized Workbench ADFs found in the configured directories"
+                )
                 self.adf_status.setStyleSheet("color: orange;")
             return
 
@@ -408,8 +399,8 @@ class KickstartTab(QWidget):
                 friendly, version = self._infer_adf_labels(adf_name)
             rows.append((status, adf_name, friendly, version, in_required))
         self._adf_rows = rows
-        self._adf_dialog_title = f"ADFs for Workbench {wb_version}"
-        self._adf_details_btn.setEnabled(True)
+        self._adf_dialog_title = f"Detected files for Workbench {wb_version}"
+        self._refresh_details_button()
 
         # summary line
         summary = (
@@ -422,13 +413,25 @@ class KickstartTab(QWidget):
         else:
             self.adf_status.setStyleSheet("color: green;")
 
-    def _show_adf_details(self):
-        """open the details dialog with the per-ADF breakdown."""
-        if not self._adf_rows:
-            return
-        from emu68hatcher.gui.dialogs import ADFDetailsDialog
+    def _refresh_details_button(self):
+        has_any = bool(self._rom_rows or self._whdload_rows or self._adf_rows)
+        self._adf_details_btn.setEnabled(has_any)
 
-        dialog = ADFDetailsDialog(self._adf_rows, self._adf_dialog_title, self)
+    def _show_details(self):
+        if not (self._rom_rows or self._whdload_rows or self._adf_rows):
+            return
+        from emu68hatcher.gui.dialogs import DetectedFilesDialog
+
+        title = (
+            self._adf_dialog_title or f"Detected files for Workbench {self.get_selected_version()}"
+        )
+        dialog = DetectedFilesDialog(
+            title=title,
+            rom_rows=self._rom_rows,
+            whdload_rows=self._whdload_rows,
+            adf_rows=self._adf_rows,
+            parent=self,
+        )
         dialog.exec()
 
     @staticmethod
@@ -449,12 +452,18 @@ class KickstartTab(QWidget):
     def get_config(self) -> dict:
         return {
             "version": self.get_selected_version(),
-            "rom_directory": self.rom_dir.text(),
             "wb_version": self.get_selected_version(),
-            "adf_directory": self.adf_dir.text(),
+            "asset_directories": [
+                self.dir_list.item(i).text() for i in range(self.dir_list.count())
+            ],
         }
 
-    def set_config(self, ks_config: KickstartConfig, media_config: InstallMediaConfig):
+    def set_config(
+        self,
+        ks_config: KickstartConfig,
+        media_config: InstallMediaConfig,
+        asset_directories: list[Path] | None = None,
+    ):
         """populate the tab from config objects"""
         # install_media drives the Workbench dropdown; 3.9 maps to 3.1 (same ROM, hidden in UI)
         version_to_set = media_config.version.value
@@ -463,10 +472,15 @@ class KickstartTab(QWidget):
         idx = _SELECTABLE_VERSIONS.index(version_to_set)
         self.version_combo.setCurrentIndex(idx)
 
-        # set ROM directory
-        if ks_config.rom_directory:
-            self.rom_dir.setText(str(ks_config.rom_directory))
-
-        # set ADF directory
-        if media_config.directory:
-            self.adf_dir.setText(str(media_config.directory))
+        # asset_directories wins; fall back to merging legacy single-dir fields for round-trips
+        dirs: list[Path | str] = []
+        if asset_directories:
+            dirs.extend(asset_directories)
+        else:
+            if ks_config.rom_directory:
+                dirs.append(ks_config.rom_directory)
+            if media_config.directory and media_config.directory != ks_config.rom_directory:
+                dirs.append(media_config.directory)
+        self._set_dirs(dirs)
+        if dirs:
+            self._fire_scans()

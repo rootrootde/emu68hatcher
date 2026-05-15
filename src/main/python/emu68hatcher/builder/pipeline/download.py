@@ -99,12 +99,7 @@ def _extract_ffs_handler_if_needed(workflow: BuildWorkflow) -> None:
 
     # filename fallback (sorted for determinism across filesystems / repeated runs)
     if install_adf is None:
-        scan_dirs: list[Path] = []
-        if workflow.config.install_media and workflow.config.install_media.directory:
-            scan_dirs.append(Path(workflow.config.install_media.directory))
-        if workflow.config.kickstart.rom_directory:
-            scan_dirs.append(Path(workflow.config.kickstart.rom_directory))
-        for d in scan_dirs:
+        for d in (Path(p) for p in workflow.config.asset_directories):
             if not d.exists():
                 continue
             candidates = sorted(p for p in d.rglob("*.adf") if p.name.lower().startswith("install"))
@@ -113,23 +108,11 @@ def _extract_ffs_handler_if_needed(workflow: BuildWorkflow) -> None:
                 break
 
     if install_adf is None or not install_adf.exists():
-        checked = (
-            ", ".join(
-                str(d)
-                for d in (
-                    workflow.config.install_media.directory
-                    if workflow.config.install_media
-                    else None,
-                    workflow.config.kickstart.rom_directory,
-                )
-                if d
-            )
-            or "(no directories configured)"
-        )
+        dirs_str = ", ".join(str(d) for d in workflow.config.asset_directories) or "(none)"
         raise BuildError(
             "FFS partition selected but no Install ADF found to extract "
-            f"L/FastFileSystem from. Checked: {checked}. "
-            "Place an Install3.x.adf in the ADF or ROM directory."
+            f"L/FastFileSystem from. Asset directories: {dirs_str}. "
+            "Place an Install3.x.adf in one of them."
         )
 
     hst_imager = find_hst_imager()

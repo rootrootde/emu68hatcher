@@ -60,12 +60,16 @@ def stage_whdload_kickstarts(workflow: BuildWorkflow, boot_staging: Path) -> Non
 
     from emu68hatcher.data.rom_detection import WHDLOAD_ROM_NAMES, find_whdload_kickstarts
 
-    rom_dir = workflow.config.kickstart.rom_directory
-    if not rom_dir or not Path(rom_dir).exists():
-        workflow.logger.info("No ROM directory configured - skipping WHDLoad Kickstart staging")
+    existing_dirs = [Path(d) for d in workflow.config.asset_directories if Path(d).exists()]
+    if not existing_dirs:
+        workflow.logger.info("No asset directories configured - skipping WHDLoad Kickstart staging")
         return
 
-    matched = find_whdload_kickstarts(Path(rom_dir))
+    matched: dict[str, Path] = {}
+    for d in existing_dirs:
+        # earliest dir wins on dupes - matches find_whdload_kickstarts single-dir behaviour
+        for name, src in find_whdload_kickstarts(d).items():
+            matched.setdefault(name, src)
 
     # include the boot ROM
     boot_info = workflow.state.resolved_rom_info or {}

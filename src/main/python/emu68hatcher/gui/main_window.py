@@ -120,7 +120,11 @@ class MainWindow(QMainWindow):
             try:
                 self.config = load_config(Path(path))
                 # populate all tabs from loaded config
-                self.kickstart_tab.set_config(self.config.kickstart, self.config.install_media)
+                self.kickstart_tab.set_config(
+                    self.config.kickstart,
+                    self.config.install_media,
+                    asset_directories=list(self.config.asset_directories),
+                )
                 self.emu68_tab.set_config(self.config.display)
                 self.emu68_tab.set_emu68_version(self.config.emu68_version)
                 self.packages_tab.set_kickstart_version(self.config.kickstart.version.value)
@@ -167,19 +171,20 @@ class MainWindow(QMainWindow):
         ks = self.kickstart_tab.get_config()
         logger.debug(f"Kickstart tab config: {ks}")
         self.config.kickstart.version = KickstartVersion(ks["version"])
-        self.config.kickstart.rom_directory = (
-            Path(ks["rom_directory"]) if ks["rom_directory"] else None
-        )
+        # legacy single-dir fields go away in favour of asset_directories
+        self.config.kickstart.rom_directory = None
 
         # str-enum constructs from the raw version; fall back to 3.1 on unknown
         try:
             self.config.install_media.version = KickstartVersion(ks.get("wb_version", "3.1"))
         except ValueError:
             self.config.install_media.version = KickstartVersion.V3_1
-        adf_dir = ks.get("adf_directory", "")
-        logger.debug(f"ADF directory from GUI: '{adf_dir}' (truthy={bool(adf_dir)})")
-        self.config.install_media.directory = Path(adf_dir) if adf_dir else None
-        logger.debug(f"Set install_media.directory to: {self.config.install_media.directory}")
+        self.config.install_media.directory = None
+
+        # asset_directories is the single source of truth - scanned for both ROMs and ADFs
+        asset_dirs = ks.get("asset_directories", []) or []
+        self.config.asset_directories = [Path(p) for p in asset_dirs if str(p).strip()]
+        logger.debug(f"Asset directories: {self.config.asset_directories}")
 
         disp = self.emu68_tab.get_config()
         logger.debug(f"Emu68 tab returned: {disp}")
@@ -226,28 +231,32 @@ class MainWindow(QMainWindow):
         self.collect_config()
 
         # validation
-        if not self.config.kickstart.rom_directory:
+        if not self.config.asset_directories:
             QMessageBox.warning(
                 self,
-                "Missing ROM Directory",
-                "Please select a directory containing Kickstart ROM files.",
+                "Missing Asset Directories",
+                "Add at least one directory containing Kickstart ROMs and Workbench ADFs.",
             )
             return
 
-        rom_dir = Path(self.config.kickstart.rom_directory)
-        if not rom_dir.exists():
-            QMessageBox.warning(self, "Directory Not Found", f"ROM directory not found:\n{rom_dir}")
+        existing_dirs = [Path(d) for d in self.config.asset_directories if Path(d).exists()]
+        if not existing_dirs:
+            missing = "\n".join(str(d) for d in self.config.asset_directories)
+            QMessageBox.warning(
+                self, "Directories Not Found", f"None of the asset directories exist:\n{missing}"
+            )
             return
 
-        # check if matching ROM exist
+        # check if matching ROM exists across the configured dirs
         from emu68hatcher.data.rom_detection import find_kickstart_for_version
 
-        rom_path = find_kickstart_for_version(rom_dir, self.config.kickstart.version.value)
+        rom_path = find_kickstart_for_version(existing_dirs, self.config.kickstart.version.value)
         if not rom_path:
+            dirs_str = "\n  ".join(str(d) for d in existing_dirs)
             QMessageBox.warning(
                 self,
                 "ROM Not Found",
-                f"No Kickstart {self.config.kickstart.version.value} ROM found in:\n{rom_dir}",
+                f"No Kickstart {self.config.kickstart.version.value} ROM found in:\n  {dirs_str}",
             )
             return
 
