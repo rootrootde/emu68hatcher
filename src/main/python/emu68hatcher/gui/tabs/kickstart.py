@@ -90,49 +90,42 @@ class KickstartTab(QWidget):
         layout.addWidget(dir_group)
 
         #################
-        # kickstart ROM #
+        # detected files #
         #################
-        rom_group = QGroupBox("Kickstart ROM")
-        rom_layout = QVBoxLayout(rom_group)
+        detected_group = QGroupBox("Detected Files")
+        detected_layout = QVBoxLayout(detected_group)
 
-        # ROM status - boot ROM line
-        self.rom_status = QLabel("Add at least one directory containing ROM files")
+        self.rom_status = QLabel("Add at least one directory above to scan for ROMs and ADFs")
         self.rom_status.setStyleSheet("color: gray;")
         self.rom_status.setWordWrap(True)
         self.rom_status.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        rom_layout.addWidget(self.rom_status)
+        detected_layout.addWidget(self.rom_status)
 
         # WHDLoad ROM inventory (kick*.* ROMs staged to DEVS:Kickstarts/)
         self.whdload_status = QLabel("")
         self.whdload_status.setStyleSheet("color: gray;")
         self.whdload_status.setWordWrap(True)
         self.whdload_status.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        rom_layout.addWidget(self.whdload_status)
+        detected_layout.addWidget(self.whdload_status)
 
-        layout.addWidget(rom_group)
-
-        ################################
-        # workbench Installation Media #
-        ################################
-        wb_group = QGroupBox("Workbench Installation Disks")
-        wb_layout = QVBoxLayout(wb_group)
-
-        # ADF status - one-line summary + button for the detailed table
         adf_status_row = QHBoxLayout()
-        self.adf_status = QLabel("Add at least one directory containing Workbench ADF files")
+        self.adf_status = QLabel("")
         self.adf_status.setStyleSheet("color: gray;")
         self.adf_status.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         adf_status_row.addWidget(self.adf_status, 1)
         self._adf_details_btn = QPushButton("Show details…")
         self._adf_details_btn.setEnabled(False)
-        self._adf_details_btn.clicked.connect(self._show_adf_details)
+        self._adf_details_btn.clicked.connect(self._show_details)
         adf_status_row.addWidget(self._adf_details_btn)
-        wb_layout.addLayout(adf_status_row)
-        # populated by _on_adf_scan_finished so the dialog can render on demand
+        detected_layout.addLayout(adf_status_row)
+
+        # populated by the scan-finished slots so the details dialog can render on demand
+        self._rom_rows: list[tuple[str, str, str, str, str]] = []
+        self._whdload_rows: list[tuple[str, str, str]] = []
         self._adf_rows: list[tuple[str, str, str, str, bool]] = []
         self._adf_dialog_title: str = ""
 
-        layout.addWidget(wb_group)
+        layout.addWidget(detected_group)
         layout.addStretch()
 
     #####################
@@ -198,13 +191,15 @@ class KickstartTab(QWidget):
         """kick off ROM + ADF scans across the current directory list"""
         dirs = [d for d in self._list_dirs() if d.exists() and d.is_dir()]
         if not dirs:
-            self.rom_status.setText("Add at least one directory containing ROM files")
+            self.rom_status.setText("Add at least one directory above to scan for ROMs and ADFs")
             self.rom_status.setStyleSheet("color: gray;")
             self.whdload_status.setText("")
-            self.adf_status.setText("Add at least one directory containing Workbench ADF files")
+            self.adf_status.setText("")
             self.adf_status.setStyleSheet("color: gray;")
+            self._rom_rows = []
+            self._whdload_rows = []
             self._adf_rows = []
-            self._adf_details_btn.setEnabled(False)
+            self._refresh_details_button()
             return
 
         # cancel any in-flight workers
@@ -242,8 +237,13 @@ class KickstartTab(QWidget):
         self._set_scanning(False)
         from emu68hatcher.data.rom_detection import find_kickstart_for_version
 
-        # always update the WHDLoad inventory, regardless of boot-ROM outcome
+        version = self.get_selected_version()
+        dirs = [d for d in self._list_dirs() if d.exists() and d.is_dir()]
+        boot_path = find_kickstart_for_version(dirs, version) if found_roms else None
+
+        self._rom_rows = self._build_rom_rows(found_roms, version, boot_path)
         self._update_whdload_status(found_roms)
+        self._refresh_details_button()
 
         if not found_roms:
             if truncated:
@@ -258,15 +258,11 @@ class KickstartTab(QWidget):
                 self.rom_status.setStyleSheet("color: orange;")
             return
 
-        version = self.get_selected_version()
-        dirs = [d for d in self._list_dirs() if d.exists() and d.is_dir()]
-        rom_path = find_kickstart_for_version(dirs, version)
-
-        if rom_path:
+        if boot_path:
             for rom in found_roms:
-                if rom["path"] == rom_path:
+                if rom["path"] == boot_path:
                     self.rom_status.setText(
-                        f"Boot ROM: {rom_path.name} - Kickstart {rom['version']} ({rom['model']})"
+                        f"Boot ROM: {boot_path.name} - Kickstart {rom['version']} ({rom['model']})"
                     )
                     self.rom_status.setStyleSheet("color: green;")
                     return
@@ -284,28 +280,54 @@ class KickstartTab(QWidget):
         self.rom_status.setText(f"No {version} ROM. Available: {', '.join(versions)}")
         self.rom_status.setStyleSheet("color: orange;")
 
+    @staticmethod
+    def _build_rom_rows(found_roms: list, version: str, boot_path) -> list[tuple]:
+        """(status, filename, version, model, path) per ROM"""
+        rows: list[tuple] = []
+        for rom in found_roms:
+            path = rom["path"]
+            if rom.get("excluded"):
+                status = "excluded"
+            elif boot_path is not None and path == boot_path:
+                status = "boot"
+            elif rom["version"] == version:
+                status = "available"
+            else:
+                status = "other_version"
+            rows.append((status, path.name, rom["version"], rom.get("model", ""), str(path)))
+        return rows
+
     def _update_whdload_status(self, found_roms: list) -> None:
         """show which kick*.* ROMs will be staged for WHDLoad under DEVS:Kickstarts/"""
         from emu68hatcher.data.rom_detection import WHDLOAD_ROM_NAMES
 
-        found = sorted({r["whdload_name"] for r in found_roms if r.get("whdload_name")})
-        missing = [n for n in WHDLOAD_ROM_NAMES if n not in found]
+        # path per whdload name; first occurrence wins (matches find_whdload_kickstarts)
+        whdload_path: dict[str, str] = {}
+        for rom in found_roms:
+            name = rom.get("whdload_name")
+            if not name or rom.get("excluded"):
+                continue
+            whdload_path.setdefault(name, str(rom["path"]))
+
+        self._whdload_rows = [
+            (
+                "found" if name in whdload_path else "missing",
+                name,
+                whdload_path.get(name, ""),
+            )
+            for name in WHDLOAD_ROM_NAMES
+        ]
+
+        found = sorted(whdload_path.keys())
+        missing = [n for n in WHDLOAD_ROM_NAMES if n not in whdload_path]
 
         if not found:
-            self.whdload_status.setText(
-                "WHDLoad ROMs → DEVS:Kickstarts/ : none found\n"
-                f"  (looking for: {', '.join(WHDLOAD_ROM_NAMES)})"
-            )
+            self.whdload_status.setText("WHDLoad ROMs → DEVS:Kickstarts/ : none found")
             self.whdload_status.setStyleSheet("color: gray;")
             return
 
-        lines = [
-            f"WHDLoad ROMs → DEVS:Kickstarts/ ({len(found)}/{len(WHDLOAD_ROM_NAMES)} will be copied):",
-            f"  {', '.join(found)}",
-        ]
-        if missing:
-            lines.append(f"  missing: {', '.join(missing)}")
-        self.whdload_status.setText("\n".join(lines))
+        line = f"WHDLoad ROMs → DEVS:Kickstarts/ ({len(found)}/{len(WHDLOAD_ROM_NAMES)} will be copied)"
+        self.whdload_status.setText(line)
         self.whdload_status.setStyleSheet("color: green;" if not missing else "color: gray;")
 
     def get_selected_version(self) -> str:
@@ -326,9 +348,9 @@ class KickstartTab(QWidget):
         from emu68hatcher.data.install_media import get_required_install_media
         from emu68hatcher.data.package_loader import get_adf_rules_for_version
 
-        # disable details button until data arrives
+        # reset the ADF tab data; button stays enabled if other tabs have content
         self._adf_rows = []
-        self._adf_details_btn.setEnabled(False)
+        self._refresh_details_button()
 
         if not found_media:
             if truncated:
@@ -377,8 +399,8 @@ class KickstartTab(QWidget):
                 friendly, version = self._infer_adf_labels(adf_name)
             rows.append((status, adf_name, friendly, version, in_required))
         self._adf_rows = rows
-        self._adf_dialog_title = f"ADFs for Workbench {wb_version}"
-        self._adf_details_btn.setEnabled(True)
+        self._adf_dialog_title = f"Detected files for Workbench {wb_version}"
+        self._refresh_details_button()
 
         # summary line
         summary = (
@@ -391,13 +413,25 @@ class KickstartTab(QWidget):
         else:
             self.adf_status.setStyleSheet("color: green;")
 
-    def _show_adf_details(self):
-        """open the details dialog with the per-ADF breakdown."""
-        if not self._adf_rows:
-            return
-        from emu68hatcher.gui.dialogs import ADFDetailsDialog
+    def _refresh_details_button(self):
+        has_any = bool(self._rom_rows or self._whdload_rows or self._adf_rows)
+        self._adf_details_btn.setEnabled(has_any)
 
-        dialog = ADFDetailsDialog(self._adf_rows, self._adf_dialog_title, self)
+    def _show_details(self):
+        if not (self._rom_rows or self._whdload_rows or self._adf_rows):
+            return
+        from emu68hatcher.gui.dialogs import DetectedFilesDialog
+
+        title = (
+            self._adf_dialog_title or f"Detected files for Workbench {self.get_selected_version()}"
+        )
+        dialog = DetectedFilesDialog(
+            title=title,
+            rom_rows=self._rom_rows,
+            whdload_rows=self._whdload_rows,
+            adf_rows=self._adf_rows,
+            parent=self,
+        )
         dialog.exec()
 
     @staticmethod
