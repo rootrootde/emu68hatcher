@@ -168,8 +168,14 @@ def _copy_staged_files_to_image(workflow: BuildWorkflow) -> None:
         workflow.logger.info(f"finalize: {device_name} dest: {dest!r}")
         workflow.logger.info(f"Running: {command.to_string()}")
 
+        # observed throughput is ~4 MB/s; floor at 1 MB/s keeps a comfortable margin for
+        # multi-GB extras dirs without making small partitions wait the same wall time
+        copy_timeout = max(300.0, total_bytes / 1_048_576)
+
         start_time = time.time()
-        result = runner.run_command(command, elevation=workflow.state.elevation)
+        result = runner.run_command(
+            command, timeout=copy_timeout, elevation=workflow.state.elevation
+        )
         duration_ms = int((time.time() - start_time) * 1000)
 
         if result.success:
