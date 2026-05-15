@@ -30,6 +30,7 @@ class ElevationToken:
     os: OperatingSystem
     method: str  # "pkexec" | "sudo" | "runas" | "runas-helper" | "osascript-helper" | "noop"
     helper: object | None = None  # ElevatedHelper when method ends with "-helper"
+    askpass_path: Path | None = None  # kept alive for sudo timestamp refresh on long builds
 
 
 def acquire_elevation() -> ElevationToken:
@@ -115,6 +116,27 @@ def _wrap_sudo(cmd: list[str]) -> list[str]:
 _DEVICE_RE = re.compile(r"^(/dev/(?:r?disk|sd|mmcblk)\d+)")
 
 
+def _refresh_sudo_timestamp(token: ElevationToken) -> None:
+    """no-op when sudo's cache is still warm; long ops blow past the 5-min macos window
+    and the next `sudo -n` fails, so prime the timestamp via askpass before each call."""
+    if token.method != "sudo" or token.askpass_path is None:
+        return
+    env = os.environ.copy()
+    env["SUDO_ASKPASS"] = str(token.askpass_path)
+    try:
+        subprocess.run(
+            ["sudo", "-A", "-v"],
+            check=True,
+            env=env,
+            timeout=300,
+            capture_output=True,
+            text=True,
+        )
+    except (subprocess.CalledProcessError, subprocess.SubprocessError, OSError) as e:
+        # refresh failed -> let the wrapped sudo -n surface its own clearer error
+        logger.warning(f"sudo timestamp refresh failed: {e}")
+
+
 def run_elevated(
     cmd: list[str],
     token: ElevationToken | None,
@@ -130,6 +152,8 @@ def run_elevated(
     """run cmd elevated; *-helper methods stream stdout/stderr via on_line, else plain subprocess.run"""
     if token is not None and token.method.endswith("-helper") and token.helper is not None:
         return token.helper.run(cmd, timeout=timeout, cancel_check=cancel_check, on_line=on_line)
+    if token is not None:
+        _refresh_sudo_timestamp(token)
     wrapped = wrap_for_elevation(cmd, token)
     # noop/None path inherits this directly; wrapped paths re-set it inside the elevated shell
     result = subprocess.run(
@@ -209,7 +233,7 @@ def _acquire_macos() -> ElevationToken:
             raise ElevationDenied(
                 f"admin prompt cancelled or denied: {e.stderr or e.stdout or e}"
             ) from e
-        return ElevationToken(os=OperatingSystem.MACOS, method="sudo")
+        return ElevationToken(os=OperatingSystem.MACOS, method="sudo", askpass_path=askpass)
 
     from emu68hatcher.builder.host.elevated_helper import ElevatedHelper
 
@@ -282,7 +306,7 @@ def _acquire_linux() -> ElevationToken:
                 capture_output=True,
                 text=True,
             )
-            return ElevationToken(os=OperatingSystem.LINUX, method="sudo")
+            return ElevationToken(os=OperatingSystem.LINUX, method="sudo", askpass_path=askpass)
         except subprocess.CalledProcessError as e:
             logger.info(f"sudo -A rejected ({e.returncode}); trying pkexec")
         except (OSError, subprocess.SubprocessError) as e:
