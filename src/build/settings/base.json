@@ -24,6 +24,7 @@
         "--collect-data", "emu68hatcher",
         "--collect-data", "certifi",
         "--collect-submodules", "emu68hatcher",
-        "--collect-submodules", "rich"
+        "--collect-submodules", "rich",
+        "--copy-metadata", "emu68hatcher"
     ]
 }
