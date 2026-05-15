@@ -27,6 +27,7 @@ class BuildStage(str, Enum):
     INSTALL_WORKBENCH = "install_workbench"
     INSTALL_PACKAGES = "install_packages"
     CONFIGURE = "configure"
+    INSTALL_EXTRAS = "install_extras"
     FINALIZE = "finalize"
     FLASH = "flash"
     COMPLETE = "complete"
@@ -266,6 +267,7 @@ class BuildWorkflow:
             stage_extract,
             stage_finalize,
             stage_flash,
+            stage_install_extras,
             stage_install_packages,
             stage_install_workbench,
             stage_setup_workspace,
@@ -281,6 +283,7 @@ class BuildWorkflow:
             (stage_install_workbench, BuildStage.INSTALL_WORKBENCH),
             (stage_install_packages, BuildStage.INSTALL_PACKAGES),
             (stage_configure, BuildStage.CONFIGURE),
+            (stage_install_extras, BuildStage.INSTALL_EXTRAS),
             (stage_finalize, BuildStage.FINALIZE),
             (stage_flash, BuildStage.FLASH),
         ]

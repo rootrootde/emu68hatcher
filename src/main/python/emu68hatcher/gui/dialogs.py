@@ -106,6 +106,7 @@ class BuildProgressDialog(QDialog):
         "install_workbench": "Installing Workbench",
         "install_packages": "Installing Packages",
         "configure": "Configuring",
+        "install_extras": "Mirroring Extras",
         "finalize": "Finalizing",
         "flash": "Flashing to SD card",
         "complete": "Complete",

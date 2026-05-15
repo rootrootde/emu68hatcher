@@ -170,6 +170,13 @@ class AmigaPartition(BaseModel):
     max_transfer: int = Field(default=0x1FE00)
     mask: int = Field(default=0x7FFFFFFE)
     no_mount: bool = False
+    # optional: contents of this dir get mirrored into staging/<device>/ after packages
+    extra_content_directory: Path | None = None
+
+    @field_validator("extra_content_directory", mode="before")
+    @classmethod
+    def _convert_extra_content_directory(cls, v):
+        return _coerce_optional_path(v)
 
 
 class MBRPartition(BaseModel):

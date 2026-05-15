@@ -1,15 +1,19 @@
 """partition tab - editable layout"""
 
+from pathlib import Path
+
 from PySide6.QtCore import QPoint, QRect, Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPen, QPolygon
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
     QComboBox,
+    QFileDialog,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QLineEdit,
     QPushButton,
     QSpinBox,
     QTableWidget,
@@ -400,6 +404,25 @@ class PartitionsTab(QWidget):
         btn_layout.addStretch()
         amiga_layout.addLayout(btn_layout)
 
+        # per-partition detail panel: selected row -> extra content directory picker
+        self._extras_box = QWidget()
+        extras_layout = QHBoxLayout(self._extras_box)
+        extras_layout.setContentsMargins(0, 6, 0, 0)
+        self._extras_label = QLabel("Extra content directory:")
+        extras_layout.addWidget(self._extras_label)
+        self._extras_edit = QLineEdit()
+        self._extras_edit.setPlaceholderText("(optional) contents mirrored into this partition")
+        self._extras_edit.setReadOnly(True)
+        extras_layout.addWidget(self._extras_edit, 1)
+        self._extras_browse_btn = QPushButton("Browse...")
+        self._extras_browse_btn.clicked.connect(self._browse_extras_directory)
+        extras_layout.addWidget(self._extras_browse_btn)
+        self._extras_clear_btn = QPushButton("Clear")
+        self._extras_clear_btn.clicked.connect(self._clear_extras_directory)
+        extras_layout.addWidget(self._extras_clear_btn)
+        self._extras_box.setEnabled(False)
+        amiga_layout.addWidget(self._extras_box)
+
         layout.addWidget(amiga_group)
 
         # --- Status ---
@@ -591,6 +614,54 @@ class PartitionsTab(QWidget):
         if self._updating:
             return
         self._update_bar()
+        self._refresh_extras_panel()
+
+    def _selected_partition_row(self) -> int:
+        rows = (
+            self.part_table.selectionModel().selectedRows()
+            if self.part_table.selectionModel()
+            else []
+        )
+        if not rows:
+            return -1
+        return rows[0].row()
+
+    def _refresh_extras_panel(self):
+        row = self._selected_partition_row()
+        if not (0 <= row < len(self._amiga_partitions)):
+            self._extras_box.setEnabled(False)
+            self._extras_edit.clear()
+            self._extras_label.setText("Extra content directory:")
+            return
+        part = self._amiga_partitions[row]
+        self._extras_box.setEnabled(True)
+        self._extras_label.setText(f"Extra content for {part.device} ({part.volume}):")
+        self._extras_edit.setText(
+            str(part.extra_content_directory) if part.extra_content_directory else ""
+        )
+
+    def _browse_extras_directory(self):
+        row = self._selected_partition_row()
+        if not (0 <= row < len(self._amiga_partitions)):
+            return
+        start = self._extras_edit.text() or ""
+        path = QFileDialog.getExistingDirectory(
+            self,
+            "Select directory to mirror into this partition",
+            start,
+            QFileDialog.Option.DontUseNativeDialog,
+        )
+        if not path:
+            return
+        self._amiga_partitions[row].extra_content_directory = Path(path)
+        self._extras_edit.setText(path)
+
+    def _clear_extras_directory(self):
+        row = self._selected_partition_row()
+        if not (0 <= row < len(self._amiga_partitions)):
+            return
+        self._amiga_partitions[row].extra_content_directory = None
+        self._extras_edit.clear()
 
     def _on_bootable_changed(self, row, state):
         if self._updating or row < 0 or row >= len(self._amiga_partitions):
@@ -661,6 +732,7 @@ class PartitionsTab(QWidget):
             self._updating = False
 
         self._update_status()
+        self._refresh_extras_panel()
 
     def _update_bar(self):
         """refresh the partition bar viz"""
