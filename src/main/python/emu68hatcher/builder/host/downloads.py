@@ -102,13 +102,17 @@ class DownloadManager:
             slept += step
         return True
 
-    def _get_cached_path(self, filename: str) -> Path:
-        """get path in cache for a file"""
+    def _get_cached_path(self, filename: str, pkg_name: str | None = None) -> Path:
+        """get path in cache for a file; namespaced by package name to avoid filename collisions"""
+        if pkg_name:
+            return self.cache_dir / pkg_name / filename
         return self.cache_dir / filename
 
-    def _is_cached(self, filename: str, expected_hash: str | None = None) -> bool:
+    def _is_cached(
+        self, filename: str, expected_hash: str | None = None, pkg_name: str | None = None
+    ) -> bool:
         """check if file is in cache (+optionaly verify hash)"""
-        cached = self._get_cached_path(filename)
+        cached = self._get_cached_path(filename, pkg_name)
         if not cached.exists():
             return False
         if expected_hash:
@@ -195,9 +199,9 @@ class DownloadManager:
         """download a single item"""
         result = DownloadResult(name=item.name, success=False)
 
-        # check cache first
-        cached = self._get_cached_path(item.filename)
-        if self._is_cached(item.filename, item.expected_hash):
+        # check cache first; namespace by package name so two pkgs with the same filename never collide
+        cached = self._get_cached_path(item.filename, item.name)
+        if self._is_cached(item.filename, item.expected_hash, item.name):
             self.logger.info(f"Using cached: {item.name}")
         else:
             # download
