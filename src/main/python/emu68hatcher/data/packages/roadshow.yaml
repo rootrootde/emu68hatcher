@@ -1,7 +1,7 @@
 name: roadshow
 friendly_name: Roadshow
 group: Network
-description: 'TCP/IP stack (demo)'
+description: 'TCP/IP stack (demo by default; full version when a Roadshow archive is configured)'
 purchase_url: https://www.amigashop.org/product_info.php?cPath=2_34&products_id=200&language=de
 versions:
 - '3.1'
@@ -16,33 +16,46 @@ download:
   hash: 25471647C76D8EAB98F78D24945B3FC6
   filename: Roadshow-Demo-1.15.lha
 install:
-- from: Roadshow-Demo-*/Workbench/Storage/*
+- from: Roadshow*/Workbench/Storage/*
   to: Storage/
-- from: Roadshow-Demo-*/Workbench/Libs/*
+- from: Roadshow*/Workbench/Libs/bsdsocket.library
   to: Libs/
-- from: Roadshow-Demo-*/Workbench/Devs/*
-  to: Devs/
-- from: Roadshow-Demo-*/Workbench/C/*
+- from: Roadshow*/Workbench/Libs/usergroup.library
+  to: Libs/
+- from: Roadshow*/Workbench/Devs/Internet/*
+  to: Devs/Internet/
+- from: Roadshow*/Workbench/Devs/Networks/ppp-ethernet.device
+  to: Devs/Networks/
+- from: Roadshow*/Workbench/Devs/Networks/ppp-serial.device
+  to: Devs/Networks/
+- from: Roadshow*/Workbench/C/*
   to: C/
-- from: Roadshow-Demo-*/Workbench/Locale/*
+- from: Roadshow*/Workbench/Locale/*
   to: Locale/
-- from: Roadshow-Demo-*/Workbench/S/Stop-Firewall
+- from: Roadshow*/Workbench/S/Stop-Firewall
   to: S/
-- from: Roadshow-Demo-*/Workbench/S/Start-Firewall
+- from: Roadshow*/Workbench/S/Start-Firewall
   to: S/
-- from: Roadshow-Demo-*/Workbench/S/Network-Startup
+- from: Roadshow*/Workbench/S/Network-Startup
   to: S/
-- from: Roadshow-Demo-*/Workbench/S/Check-Firewall-Rules
+- from: Roadshow*/Workbench/S/Check-Firewall-Rules
   to: S/
-- from: Roadshow-Demo-*/Workbench/S/IPF/*
+- from: Roadshow*/Workbench/S/IPF/*
   to: S/IPF/
-- from: Roadshow-Demo-*/Workbench/S/PPP-Configurations/*
+- from: Roadshow*/Workbench/S/PPP-Configurations/*
   to: S/PPP-Configurations/
-- from: Roadshow-Demo-*/Documentation/*
+- from: Roadshow*/Documentation/*
   to: Programs/Roadshow/
-- from: Roadshow-Demo-*/Workbench/Storage/NetInterfaces/CNet16.info
+- from: Roadshow*/Workbench/Storage/NetInterfaces/CNet16.info
   to: Devs/NetInterfaces/
   rename: wifipi.info
-- from: Roadshow-Demo-*/Workbench/Storage/NetInterfaces/CNet16.info
+- from: Roadshow*/Workbench/Storage/NetInterfaces/CNet16.info
   to: Devs/NetInterfaces/
   rename: genet.info
+# full-release-only overrides; silent no-ops when the demo archive is in use
+- from: Roadshow-1.15/Workbench/Libs/020/bsdsocket.library
+  to: Libs/
+- from: Roadshow-1.15/Workbench/Devs/Networks/020/ppp-ethernet.device
+  to: Devs/Networks/
+- from: Roadshow-1.15/Workbench/Devs/Networks/020/ppp-serial.device
+  to: Devs/Networks/

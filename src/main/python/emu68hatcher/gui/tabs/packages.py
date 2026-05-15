@@ -1,9 +1,12 @@
 """package selection tab - loads packages from YAML defs"""
 
+from pathlib import Path
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QComboBox,
+    QFileDialog,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
@@ -113,17 +116,35 @@ class PackagesTab(QWidget):
         roadshow_row.addWidget(self.radio_roadshow)
         roadshow_pkg = get_package_by_name("roadshow")
         if roadshow_pkg and roadshow_pkg.purchase_url:
-            demo_label = QLabel(
+            self._roadshow_status_label = QLabel(
                 f"(Demo version - buy the full version "
                 f'<a href="{roadshow_pkg.purchase_url}">here</a>)'
             )
-            demo_label.setTextFormat(Qt.TextFormat.RichText)
-            demo_label.setOpenExternalLinks(True)
+            self._roadshow_status_label.setTextFormat(Qt.TextFormat.RichText)
+            self._roadshow_status_label.setOpenExternalLinks(True)
         else:
-            demo_label = QLabel("(Demo version)")
-        roadshow_row.addWidget(demo_label)
+            self._roadshow_status_label = QLabel("(Demo version)")
+        roadshow_row.addWidget(self._roadshow_status_label)
         roadshow_row.addStretch()
         net_layout.addLayout(roadshow_row)
+
+        # full-version archive picker: empty -> use bundled demo
+        self._roadshow_full_box = QWidget()
+        full_layout = QHBoxLayout(self._roadshow_full_box)
+        full_layout.setContentsMargins(20, 0, 0, 0)
+        full_layout.setSpacing(6)
+        full_layout.addWidget(QLabel("Full version archive:"))
+        self.roadshow_archive_edit = QLineEdit()
+        self.roadshow_archive_edit.setPlaceholderText("Roadshow.lha (leave empty for demo)")
+        self.roadshow_archive_edit.setReadOnly(True)
+        full_layout.addWidget(self.roadshow_archive_edit, 1)
+        browse_btn = QPushButton("Browse...")
+        browse_btn.clicked.connect(self._browse_roadshow_archive)
+        full_layout.addWidget(browse_btn)
+        clear_btn = QPushButton("Clear")
+        clear_btn.clicked.connect(self._clear_roadshow_archive)
+        full_layout.addWidget(clear_btn)
+        net_layout.addWidget(self._roadshow_full_box)
 
         # WiFi credentials (optional - only shown when a network stack is selected)
         self._wifi_box = QWidget()
@@ -298,7 +319,55 @@ class PackagesTab(QWidget):
 
     def _update_wifi_visibility(self):
         """hide WiFi fields when no network stack is selected"""
-        self._wifi_box.setVisible(not self.radio_none.isChecked())
+        has_stack = not self.radio_none.isChecked()
+        self._wifi_box.setVisible(has_stack)
+        self._roadshow_full_box.setVisible(has_stack)
+
+    def _browse_roadshow_archive(self):
+        """pick the user's Roadshow archive file"""
+        start = self.roadshow_archive_edit.text() or str(Path.home())
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select Roadshow archive",
+            start,
+            "Roadshow archive (*.lha *.LHA);;All files (*.*)",
+        )
+        if path:
+            self.roadshow_archive_edit.setText(path)
+            self._refresh_roadshow_status()
+
+    def _clear_roadshow_archive(self):
+        """reset to the bundled demo"""
+        self.roadshow_archive_edit.clear()
+        self._refresh_roadshow_status()
+
+    def _refresh_roadshow_status(self):
+        """update the sub-label to reflect demo vs full"""
+        path = self.roadshow_archive_edit.text().strip()
+        if path:
+            self._roadshow_status_label.setTextFormat(Qt.TextFormat.PlainText)
+            self._roadshow_status_label.setText(f"(Full version: {Path(path).name})")
+        else:
+            roadshow_pkg = get_package_by_name("roadshow")
+            if roadshow_pkg and roadshow_pkg.purchase_url:
+                self._roadshow_status_label.setTextFormat(Qt.TextFormat.RichText)
+                self._roadshow_status_label.setText(
+                    f"(Demo version - buy the full version "
+                    f'<a href="{roadshow_pkg.purchase_url}">here</a>)'
+                )
+            else:
+                self._roadshow_status_label.setTextFormat(Qt.TextFormat.PlainText)
+                self._roadshow_status_label.setText("(Demo version)")
+
+    def get_roadshow_archive(self) -> Path | None:
+        """user-supplied Roadshow archive path, or None when the picker is empty"""
+        text = self.roadshow_archive_edit.text().strip()
+        return Path(text) if text else None
+
+    def set_roadshow_archive(self, archive: Path | str | None):
+        """populate the Roadshow archive picker from config"""
+        self.roadshow_archive_edit.setText(str(archive) if archive else "")
+        self._refresh_roadshow_status()
 
     def get_wifi_config(self) -> WifiConfig | None:
         """get WiFi config from text fields, or None if incomplete"""

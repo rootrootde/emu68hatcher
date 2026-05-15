@@ -338,8 +338,11 @@ def apply_standard_injections(
     staging_dir: Path,
     content_base_path: Path,
     enabled_packages: set[str] | None = None,
+    roadshow_full: bool = False,
 ) -> int:
     """apply standard script injections to staged files"""
+    from dataclasses import replace
+
     count = 0
 
     # always apply Startup-Sequence injections
@@ -366,6 +369,10 @@ def apply_standard_injections(
 
         if enabled_packages and package_name and package_name not in enabled_packages:
             continue
+
+        # full Roadshow auto-runs Network-Startup; the demo snippet leaves it off
+        if package_name == "roadshow" and roadshow_full:
+            injection = replace(injection, content_file="S/User-Startup_Roadshow_Full")
 
         target = staging_dir / injection.target_script
         if inject_script(target, injection, content_base_path):

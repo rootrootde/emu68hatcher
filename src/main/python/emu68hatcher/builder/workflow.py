@@ -66,6 +66,10 @@ class BuildState:
     pfs3_handler_path: Path | None = None
     ffs_handler_path: Path | None = None
 
+    # user-supplied Roadshow archive resolution (set by validate, consumed by extract)
+    roadshow_archive_path: Path | None = None
+    roadshow_archive_kind: str | None = None  # outer | inner_full | dir_full | dir_inner
+
 
 BuildProgressCallback = Callable[[BuildState], None]
 BuildLogCallback = Callable[[str, str], None]  # (stage_name, message)

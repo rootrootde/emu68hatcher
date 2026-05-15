@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from emu68hatcher.builder.errors import BuildError
@@ -74,7 +75,6 @@ def _extract_ffs_handler_if_needed(workflow: BuildWorkflow) -> None:
         return
 
     import subprocess
-    from pathlib import Path
 
     from emu68hatcher.utils.host_tools import find_hst_imager
 
@@ -418,6 +418,16 @@ def stage_extract(workflow: BuildWorkflow) -> None:
         pkg = get_package_by_name(pkg_name)
         if not pkg or not pkg.download or pkg.download.source != SourceType.LOCAL:
             continue
+
+        # roadshow gets a user-supplied archive when configured; everything else uses the bundled file
+        if pkg_name == "roadshow" and workflow.state.roadshow_archive_path is not None:
+            output_dir = workflow.state.extracted_dir / pkg_name
+            workflow._milestone("Extracting Roadshow (user archive)")
+            if _stage_user_roadshow(workflow, output_dir):
+                workflow.state.extracted_paths[pkg_name] = output_dir
+                local_extracted += 1
+            continue
+
         if not pkg.download.path:
             continue
         archive_path = local_packages_dir / pkg.download.path
@@ -445,3 +455,94 @@ def stage_extract(workflow: BuildWorkflow) -> None:
     workflow._milestone(
         "Extraction complete" + (f" ({local_extracted} local)" if local_extracted else "")
     )
+
+
+def _stage_user_roadshow(workflow: BuildWorkflow, output_dir: Path) -> bool:
+    """populate output_dir from workflow.state.roadshow_archive_path; install rules glob Roadshow*/...
+
+    layouts:
+      outer       - archive file containing Roadshow-1.15.lha + siblings; two-stage extract
+      inner_full  - archive file rooted at Roadshow-1.15/Workbench/...
+      dir_full    - already-extracted dir containing Roadshow-1.15/Workbench/...
+      dir_inner   - already-extracted dir rooted at Workbench/... (wrap under Roadshow-1.15/)
+    """
+    src = workflow.state.roadshow_archive_path
+    kind = workflow.state.roadshow_archive_kind
+    if src is None or kind is None:
+        return False
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if kind == "dir_full":
+        return _mirror_tree(src, output_dir, workflow)
+    if kind == "dir_inner":
+        wrapped = output_dir / "Roadshow-1.15"
+        wrapped.mkdir(parents=True, exist_ok=True)
+        return _mirror_tree(src, wrapped, workflow)
+
+    def on_extract(filename: str, current: int, total: int, _msg="Roadshow") -> None:
+        workflow._update_state(message=f"Extracting {_msg}: {filename}")
+
+    if kind == "inner_full":
+        result = extract_archive(src, output_dir, progress_callback=on_extract)
+        if not result.success:
+            workflow.logger.error(f"Failed to extract Roadshow archive: {result.error}")
+            return False
+        workflow.logger.info(f"Extracted user Roadshow archive: {result.files_extracted} files")
+        return True
+
+    if kind == "outer":
+        scratch = output_dir.parent / f"{output_dir.name}_outer"
+        if scratch.exists():
+            shutil.rmtree(scratch)
+        scratch.mkdir(parents=True, exist_ok=True)
+        outer = extract_archive(src, scratch, progress_callback=on_extract)
+        if not outer.success:
+            workflow.logger.error(f"Failed to extract outer Roadshow envelope: {outer.error}")
+            return False
+
+        inner = _pick_inner_roadshow(scratch)
+        if inner is None:
+            workflow.logger.error(
+                "Outer Roadshow archive did not contain Roadshow-1.15.lha (or compatible)"
+            )
+            return False
+
+        result = extract_archive(inner, output_dir, progress_callback=on_extract)
+        shutil.rmtree(scratch, ignore_errors=True)
+        if not result.success:
+            workflow.logger.error(f"Failed to extract inner Roadshow archive: {result.error}")
+            return False
+        workflow.logger.info(
+            f"Extracted user Roadshow archive ({inner.name}): {result.files_extracted} files"
+        )
+        return True
+
+    workflow.logger.error(f"Unknown Roadshow archive kind: {kind}")
+    return False
+
+
+def _pick_inner_roadshow(scratch: Path) -> Path | None:
+    """find the full-release inner LHA (Roadshow-1.15.lha or compatible) inside a scratch dir"""
+    candidates = sorted(scratch.rglob("Roadshow-1.*.lha"))
+    for c in candidates:
+        if "Update" in c.name or "Compact" in c.name or "Demo" in c.name:
+            continue
+        return c
+    return None
+
+
+def _mirror_tree(src: Path, dest: Path, workflow: BuildWorkflow) -> bool:
+    """copy src tree into dest (dest may exist); returns True on success"""
+    try:
+        for item in src.iterdir():
+            target = dest / item.name
+            if item.is_dir():
+                shutil.copytree(item, target, dirs_exist_ok=True)
+            else:
+                shutil.copy2(item, target)
+        workflow.logger.info(f"Mirrored Roadshow directory {src} -> {dest}")
+        return True
+    except OSError as e:
+        workflow.logger.error(f"Failed to mirror Roadshow directory {src}: {e}")
+        return False

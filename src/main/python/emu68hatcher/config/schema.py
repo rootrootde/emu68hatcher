@@ -358,6 +358,9 @@ class BuildConfig(BaseModel):
     # network stack (None = no network stack installed)
     network_stack: NetworkStack | None = NetworkStack.ROADSHOW
 
+    # optional path to a user-owned Roadshow archive; when set, replaces the bundled demo
+    roadshow_archive: Path | None = None
+
     # wifi creds - never serialized, never in repr
     wifi: WifiConfig | None = Field(default=None, exclude=True, repr=False)
 
@@ -366,6 +369,12 @@ class BuildConfig(BaseModel):
         default=Emu68Version.V1_0_7,
         description="upstream Emu68 release to bundle on the boot partition",
     )
+
+    @field_validator("roadshow_archive", mode="before")
+    @classmethod
+    def _convert_roadshow_archive(cls, v):
+        return _coerce_optional_path(v)
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {

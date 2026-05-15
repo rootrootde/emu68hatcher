@@ -61,6 +61,7 @@ def configure_scripts(
             staging_dir=boot_staging,
             content_base_path=content_base,
             enabled_packages=all_packages,
+            roadshow_full=workflow.config.roadshow_archive is not None,
         )
         workflow.logger.info(f"Applied {injection_count} script injections to Startup-Sequence")
 

@@ -109,6 +109,7 @@ def stage_validate(workflow: BuildWorkflow) -> None:
         raise BuildError("Output configuration not specified")
 
     _check_output_target(workflow)
+    _check_roadshow_archive(workflow)
 
     workflow._update_state(progress=100.0)
     workflow._milestone("Configuration validated")
@@ -215,6 +216,103 @@ def _claim_macos_disk(workflow: BuildWorkflow, device: str) -> None:
         return
     workflow.state.disk_claim = claim
     workflow.logger.info(f"DiskArbitration claim held on {device}")
+
+
+def _check_roadshow_archive(workflow: BuildWorkflow) -> None:
+    """probe the user's Roadshow archive (file or already-extracted dir) and stash its kind"""
+    archive = workflow.config.roadshow_archive
+    if archive is None:
+        return
+
+    archive = Path(archive).expanduser()
+    if not archive.exists():
+        raise BuildError(f"Roadshow archive not found: {archive}")
+
+    if archive.is_dir():
+        kind = _classify_roadshow_dir(archive)
+    elif archive.is_file():
+        kind = _classify_roadshow_file(archive)
+    else:
+        raise BuildError(f"Roadshow archive is neither a file nor a directory: {archive}")
+
+    workflow.state.roadshow_archive_path = archive
+    workflow.state.roadshow_archive_kind = kind
+    workflow.logger.info(f"Roadshow archive accepted ({kind}): {archive}")
+
+
+# names inside the full commercial Roadshow.lha (outer envelope ships these three)
+_ROADSHOW_INNER_FULL_NAMES = ("Roadshow-1.15.lha", "Roadshow-1.16.lha")
+
+
+def _classify_roadshow_file(path: Path) -> str:
+    """sniff archive contents via 7z l; return 'outer' or 'inner_full' or raise"""
+    import subprocess
+
+    from emu68hatcher.utils.host_tools import find_7z
+
+    sevenz = find_7z()
+    if sevenz is None:
+        raise BuildError("7-Zip not found; cannot probe Roadshow archive")
+
+    try:
+        result = subprocess.run(
+            [str(sevenz), "l", "-slt", str(path)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError) as e:
+        raise BuildError(f"could not list Roadshow archive {path.name}: {e}") from e
+
+    if result.returncode != 0:
+        raise BuildError(
+            f"7-Zip rejected Roadshow archive {path.name}: "
+            f"{result.stderr.strip() or result.stdout.strip()}"
+        )
+
+    import os.path
+
+    # archive header line ("Path = <absolute path>") is dropped so it cannot fake an entry match
+    entry_paths = []
+    for line in result.stdout.splitlines():
+        if not line.startswith("Path = "):
+            continue
+        value = line[7:]
+        if os.path.isabs(value):
+            continue
+        entry_paths.append(value)
+
+    has_full_tree = any(p.startswith("Roadshow-1.15/Workbench") for p in entry_paths)
+    has_inner_entry = any(p in _ROADSHOW_INNER_FULL_NAMES for p in entry_paths)
+    has_demo_marker = any(p.startswith("Roadshow-Demo-") for p in entry_paths)
+
+    if has_full_tree:
+        return "inner_full"
+    if has_inner_entry:
+        return "outer"
+    if has_demo_marker:
+        raise BuildError(
+            f"{path.name} looks like a Roadshow demo archive; "
+            "leave the field empty to use the bundled demo instead."
+        )
+    raise BuildError(
+        f"{path.name} does not look like a Roadshow release archive "
+        "(expected an outer envelope with Roadshow-1.15.lha, or the full release itself)."
+    )
+
+
+def _classify_roadshow_dir(path: Path) -> str:
+    """return 'dir_full' if the dir contains Roadshow-1.15/Workbench/, 'dir_inner' if it IS the release dir"""
+    if (path / "Roadshow-1.15" / "Workbench" / "Libs" / "bsdsocket.library").exists():
+        return "dir_full"
+    if (path / "Workbench" / "Libs" / "bsdsocket.library").exists():
+        return "dir_inner"
+    raise BuildError(
+        f"{path} does not look like an extracted Roadshow release "
+        "(expected Roadshow-1.15/Workbench/ or Workbench/ inside)."
+    )
 
 
 def _validate_target_disk(info, required_size: int) -> None:

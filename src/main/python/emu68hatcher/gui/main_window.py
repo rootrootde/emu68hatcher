@@ -127,6 +127,7 @@ class MainWindow(QMainWindow):
                 self.packages_tab.set_icon_set(self.config.icon_set)
                 self.packages_tab.set_network_stack(self.config.network_stack)
                 self.packages_tab.set_wifi_config(self.config.wifi)
+                self.packages_tab.set_roadshow_archive(self.config.roadshow_archive)
                 self.packages_tab.set_config(self.config.packages)
                 self.partitions_tab.set_config(self.config.partitions)
                 self.output_tab.set_config(self.config.output)
@@ -205,6 +206,7 @@ class MainWindow(QMainWindow):
         self.config.packages = [PackageConfig(name=p["name"], enabled=p["enabled"]) for p in pkgs]
         self.config.network_stack = self.packages_tab.get_network_stack()
         self.config.wifi = self.packages_tab.get_wifi_config()
+        self.config.roadshow_archive = self.packages_tab.get_roadshow_archive()
 
         out = self.output_tab.get_config()
         if out.get("path"):

@@ -31,6 +31,10 @@ wheels/
 Amiga_ROMs/
 Amiga_WB/
 
+# user-supplied Roadshow archive (dropped here during development; do not commit)
+/Roadshow.lha
+/Roadshow-*.info
+
 # disk images
 *.img
 *.IMG
