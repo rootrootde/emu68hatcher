@@ -36,10 +36,12 @@ def stage_setup_workspace(workflow: BuildWorkflow) -> None:
     workflow.state.workbench_dir = ensure_dir(workflow.state.work_dir / "workbench")
 
     devices = [EMU68_BOOT_PARTITION_NAME]
+    boot_device = None
     if workflow.config.partitions:
         devices.extend(p.device for p in workflow.config.partitions.iter_amiga_partitions())
+        boot_device = workflow.config.partitions.bootable_device
 
-    prepare_staging_directory(workflow.state.staging_dir, devices)
+    prepare_staging_directory(workflow.state.staging_dir, devices, boot_device=boot_device)
 
     workflow._update_state(progress=100.0)
     workflow._milestone("Workspace ready")

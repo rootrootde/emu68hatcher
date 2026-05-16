@@ -238,8 +238,9 @@ def unix_to_amiga_path(path: str) -> str:
 def prepare_staging_directory(
     staging_dir: Path,
     devices: list[str],
+    boot_device: str | None = None,
 ) -> dict[str, Path]:
-    """prepare per-device staging dirs. standard Amiga subdirs only for Amiga devices, not FAT32 like EMU68BOOT"""
+    """prepare per-device staging dirs. Amiga scaffold dirs (C/S/L/...) only on the boot partition"""
     device_dirs = {}
 
     AMIGA_SUBDIRS = ["C", "S", "L", "Libs", "Devs", "Prefs", "Fonts", "T"]
@@ -250,7 +251,13 @@ def prepare_staging_directory(
         device_dir = ensure_dir(staging_dir / device)
         device_dirs[device] = device_dir
 
-        if device.upper() not in NON_AMIGA_DEVICES:
+        # scaffold only on the boot partition; Work/Data etc start empty so they
+        # dont end up with stray /S /Devs/ /Libs/ folders cluttering the volume
+        if (
+            device.upper() not in NON_AMIGA_DEVICES
+            and boot_device is not None
+            and device == boot_device
+        ):
             for subdir in AMIGA_SUBDIRS:
                 ensure_dir(device_dir / subdir)
 
