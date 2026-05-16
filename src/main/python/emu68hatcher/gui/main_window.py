@@ -133,8 +133,11 @@ class MainWindow(QMainWindow):
                 self.packages_tab.set_wifi_config(self.config.wifi)
                 self.packages_tab.set_roadshow_archive(self.config.roadshow_archive)
                 self.packages_tab.set_config(self.config.packages)
-                self.partitions_tab.set_config(self.config.partitions)
+                # output first: emits target_size_changed which rebuilds the partition
+                # layout for the picked SD card. apply the saved partitions AFTER that so the
+                # resize signal doesnt overwrite custom sizes / extra_content_directory paths.
                 self.output_tab.set_config(self.config.output)
+                self.partitions_tab.set_config(self.config.partitions)
                 self.statusBar().showMessage(f"Loaded: {path}")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to load config: {e}")
