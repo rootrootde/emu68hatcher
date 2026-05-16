@@ -16,9 +16,9 @@
     - **Image file** - writes a regular **.img** file to disk. Sparse files are enabled by default, so a large image only uses as much disk space as the actual data.
     - **Image file + flash to SD card** - same as above, then writes the image to the SD card you pick block-by-block. Requires admin/sudo. Faster for large builds: file copy hits local-disk speed and the SD card is only written once at hardware speed.
     - **Direct to SD card** - skips the **.img** file and writes each Amiga file through hst-imager's PFS3 layer over the SD card interface. Useful when you don't need to keep the image around, but several times slower than the image+flash path once partitions get into multi-GB territory.
-    
-!!! danger "Double-check the target!"
-    **Picking the wrong disk will wipe it.** Emu68 Hatcher will refuse to write to mounted root partitions (=your operating system) but has no problem with wiping anything else you have connected.
+
+    !!! danger "Double-check the target!"
+        **Picking the wrong disk will wipe it.** Emu68 Hatcher will refuse to write to mounted root partitions (=your operating system) but has no problem with wiping anything else you have connected.
 
 7. **Partitions tab - configure disk size and partition layout.** Default is 64 GB image with 1 GB Workbench partition and a "Work" partition. You can add/remove/resize partitions, drag the borders on the partition bar to resize them or type exact sizes. With an SD card selected on the Output tab, the disk size matches the card.
 
