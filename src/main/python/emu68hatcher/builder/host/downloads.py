@@ -237,7 +237,21 @@ class DownloadManager:
                 return result
 
             if item.expected_hash and not verify_hash(cached, item.expected_hash):
-                result.error = f"Hash mismatch against expected {item.expected_hash}"
+                # log got-hash + size so 'flaky mirror returned an html error page' is
+                # distinguishable from 'upstream actually changed'
+                from emu68hatcher.utils.hashing import HashAlgorithm, calculate_hash
+
+                try:
+                    got = calculate_hash(cached, HashAlgorithm.MD5)
+                except Exception:
+                    got = "(unreadable)"
+                try:
+                    size = cached.stat().st_size
+                except OSError:
+                    size = -1
+                result.error = (
+                    f"Hash mismatch: got {got} ({size} bytes), expected {item.expected_hash}"
+                )
                 cached.unlink()
                 self.results[item.name] = result
                 return result
