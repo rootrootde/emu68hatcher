@@ -174,21 +174,29 @@ class DownloadManager:
         mirrors: list[str],
         file_progress: Callable[[str, int, int], None] | None = None,
         name: str = "",
+        expected_hash: str | None = None,
     ) -> bool:
-        """try multiple mirrors. short-circuit on 404 - Aminet mirrors share layout, 404 on one = 404 on all (saves ~12min of timeouts per package)"""
+        """try multiple mirrors. short-circuit on 404 - Aminet mirrors share layout, 404 on one = 404 on all (saves ~12min of timeouts per package).
+        when expected_hash is set, also fall through to the next mirror on hash mismatch -
+        a mirror returning HTTP 200 with corrupted/different bytes is treated like a miss."""
         for mirror in mirrors:
             if self._cancelled():
                 return False
             url = f"{mirror.rstrip('/')}/{path.lstrip('/')}"
             self.logger.info(f"Trying mirror: {url}")
-            if self._download_file(url, dest, file_progress=file_progress, name=name):
-                return True
-            if self._last_error_permanent:
-                # 404 on one mirror = skip all other mirrors for this file
-                self.logger.info(
-                    f"Giving up on {name}: {self._last_error} (same path on every mirror)"
-                )
-                return False
+            if not self._download_file(url, dest, file_progress=file_progress, name=name):
+                if self._last_error_permanent:
+                    # 404 on one mirror = skip all other mirrors for this file
+                    self.logger.info(
+                        f"Giving up on {name}: {self._last_error} (same path on every mirror)"
+                    )
+                    return False
+                continue
+            if expected_hash and not verify_hash(dest, expected_hash):
+                self.logger.warning(f"hash mismatch from {mirror} for {name}; trying next mirror")
+                dest.unlink(missing_ok=True)
+                continue
+            return True
         return False
 
     def download(
@@ -220,6 +228,7 @@ class DownloadManager:
                     mirrors,
                     file_progress=file_progress,
                     name=item.name,
+                    expected_hash=item.expected_hash,
                 )
             else:
                 success = self._download_file(
