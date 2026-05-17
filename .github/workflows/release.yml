@@ -179,25 +179,22 @@ jobs:
         run: fbs freeze
 
       # english-only app + no QtQml/Quick/Pdf/VirtualKeyboard usage. trim before signing on macos.
+      # pyinstaller on linux puts the actual .so files in _internal/PySide6/Qt/lib/ and symlinks them
+      # at _internal/ root; find -name -delete kills both ends so fbs copytree doesnt trip on broken symlinks
       - name: Slim PySide6 bundle (Linux)
         if: matrix.os == 'linux'
         shell: bash
         run: |
           set -euo pipefail
-          QT_LIB="$(find target -type d -path '*/PySide6/Qt/lib' | head -1)"
-          if [ -z "$QT_LIB" ]; then
-            echo "::error::no PySide6/Qt/lib dir found under target/"
-            find target -maxdepth 5 -type d -name PySide6 || true
-            exit 1
-          fi
-          rm -rf "$(dirname "$QT_LIB")/translations"
-          cd "$QT_LIB"
-          rm -f libQt6Quick.so.6 libQt6Qml.so.6 libQt6QmlModels.so.6 \
-                libQt6QmlMeta.so.6 libQt6QmlWorkerScript.so.6 \
-                libQt6Pdf.so.6 libQt6VirtualKeyboard.so.6 libQt6VirtualKeyboardQml.so.6 \
-                libQt6WaylandClient.so.6 libQt6WaylandCompositor.so.6 \
-                libQt6WlShellIntegration.so.6 libQt6EglFSDeviceIntegration.so.6 \
-                libQt6EglFsKmsSupport.so.6
+          find target -type d -name translations -path '*/PySide6/*' -prune -exec rm -rf {} +
+          for lib in libQt6Quick.so.6 libQt6Qml.so.6 libQt6QmlModels.so.6 \
+                     libQt6QmlMeta.so.6 libQt6QmlWorkerScript.so.6 \
+                     libQt6Pdf.so.6 libQt6VirtualKeyboard.so.6 libQt6VirtualKeyboardQml.so.6 \
+                     libQt6WaylandClient.so.6 libQt6WaylandCompositor.so.6 \
+                     libQt6WlShellIntegration.so.6 libQt6EglFSDeviceIntegration.so.6 \
+                     libQt6EglFsKmsSupport.so.6; do
+            find target -name "$lib" -delete 2>/dev/null || true
+          done
 
       - name: Slim PySide6 bundle (Windows)
         if: matrix.os == 'windows'
