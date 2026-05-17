@@ -184,10 +184,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          QT="target/Emu68 Hatcher/_internal/PySide6/Qt"
-          if [ ! -d "$QT" ]; then echo "::error::expected Qt dir at $QT not found"; ls -la "target/Emu68 Hatcher/_internal" || true; exit 1; fi
-          rm -rf "$QT/translations"
-          cd "$QT/lib"
+          QT_LIB="$(find target -type d -path '*/PySide6/Qt/lib' | head -1)"
+          if [ -z "$QT_LIB" ]; then
+            echo "::error::no PySide6/Qt/lib dir found under target/"
+            find target -maxdepth 5 -type d -name PySide6 || true
+            exit 1
+          fi
+          rm -rf "$(dirname "$QT_LIB")/translations"
+          cd "$QT_LIB"
           rm -f libQt6Quick.so.6 libQt6Qml.so.6 libQt6QmlModels.so.6 \
                 libQt6QmlMeta.so.6 libQt6QmlWorkerScript.so.6 \
                 libQt6Pdf.so.6 libQt6VirtualKeyboard.so.6 libQt6VirtualKeyboardQml.so.6 \
@@ -208,6 +212,7 @@ jobs:
                 Qt6Pdf.dll Qt6VirtualKeyboard.dll Qt6VirtualKeyboardQml.dll
 
       # signing reseals the bundle after trimming; do this before "Sign .app (macOS)"
+      # translations exist in both Frameworks/ and Resources/ (one is a symlink); nuke both so xattr -cr in sign doesnt hit a dangling symlink
       - name: Slim PySide6 bundle (macOS)
         if: matrix.os == 'macos'
         shell: bash
@@ -216,7 +221,7 @@ jobs:
           APP="target/Emu68 Hatcher.app/Contents"
           LIB="$APP/Frameworks/PySide6/Qt/lib"
           if [ ! -d "$LIB" ]; then echo "::error::expected Qt lib dir at $LIB not found"; ls -la "$APP/Frameworks" || true; exit 1; fi
-          rm -rf "$APP/Resources/PySide6/Qt/translations"
+          rm -rf "$APP/Resources/PySide6/Qt/translations" "$APP/Frameworks/PySide6/Qt/translations"
           for name in QtQuick QtQml QtQmlModels QtQmlMeta QtQmlWorkerScript QtPdf QtVirtualKeyboard QtVirtualKeyboardQml; do
             rm -rf "$LIB/${name}.framework"
             rm -f "$APP/Frameworks/$name" "$APP/Resources/$name"
