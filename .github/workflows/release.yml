@@ -178,7 +178,7 @@ jobs:
       - name: Freeze app with fbs
         run: fbs freeze
 
-      # english-only app + no QtQml/Quick/Pdf/VirtualKeyboard/Wayland usage
+      # english-only app + no QtQml/Quick/Pdf/VirtualKeyboard usage. trim before signing on macos.
       - name: Slim PySide6 bundle (Linux)
         if: matrix.os == 'linux'
         shell: bash
@@ -194,6 +194,33 @@ jobs:
                 libQt6WaylandClient.so.6 libQt6WaylandCompositor.so.6 \
                 libQt6WlShellIntegration.so.6 libQt6EglFSDeviceIntegration.so.6 \
                 libQt6EglFsKmsSupport.so.6
+
+      - name: Slim PySide6 bundle (Windows)
+        if: matrix.os == 'windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYS="target/Emu68 Hatcher/_internal/PySide6"
+          if [ ! -d "$PYS" ]; then echo "::error::expected PySide6 dir at $PYS not found"; ls -la "target/Emu68 Hatcher/_internal" || true; exit 1; fi
+          rm -rf "$PYS/translations"
+          cd "$PYS"
+          rm -f Qt6Quick.dll Qt6Qml.dll Qt6QmlModels.dll Qt6QmlMeta.dll Qt6QmlWorkerScript.dll \
+                Qt6Pdf.dll Qt6VirtualKeyboard.dll Qt6VirtualKeyboardQml.dll
+
+      # signing reseals the bundle after trimming; do this before "Sign .app (macOS)"
+      - name: Slim PySide6 bundle (macOS)
+        if: matrix.os == 'macos'
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP="target/Emu68 Hatcher.app/Contents"
+          LIB="$APP/Frameworks/PySide6/Qt/lib"
+          if [ ! -d "$LIB" ]; then echo "::error::expected Qt lib dir at $LIB not found"; ls -la "$APP/Frameworks" || true; exit 1; fi
+          rm -rf "$APP/Resources/PySide6/Qt/translations"
+          for name in QtQuick QtQml QtQmlModels QtQmlMeta QtQmlWorkerScript QtPdf QtVirtualKeyboard QtVirtualKeyboardQml; do
+            rm -rf "$LIB/${name}.framework"
+            rm -f "$APP/Frameworks/$name" "$APP/Resources/$name"
+          done
 
       # fbs leaves CFBundleIdentifier empty; TCC needs a non-empty id to file FDA grants
       - name: Patch CFBundleIdentifier (macOS)
