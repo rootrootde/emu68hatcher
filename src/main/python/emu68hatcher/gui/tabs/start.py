@@ -33,18 +33,20 @@ def _render_icon(path: Path, size: int) -> QPixmap:
 
 
 def _find_app_icon() -> Path | None:
-    """locate the app icon - repo svg in dev, fbs-extracted icns in frozen"""
-    # frozen builds extract resources to sys._MEIPASS; mac icon lands at Contents/Resources/Icon.icns
-    frozen_root = getattr(sys, "_MEIPASS", None)
-    if frozen_root:
-        for rel in ("Icon.icns", "base/Icon.icns", "base/icon.png"):
-            p = Path(frozen_root) / rel
-            if p.exists():
-                return p
-    # dev checkout: walk up from this file to the repo root
+    """locate the app icon - frozen: fbs-emitted Icon.{ico,icns} next to binary; dev: hatcher-icon.svg in src tree"""
+    if getattr(sys, "frozen", False):
+        exe_dir = Path(sys.executable).parent
+        for candidate in (
+            exe_dir / "Icon.ico",  # windows + linux
+            exe_dir.parent / "Resources" / "Icon.icns",  # macos .app
+            exe_dir / "Icon.icns",
+        ):
+            if candidate.is_file():
+                return candidate
+        return None
     here = Path(__file__).resolve()
-    for parent in [here, *here.parents]:
-        svg = parent / "images" / "logo" / "emu-icon.svg"
+    for parent in here.parents:
+        svg = parent / "src" / "main" / "icons" / "hatcher-icon.svg"
         if svg.is_file():
             return svg
     return None
