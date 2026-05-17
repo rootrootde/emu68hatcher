@@ -178,6 +178,23 @@ jobs:
       - name: Freeze app with fbs
         run: fbs freeze
 
+      # english-only app + no QtQml/Quick/Pdf/VirtualKeyboard/Wayland usage
+      - name: Slim PySide6 bundle (Linux)
+        if: matrix.os == 'linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          QT="target/Emu68 Hatcher/_internal/PySide6/Qt"
+          if [ ! -d "$QT" ]; then echo "::error::expected Qt dir at $QT not found"; ls -la "target/Emu68 Hatcher/_internal" || true; exit 1; fi
+          rm -rf "$QT/translations"
+          cd "$QT/lib"
+          rm -f libQt6Quick.so.6 libQt6Qml.so.6 libQt6QmlModels.so.6 \
+                libQt6QmlMeta.so.6 libQt6QmlWorkerScript.so.6 \
+                libQt6Pdf.so.6 libQt6VirtualKeyboard.so.6 libQt6VirtualKeyboardQml.so.6 \
+                libQt6WaylandClient.so.6 libQt6WaylandCompositor.so.6 \
+                libQt6WlShellIntegration.so.6 libQt6EglFSDeviceIntegration.so.6 \
+                libQt6EglFsKmsSupport.so.6
+
       # fbs leaves CFBundleIdentifier empty; TCC needs a non-empty id to file FDA grants
       - name: Patch CFBundleIdentifier (macOS)
         if: matrix.os == 'macos'
@@ -196,6 +213,18 @@ jobs:
       # produces target/<AppName>Setup.exe (windows, NSIS) or target/<AppName>.deb (linux, fpm+dpkg on ubuntu)
       - name: Build installer
         run: fbs installer
+
+      # fbs/fpm default = gzip; xz cuts the .deb by ~30 MB. Ubuntu 18.04+/Debian 10+ install xz debs fine.
+      - name: Recompress .deb with xz (Linux)
+        if: matrix.os == 'linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEB="target/emu68hatcher.deb"
+          TMP="$(mktemp -d)"
+          dpkg-deb -R "$DEB" "$TMP/extracted"
+          dpkg-deb -Zxz -z9 -b "$TMP/extracted" "$DEB"
+          ls -lh "$DEB"
 
       - name: Sign + notarize + staple .dmg (macOS)
         if: matrix.os == 'macos'
