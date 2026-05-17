@@ -51,10 +51,22 @@ def _hide_windows_subprocess_consoles():
     subprocess.Popen.__init__ = _patched
 
 
+def _restore_subprocess_ld_library_path():
+    """undo pyinstaller's bundle LD_LIBRARY_PATH so subprocs use system libs"""
+    if sys.platform != "linux" or not getattr(sys, "frozen", False):
+        return
+    orig = os.environ.pop("LD_LIBRARY_PATH_ORIG", None)
+    if orig is not None:
+        os.environ["LD_LIBRARY_PATH"] = orig
+    else:
+        os.environ.pop("LD_LIBRARY_PATH", None)
+
+
 def main():
     _augment_path_for_gui_launch()
     _point_ssl_at_certifi()
     _hide_windows_subprocess_consoles()
+    _restore_subprocess_ld_library_path()
 
     from emu68hatcher.app import run
 

@@ -108,14 +108,4 @@ def get_hst_imager_env() -> dict[str, str]:
     """parent env + DOTNET_BUNDLE_EXTRACT_BASE_DIR; pass to subprocess.run(env=...) for direct hst-imager calls"""
     env = os.environ.copy()
     env[DOTNET_BUNDLE_ENV_VAR] = str(get_dotnet_bundle_dir())
-
-    # PyInstaller-frozen linux apps set LD_LIBRARY_PATH to the bundle dir so the bundled
-    # python finds bundled libs. hst-imager (.NET) shells out to /usr/bin/7z, and that
-    # system 7z inherits LD_LIBRARY_PATH -> tries to link against our older bundled
-    # libstdc++ and fails on missing CXXABI versions. PyInstaller stashes the original
-    # in LD_LIBRARY_PATH_ORIG; restore it for the subprocess so 7z gets system libs.
-    if "LD_LIBRARY_PATH_ORIG" in env:
-        env["LD_LIBRARY_PATH"] = env["LD_LIBRARY_PATH_ORIG"]
-    else:
-        env.pop("LD_LIBRARY_PATH", None)
     return env
