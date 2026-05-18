@@ -8,6 +8,4 @@ try:
 except PackageNotFoundError:
     __version__ = "0.0.0+source"
 
-__author__ = "rootrootde"
-
 __all__ = ["__version__"]

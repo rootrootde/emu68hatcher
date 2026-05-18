@@ -85,12 +85,17 @@ def unmount_disk(
     log.info(f"unmounting {info.device}: {info.mounted_partitions}")
 
     if plat == OperatingSystem.MACOS:
-        subprocess.run(
+        r = subprocess.run(
             ["diskutil", "unmountDisk", info.device],
             capture_output=True,
             text=True,
             timeout=30,
         )
+        if r.returncode != 0:
+            log.warning(
+                f"diskutil unmountDisk {info.device} failed (rc={r.returncode}): "
+                f"{r.stderr.strip() or r.stdout.strip()}"
+            )
     elif plat == OperatingSystem.LINUX:
         # udisksctl when present, umount-via-elevation fallback
         have_udisksctl = shutil.which("udisksctl") is not None
@@ -172,7 +177,12 @@ def _set_windows_disk_offline(
         except (OSError, subprocess.SubprocessError) as e:
             log.warning(f"set-disk failed: {e}")
     else:
-        subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if r.returncode != 0:
+            log.warning(
+                f"set-disk {disk_num} IsOffline={offline} failed (rc={r.returncode}): "
+                f"{r.stderr.strip() or r.stdout.strip()}"
+            )
 
 
 # ----------------------------------------------------------------------------

@@ -20,8 +20,6 @@ class Architecture(str, Enum):
 
     X64 = "x64"
     ARM64 = "arm64"
-    ARM32 = "arm"
-    X86 = "x86"
     UNKNOWN = "unknown"
 
 
@@ -32,7 +30,6 @@ class PlatformInfo:
     os: OperatingSystem
     arch: Architecture
     os_version: str
-    hostname: str
     is_root: bool
 
     @property
@@ -67,10 +64,6 @@ def detect_architecture() -> Architecture:
         return Architecture.X64
     elif machine in ("aarch64", "arm64"):
         return Architecture.ARM64
-    elif machine in ("armv7l", "armv6l", "arm"):
-        return Architecture.ARM32
-    elif machine in ("i386", "i686", "x86"):
-        return Architecture.X86
     else:
         return Architecture.UNKNOWN
 
@@ -94,7 +87,6 @@ def get_platform_info() -> PlatformInfo:
         os=detect_os(),
         arch=detect_architecture(),
         os_version=platform.version(),
-        hostname=platform.node(),
         is_root=is_root(),
     )
 

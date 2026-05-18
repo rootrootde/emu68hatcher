@@ -41,8 +41,7 @@ def trace(msg):
 
 
 def _grant_user_read(path):
-    """windows-only: drop integrity to Medium + grant Authenticated Users read.
-    on macos the worker writes as root with default umask 022 = mode 644, already user-readable"""
+    """windows-only: drop integrity to Medium so the non-elevated parent can read worker output"""
     if sys.platform != "win32":
         return
     try:
@@ -273,13 +272,6 @@ class ElevatedHelper:
         self.worker_script: Path | None = None
         self._seq = 0
 
-    def __enter__(self) -> ElevatedHelper:
-        self.spawn()
-        return self
-
-    def __exit__(self, *exc) -> None:
-        self.shutdown()
-
     def spawn(self) -> bool:
         """one auth prompt, start the worker; True when ready"""
         if is_root():
@@ -487,7 +479,7 @@ class ElevatedHelper:
         done_seen: bool,
         on_line: Callable[[str, str], None],
     ) -> tuple[int, bool]:
-        """consume cmd-N.<stream>.<NNN> in order, emit lines via on_line, unlink as we go"""
+        """consume cmd-N.<stream>.<NNN> in order, emit lines via on_line, unlink each chunk after read"""
         assert self.ipc_dir is not None
         while True:
             nxt = self.ipc_dir / f"cmd-{cmd_seq}.{stream}.{last_seq + 1:06d}"

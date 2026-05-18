@@ -25,12 +25,9 @@ class IdentifiedInstallMedia:
     """install media file identified by hash"""
 
     path: Path
-    md5_hash: str
     friendly_name: str
     adf_name: str  # internal name from YAML
     workbench_version: str  # e.g., "3.1", "3.2"
-    install_media: str  # e.g., "Disk", "CD"
-    source: str  # e.g., "Commodore", "Cloanto"
 
 
 def scan_install_media_by_hash(
@@ -80,12 +77,9 @@ def scan_install_media_by_hash(
                 identified.append(
                     IdentifiedInstallMedia(
                         path=path,
-                        md5_hash=md5,
                         friendly_name=info.friendly_name,
                         adf_name=info.adf_name,
                         workbench_version=info.workbench_version,
-                        install_media=info.install_media,
-                        source=info.adf_source,
                     )
                 )
         except Exception:

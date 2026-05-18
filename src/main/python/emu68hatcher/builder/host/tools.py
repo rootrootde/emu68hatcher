@@ -46,7 +46,7 @@ def resolve_tool_download(name: str) -> dict | None:
 
     if t == "direct-url":
         out = {"url": entry["url"]}
-        for k in ("filename", "hash", "binary", "extract_method"):
+        for k in ("filename", "hash", "extract_method"):
             if k in entry:
                 out[k] = entry[k]
         return out
@@ -332,33 +332,3 @@ def download_tool(
         os.chmod(target_path, 0o755)
         print(f"Installed: {target_path}")
         return target_path
-
-
-def download_all_tools(force: bool = False) -> dict[str, Path | None]:
-    """download HST Imager + HST Amiga + 7-Zip. returns dict tool_id -> installed_path (Non on fail)"""
-    results = {}
-
-    print(f"\n{'=' * 50}")
-    print(f"Tool: {TOOL_LABELS['7z']}")
-    print("=" * 50)
-    results["7z"] = download_7zip(force=force)
-
-    for tool in ["hst-imager", "hst-amiga"]:
-        print(f"\n{'=' * 50}")
-        print(f"Tool: {TOOL_LABELS[tool]}")
-        print("=" * 50)
-        results[tool] = download_tool(tool, force=force)
-
-    return results
-
-
-if __name__ == "__main__":
-    from emu68hatcher.utils.host_tools import check_dependencies
-
-    print("Checking installed tools...")
-    for tool, installed in check_dependencies().items():
-        status_str = "installed" if installed else "NOT FOUND"
-        print(f"  {TOOL_LABELS.get(tool, tool)}: {status_str}")
-
-    print("\nDownloading missing tools...")
-    download_all_tools()

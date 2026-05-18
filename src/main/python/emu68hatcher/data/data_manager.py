@@ -22,12 +22,9 @@ def load_yaml_data(name: str):
 class InstallMediaInfo:
     """information about install media"""
 
-    hash: str
     workbench_version: str
     adf_name: str
     friendly_name: str
-    install_media: str  # "Disk", "CD", "Archive"
-    adf_source: str
 
 
 class InstallMediaHashDB:
@@ -50,12 +47,9 @@ class InstallMediaHashDB:
                 continue
 
             info = InstallMediaInfo(
-                hash=hash_val,
                 workbench_version=str(entry.get("version") or ""),
                 adf_name=adf_name,
                 friendly_name=entry.get("friendly_name") or "",
-                install_media=entry.get("media_type") or "Disk",
-                adf_source=entry.get("source") or "",
             )
 
             if hash_val:

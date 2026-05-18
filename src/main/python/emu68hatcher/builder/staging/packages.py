@@ -7,9 +7,6 @@ from pathlib import Path
 from emu68hatcher.builder.host.archive import ARCHIVE_EXTENSIONS, extract_archive
 from emu68hatcher.config.defaults import DEFAULT_BOOT_DEVICE, DEFAULT_WORK_DEVICE
 from emu68hatcher.data.package_loader import (
-    get_default_packages as _get_default,
-)
-from emu68hatcher.data.package_loader import (
     get_mandatory_packages as _get_mandatory,
 )
 from emu68hatcher.data.package_loader import (
@@ -107,10 +104,6 @@ class PackageInstaller:
     def get_mandatory_packages(self) -> list[str]:
         """get list of mandatory package names"""
         return [p.name for p in _get_mandatory(self.kickstart_version, self.emu68_version)]
-
-    def get_default_packages(self) -> list[str]:
-        """get list of default package names"""
-        return [p.name for p in _get_default(self.kickstart_version, self.emu68_version)]
 
     def install_package(
         self,

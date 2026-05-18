@@ -13,7 +13,6 @@ EMU68_THEME = Theme(
         "info": "cyan",
         "warning": "yellow",
         "error": "bold red",
-        "success": "bold green",
         "progress": "blue",
         "dim": "dim",
     }
@@ -88,9 +87,6 @@ class Emu68Logger:
     def exception(self, message: str, **kwargs) -> None:
         """log at ERROR wiht the active traceback attached"""
         self.logger.exception(message, **kwargs)
-
-    def success(self, message: str) -> None:
-        self.logger.info(f"[success][OK][/success] {message}")
 
 
 _logger: Emu68Logger | None = None

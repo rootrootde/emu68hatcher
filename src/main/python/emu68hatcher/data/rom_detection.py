@@ -1,10 +1,10 @@
 """Kickstart ROM detection - checksum lookup first, header parse as fallback"""
 
+import hashlib
 import re
 from pathlib import Path
 
 from emu68hatcher.data.install_media import walk_files_capped
-from emu68hatcher.utils.hashing import HashAlgorithm, calculate_hash
 
 # valid Kickstart ROM file sizes
 KICKSTART_ROM_SIZES: tuple[int, ...] = (262144, 524288, 1048576)
@@ -153,16 +153,13 @@ for _info in KICKSTART_CHECKSUMS.values():
         del _info["whdload_name"]
 
 
-def _detect_kickstart_from_header(path: Path) -> dict | None:
+def _detect_kickstart_from_header(data: bytes) -> dict | None:
     """fallback ID by scanning version strings in the ROM bytes - when checksum isn't in DB"""
-    file_size = path.stat().st_size
+    file_size = len(data)
 
     # valid: 256KB, 512KB, or 1MB (extended)
     if file_size not in KICKSTART_ROM_SIZES:
         return None
-
-    with open(path, "rb") as f:
-        data = f.read()
 
     version_patterns = [
         rb"Kickstart\s*(\d+)\.(\d+)",
@@ -243,13 +240,14 @@ def identify_kickstart(path: Path) -> dict | None:
     if not path.exists():
         return None
 
-    md5 = calculate_hash(path, HashAlgorithm.MD5)
+    data = path.read_bytes()
+    md5 = hashlib.md5(data).hexdigest()
 
     info = KICKSTART_CHECKSUMS.get(md5)
     if info:
-        return {**info, "size": path.stat().st_size}
+        return {**info, "size": len(data)}
 
-    return _detect_kickstart_from_header(path)
+    return _detect_kickstart_from_header(data)
 
 
 def scan_for_kickstart_roms(

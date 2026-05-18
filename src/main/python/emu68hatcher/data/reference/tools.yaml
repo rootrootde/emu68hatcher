@@ -14,42 +14,34 @@
     windows-x64:
       url: "https://github.com/ip7z/7zip/releases/download/26.00/7z2600-x64.exe"
       hash: "8225b98c5f9f30859e0e9dd09a2b6860"
-      binary: "7z.exe"
       extract_method: self-installer-win
     windows-x86:
       url: "https://github.com/ip7z/7zip/releases/download/26.00/7z2600.exe"
       hash: "e6e0de6cc848d8ded8e52a293b0d2bcb"
-      binary: "7z.exe"
       extract_method: self-installer-win
     windows-arm64:
       url: "https://github.com/ip7z/7zip/releases/download/26.00/7z2600-arm64.exe"
       hash: "3a9011892e1037d54e1649a278ae9f07"
-      binary: "7z.exe"
       extract_method: self-installer-win
     linux-x64:
       url: "https://github.com/ip7z/7zip/releases/download/26.00/7z2600-linux-x64.tar.xz"
       hash: "e8ad00bc2b732b7f030949ffecd1dcc0"
-      binary: "7zz"
       extract_method: tar-xz
     linux-arm64:
       url: "https://github.com/ip7z/7zip/releases/download/26.00/7z2600-linux-arm64.tar.xz"
       hash: "e88de5ff52b3b74582f958abd3d4adec"
-      binary: "7zz"
       extract_method: tar-xz
     linux-arm:
       url: "https://github.com/ip7z/7zip/releases/download/26.00/7z2600-linux-arm.tar.xz"
       hash: "d373539bb5e2b38669d3966ef3301db8"
-      binary: "7zz"
       extract_method: tar-xz
     darwin-arm64:
       url: "https://github.com/ip7z/7zip/releases/download/26.00/7z2600-mac.tar.xz"
       hash: "19f3a9717ab8e8f30d161c4b4cf46237"
-      binary: "7zz"
       extract_method: tar-xz
     darwin-x64:
       url: "https://github.com/ip7z/7zip/releases/download/26.00/7z2600-mac.tar.xz"
       hash: "19f3a9717ab8e8f30d161c4b4cf46237"
-      binary: "7zz"
       extract_method: tar-xz
 
 7zr-bootstrap:
@@ -58,7 +50,6 @@
     windows:
       url: "https://www.7-zip.org/a/7zr.exe"
       hash: "63cdadb8047e200ef81d63dbcfac7bbb"
-      binary: "7zr.exe"
       extract_method: none
 
 hst-imager:

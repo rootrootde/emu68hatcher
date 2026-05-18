@@ -101,8 +101,6 @@ class BuildResult:
     success: bool
     output_path: Path | None = None
     error: str | None = None
-    duration: float = 0.0
-    stages_completed: list[BuildStage] = field(default_factory=list)
 
 
 class BuildWorkflow:
@@ -258,8 +256,6 @@ class BuildWorkflow:
 
     def build(self) -> BuildResult:
         """run the full pipeline synchronously"""
-        import time
-
         from emu68hatcher.builder.pipeline import (
             stage_configure,
             stage_create_image,
@@ -275,21 +271,18 @@ class BuildWorkflow:
         )
 
         pipeline = [
-            (stage_validate, BuildStage.VALIDATE),
-            (stage_setup_workspace, BuildStage.INIT),
-            (stage_download, BuildStage.DOWNLOAD),
-            (stage_extract, BuildStage.EXTRACT),
-            (stage_create_image, BuildStage.CREATE_IMAGE),
-            (stage_install_workbench, BuildStage.INSTALL_WORKBENCH),
-            (stage_install_packages, BuildStage.INSTALL_PACKAGES),
-            (stage_configure, BuildStage.CONFIGURE),
-            (stage_install_extras, BuildStage.INSTALL_EXTRAS),
-            (stage_finalize, BuildStage.FINALIZE),
-            (stage_flash, BuildStage.FLASH),
+            stage_validate,
+            stage_setup_workspace,
+            stage_download,
+            stage_extract,
+            stage_create_image,
+            stage_install_workbench,
+            stage_install_packages,
+            stage_configure,
+            stage_install_extras,
+            stage_finalize,
+            stage_flash,
         ]
-
-        start_time = time.time()
-        stages_completed: list[BuildStage] = []
 
         buildlog_handler, buildlog_path = self._attach_build_log()
         gui_log_handler = BuildLogHandler(self)
@@ -299,9 +292,8 @@ class BuildWorkflow:
         self._log_platform_info()
 
         try:
-            for stage_func, stage_id in pipeline:
+            for stage_func in pipeline:
                 stage_func(self)
-                stages_completed.append(stage_id)
                 self._check_cancelled()
 
             self._update_state(BuildStage.COMPLETE, 100.0)
@@ -312,8 +304,6 @@ class BuildWorkflow:
             return BuildResult(
                 success=True,
                 output_path=Path(self.config.output.path) if self.config.output else None,
-                duration=time.time() - start_time,
-                stages_completed=stages_completed,
             )
 
         except BuildCancelledError:
@@ -322,8 +312,6 @@ class BuildWorkflow:
             return BuildResult(
                 success=False,
                 error="Build cancelled by user",
-                duration=time.time() - start_time,
-                stages_completed=stages_completed,
             )
 
         except BuildError as e:
@@ -333,8 +321,6 @@ class BuildWorkflow:
             return BuildResult(
                 success=False,
                 error=str(e),
-                duration=time.time() - start_time,
-                stages_completed=stages_completed,
             )
 
         except Exception as e:
@@ -345,8 +331,6 @@ class BuildWorkflow:
             return BuildResult(
                 success=False,
                 error=str(e),
-                duration=time.time() - start_time,
-                stages_completed=stages_completed,
             )
 
         finally:

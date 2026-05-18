@@ -443,14 +443,7 @@ def stage_extract(workflow: BuildWorkflow) -> None:
 
 
 def _stage_user_roadshow(workflow: BuildWorkflow, output_dir: Path) -> bool:
-    """populate output_dir from workflow.state.roadshow_archive_path; install rules glob Roadshow*/...
-
-    layouts:
-      outer       - archive file containing Roadshow-1.15.lha + siblings; two-stage extract
-      inner_full  - archive file rooted at Roadshow-1.15/Workbench/...
-      dir_full    - already-extracted dir containing Roadshow-1.15/Workbench/...
-      dir_inner   - already-extracted dir rooted at Workbench/... (wrap under Roadshow-1.15/)
-    """
+    """populate output_dir from workflow.state.roadshow_archive_path per its detected layout (outer/inner_full/dir_full/dir_inner)"""
     src = workflow.state.roadshow_archive_path
     kind = workflow.state.roadshow_archive_kind
     if src is None or kind is None:

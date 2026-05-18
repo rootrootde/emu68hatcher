@@ -56,8 +56,6 @@ class ConfigMetadata(BaseModel):
 
     created: datetime = Field(default_factory=datetime.now)
     modified: datetime | None = None
-    description: str = ""
-    author: str = ""
 
 
 # versions the pipeline builds; adding here enables GUI + validator. needs adf_rules.yaml entry first
@@ -416,10 +414,6 @@ class BuildConfig(BaseModel):
         json_schema_extra={
             "example": {
                 "version": "1.0.0",
-                "metadata": {
-                    "description": "My Amiga 3.1 setup",
-                    "author": "User",
-                },
                 "kickstart": {
                     "version": "3.1",
                     "rom_directory": "/path/to/roms/",
@@ -468,18 +462,6 @@ class BuildConfig(BaseModel):
             }
         }
     )
-
-    def to_json_file(self, path: Path) -> None:
-        """write config to JSON"""
-        path.write_text(self.model_dump_json(indent=2))
-
-    @classmethod
-    def from_json_file(cls, path: Path) -> "BuildConfig":
-        """read config from JSON"""
-        import json
-
-        # model_validate not model_validate_json - the former handles Path coercion
-        return cls.model_validate(json.loads(path.read_text()))
 
 
 ##########################

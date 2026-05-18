@@ -117,8 +117,7 @@ _DEVICE_RE = re.compile(r"^(/dev/(?:r?disk|sd|mmcblk)\d+)")
 
 
 def _refresh_sudo_timestamp(token: ElevationToken) -> None:
-    """no-op when sudo's cache is still warm; long ops blow past the 5-min macos window
-    and the next `sudo -n` fails, so prime the timestamp via askpass before each call."""
+    """prime sudo timestamp before each call; long ops blow past the 5-min macos cache window"""
     if token.method != "sudo" or token.askpass_path is None:
         return
     env = os.environ.copy()

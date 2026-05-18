@@ -143,7 +143,7 @@ def configure_preferences(
 
     workflow._update_state(progress=95.0)
     workflow._milestone("Configuring icons")
-    _install_icon_set(workflow, boot_staging, env_archive)
+    _install_icon_set(workflow, boot_staging)
 
 
 def _override_videocore_card(workflow: BuildWorkflow, boot_staging: Path) -> None:
@@ -224,7 +224,7 @@ def _configure_hdtoolbox_tooltypes(workflow: BuildWorkflow, boot_staging: Path) 
             workflow.logger.exception(f"Failed to patch {info_name}")
 
 
-def _install_icon_set(workflow: BuildWorkflow, boot_staging: Path, env_archive: Path) -> None:
+def _install_icon_set(workflow: BuildWorkflow, boot_staging: Path) -> None:
     """install selected icon set (GlowIcons, Standard...) per icon_sets.yaml"""
     icon_set_name = workflow.config.icon_set
     ks_version = workflow.config.kickstart.version.value
@@ -250,13 +250,9 @@ def _install_icon_set(workflow: BuildWorkflow, boot_staging: Path, env_archive: 
             return
 
         new_folder = icon_set_config.get("new_folder_icon", {})
-        system_disk = icon_set_config.get("system_disk_icon", {})
 
         workflow.logger.info(
             f"  Default drawer icon: {new_folder.get('source', '')}/{new_folder.get('file', '')}"
-        )
-        workflow.logger.info(
-            f"  System disk icon: {system_disk.get('source', '')}/{system_disk.get('file', '')}"
         )
 
         _apply_icon_set_new_folder(workflow, boot_staging, new_folder)
