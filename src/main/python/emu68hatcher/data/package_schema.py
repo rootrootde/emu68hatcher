@@ -34,7 +34,8 @@ class DownloadInfo(BaseModel):
 
     # for GitHub sources
     repo: str | None = None  # format: "owner/repo"
-    tag: str | None = None  # pin a specific release tag (default: latest)
+    # restricted charset so a YAML tag can't smuggle ? # / etc. into the github api url
+    tag: str | None = Field(default=None, pattern=r"^[\w.\-+]+$")
 
     # verification
     hash: str | None = None  # MD5 hash for verification

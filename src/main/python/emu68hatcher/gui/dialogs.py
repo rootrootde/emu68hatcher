@@ -30,21 +30,11 @@ class BuildProgressDialog(QDialog):
         self.config = config
         self.worker: BuildWorker | None = None
         self._success: bool = False
-        self._output_path: str = ""
-        self._error: str = ""
         self.setup_ui()
 
     @property
     def success(self) -> bool:
         return self._success
-
-    @property
-    def output_path(self) -> str:
-        return self._output_path
-
-    @property
-    def error(self) -> str:
-        return self._error
 
     def setup_ui(self):
         self.setWindowTitle("Building Image...")
@@ -129,8 +119,6 @@ class BuildProgressDialog(QDialog):
     def on_finished(self, success: bool, output_path: str, error: str):
         """build done - update labels + buttons"""
         self._success = success
-        self._output_path = output_path
-        self._error = error
         self.cancel_btn.setEnabled(False)
         self.close_btn.setEnabled(True)
 

@@ -275,7 +275,6 @@ def _extract_adfs_with_rules(
             )
 
             if result.returncode == 0:
-                total_files += 1
                 processed_rules += 1
             else:
                 # not all failures are errors - some patterns might not match

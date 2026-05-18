@@ -31,9 +31,7 @@ class ArchiveFormat(str, Enum):
 class ExtractionResult:
     """result of an extraction operation"""
 
-    archive_path: Path
     output_dir: Path
-    format: ArchiveFormat
     success: bool
     files_extracted: int
     error: str | None = None
@@ -127,9 +125,7 @@ def extract_archive(
 
     if not archive_path.exists():
         return ExtractionResult(
-            archive_path=archive_path,
             output_dir=Path(),
-            format=ArchiveFormat.UNKNOWN,
             success=False,
             files_extracted=0,
             error=f"Archive not found: {archive_path}",
@@ -158,9 +154,7 @@ def extract_archive(
     extractor = extractors.get(fmt)
     if extractor is None:
         return ExtractionResult(
-            archive_path=archive_path,
             output_dir=output_dir,
-            format=fmt,
             success=False,
             files_extracted=0,
             error=f"Unsupported archive format: {fmt.value}",
@@ -169,17 +163,13 @@ def extract_archive(
     try:
         files_extracted = extractor(archive_path, output_dir, progress_callback)
         return ExtractionResult(
-            archive_path=archive_path,
             output_dir=output_dir,
-            format=fmt,
             success=True,
             files_extracted=files_extracted,
         )
     except Exception as e:
         return ExtractionResult(
-            archive_path=archive_path,
             output_dir=output_dir,
-            format=fmt,
             success=False,
             files_extracted=0,
             error=str(e),

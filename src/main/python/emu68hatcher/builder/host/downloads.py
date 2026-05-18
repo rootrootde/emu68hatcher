@@ -176,12 +176,16 @@ class DownloadManager:
         name: str = "",
         expected_hash: str | None = None,
     ) -> bool:
-        """try multiple mirrors. short-circuit on 404 - Aminet mirrors share layout, 404 on one = 404 on all (saves ~12min of timeouts per package).
-        when expected_hash is set, also fall through to the next mirror on hash mismatch -
-        a mirror returning HTTP 200 with corrupted/different bytes is treated like a miss."""
+        """try mirrors in order; 404 short-circuits the rest (aminet mirrors share layout), hash mismatch falls through like a miss"""
         for mirror in mirrors:
             if self._cancelled():
                 return False
+            # without an expected hash, http:// mirrors can serve tampered bytes undetectably; refuse them
+            if not expected_hash and mirror.startswith("http://"):
+                self.logger.warning(
+                    f"skipping {mirror} for {name}: no hash configured, refusing http mirror"
+                )
+                continue
             url = f"{mirror.rstrip('/')}/{path.lstrip('/')}"
             self.logger.info(f"Trying mirror: {url}")
             if not self._download_file(url, dest, file_progress=file_progress, name=name):
