@@ -1,7 +1,7 @@
 name: emu68hatcher_local_files
 friendly_name: Hatcher Tools
 group: System
-description: 'network manager + WiFi config tools'
+description: 'Network Config tool + Roadshow tunings'
 versions:
 - '3.1'
 - '3.2'
@@ -12,17 +12,11 @@ mandatory: true
 download:
   source: local
 install:
-- from: System/S/WifiConfig.rexx
-  to: S/
-- from: System/S/NetworkManager.rexx
+- from: System/S/NetworkConfig.rexx
   to: S/
 - from: System/S/RoadshowSettings
   to: S/
-- from: System/Prefs/Wifi Config
-  to: Prefs/
-- from: System/Prefs/Wifi Config.info
-  to: Prefs/
-- from: System/Utilities/Network Manager
+- from: System/Utilities/Network Config
   to: Utilities/
-- from: System/Utilities/Network Manager.info
+- from: System/Utilities/Network Config.info
   to: Utilities/

@@ -1,5 +1,7 @@
 ;BEGIN Roadshow
-If EXISTS S:Network-Startup
-  Execute S:Network-Startup
+If NOT EXISTS S:Network-disabled
+  If EXISTS S:Network-Startup
+    Execute S:Network-Startup
+  EndIf
 EndIf
 ;END Roadshow

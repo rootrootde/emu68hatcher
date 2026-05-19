@@ -28,15 +28,9 @@ def _menu_cmd(script: str) -> str:
 # entries injected into the WB 3.2.x MenuTools ARexx script (network=True ones only when a stack is configured)
 _MENUTOOLS_ENTRIES: tuple[dict, ...] = (
     {
-        "name": "NetManager",
-        "title": "Network Manager",
-        "cmd": _menu_cmd("NetworkManager"),
-        "network": True,
-    },
-    {
-        "name": "HatcherWifiCfg",
-        "title": "Wifi Config",
-        "cmd": _menu_cmd("WifiConfig"),
+        "name": "NetConfig",
+        "title": "Network Config",
+        "cmd": _menu_cmd("NetworkConfig"),
         "network": True,
     },
 )
