@@ -276,6 +276,8 @@ def _extract_adfs_with_rules(
 
             if result.returncode == 0:
                 processed_rules += 1
+                if new_file_name:
+                    _normalize_rename_case(Path(dest_path))
             else:
                 # not all failures are errors - some patterns might not match
                 if (
@@ -309,6 +311,20 @@ def _extract_adfs_with_rules(
     )
 
     return total_files, errors
+
+
+def _normalize_rename_case(target: Path) -> None:
+    # hst-imager case-folds dest against existing files (.NET): extracting to
+    # S/Startup-Sequence when S/Startup-sequence is there keeps the lowercase name.
+    if target.exists():
+        return
+    if not target.parent.is_dir():
+        return
+    target_lower = target.name.lower()
+    for sibling in target.parent.iterdir():
+        if sibling.is_file() and sibling.name.lower() == target_lower:
+            sibling.rename(target)
+            return
 
 
 def _decompress_z_files(workflow: BuildWorkflow, directory: Path) -> None:
