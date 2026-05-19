@@ -103,7 +103,7 @@ def _build_menutools_entries(has_network: bool) -> list[str]:
 
 
 def _inject_menutools_entries(workflow: BuildWorkflow, boot_staging: Path) -> None:
-    """add the Network Manager / Wifi Config entries to WB 3.2.x WBStartup/MenuTools (before EXIT)"""
+    """add Hatcher entries to WB 3.2.x WBStartup/MenuTools (before EXIT)"""
     menutools_path = boot_staging / "WBStartup" / "MenuTools"
     if not menutools_path.exists():
         workflow.logger.debug("No WBStartup/MenuTools script, skipping menu injection")

@@ -1,2 +1,0 @@
-; Wifi Config launcher - launched via IconX so a CLI exists for 'address command'.
-SYS:Rexxc/rx s:WifiConfig.rexx
