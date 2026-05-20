@@ -341,7 +341,7 @@ InterfaceIpScreen:
     hNewGw   = ""
     hTitle = hLabel || " IP"
     if hMode = "2" then do
-        hNewMode = "manual"
+        hNewMode = "static"
         hNewAddr = rtgetstring(hCurAddr, "IP address (e.g. 192.168.1.42):", ,
             hTitle)
         if rtresult = 0 then return
@@ -366,7 +366,7 @@ InterfaceIpScreen:
         return
     end
 
-    if hNewMode = "manual" then
+    if hNewMode = "static" then
         hMsg = hLabel || " set to static" || '0a'x || ,
             "address=" || hNewAddr || '0a'x || ,
             "netmask=" || hNewMask
@@ -410,8 +410,9 @@ WriteInterfaceCfg: procedure
         call writeln("w", hLines.i)
     end
     call writeln("w", "# emu68hatcher: managed by Network Config")
-    call writeln("w", "configure=" || hMode)
-    if hMode = "manual" then do
+    if hMode = "dhcp" then
+        call writeln("w", "configure=dhcp")
+    else do
         call writeln("w", "address=" || hAddr)
         call writeln("w", "netmask=" || hMask)
         if hGw ~= "" then call writeln("w", "gateway=" || hGw)
