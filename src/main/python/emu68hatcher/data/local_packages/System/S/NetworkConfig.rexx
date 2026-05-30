@@ -21,6 +21,7 @@ end
 hWifipiCfg     = "DEVS:NetInterfaces/wifipi"
 hGenetCfg      = "DEVS:NetInterfaces/genet"
 hDnsCfg        = "DEVS:Internet/name_resolution"
+hRoutesCfg     = "DEVS:Internet/routes"
 hWirelessPrefs = "SYS:Prefs/Env-Archive/Sys/wireless.prefs"
 hTuningsFile   = "S:RoadshowSettings"
 hBootDisable   = "S:Network-disabled"
@@ -307,7 +308,7 @@ InterfaceIpScreen:
     /* read existing values for prefill */
     hCurAddr = ""
     hCurMask = ""
-    hCurGw   = ""
+    hCurGw   = ReadDefaultRoute(hRoutesCfg)
     if exists(hCfgPath) then do
         if open("f", hCfgPath, "R") then do
             do while ~eof("f")
@@ -320,7 +321,7 @@ InterfaceIpScreen:
                 select
                     when hK = "address" then hCurAddr = hV
                     when hK = "netmask" then hCurMask = hV
-                    when hK = "gateway" then hCurGw = hV
+                    when hK = "gateway" & hCurGw = "" then hCurGw = hV
                     otherwise nop
                 end
             end
@@ -360,25 +361,34 @@ InterfaceIpScreen:
         hNewGw = strip(hNewGw)
     end
 
-    hRc = WriteInterfaceCfg(hCfgPath, hNewMode, hNewAddr, hNewMask, hNewGw)
+    hRc = WriteInterfaceCfg(hCfgPath, hNewMode, hNewAddr, hNewMask)
     if hRc = 0 then do
         call rtezrequest("Could not write " || hCfgPath, "OK", hTitle)
         return
     end
 
-    if hNewMode = "static" then
+    if hNewMode = "static" then do
+        if ~WriteDefaultRoute(hRoutesCfg, hNewGw) then do
+            call rtezrequest("Could not write " || hRoutesCfg, "OK", hTitle)
+            return
+        end
         hMsg = hLabel || " set to static" || '0a'x || ,
             "address=" || hNewAddr || '0a'x || ,
             "netmask=" || hNewMask
+        if hNewGw ~= "" then
+            hMsg = hMsg || '0a'x || "default route=" || hNewGw
+    end
     else
         hMsg = hLabel || " set to DHCP"
     call rtezrequest(hMsg, "OK", hLabel || " IP")
     return
 
 WriteInterfaceCfg: procedure
-    parse arg hCfgPath, hMode, hAddr, hMask, hGw
+    parse arg hCfgPath, hMode, hAddr, hMask
 
-    /* drop tool-managed keys; keep everything else as-is */
+    /* drop tool-managed keys; keep everything else as-is. gateway= is
+       also dropped to clean up files written by older versions - roadshow
+       rejects it as an unknown keyword. */
     hLines.0 = 0
     if exists(hCfgPath) then do
         if open("r", hCfgPath, "R") then do
@@ -415,7 +425,60 @@ WriteInterfaceCfg: procedure
     else do
         call writeln("w", "address=" || hAddr)
         call writeln("w", "netmask=" || hMask)
-        if hGw ~= "" then call writeln("w", "gateway=" || hGw)
+    end
+    call close("w")
+    return 1
+
+ReadDefaultRoute: procedure
+    parse arg hCfgPath
+    if ~exists(hCfgPath) then return ""
+    if ~open("r", hCfgPath, "R") then return ""
+    hGw = ""
+    do while ~eof("r")
+        hLine = strip(readln("r"))
+        if hLine = "" then iterate
+        if left(hLine, 1) = "#" then iterate
+        parse upper var hLine hHead .
+        if hHead = "DEFAULT" then do
+            parse var hLine . hGw
+            hGw = strip(hGw)
+        end
+    end
+    call close("r")
+    return hGw
+
+WriteDefaultRoute: procedure
+    parse arg hCfgPath, hGw
+
+    /* drop any existing default route, keep everything else as-is */
+    hLines.0 = 0
+    if exists(hCfgPath) then do
+        if open("r", hCfgPath, "R") then do
+            do while ~eof("r")
+                hOne = readln("r")
+                hCheck = strip(hOne)
+                hKeep = 1
+                if hCheck ~= "" & left(hCheck, 1) ~= "#" then do
+                    parse upper var hCheck hHead .
+                    if hHead = "DEFAULT" then hKeep = 0
+                end
+                if hKeep then do
+                    hLines.0 = hLines.0 + 1
+                    hN = hLines.0
+                    hLines.hN = hOne
+                end
+            end
+            call close("r")
+        end
+    end
+
+    if ~open("w", hCfgPath, "W") then return 0
+    do i = 1 to hLines.0
+        call writeln("w", hLines.i)
+    end
+    if hGw ~= "" then do
+        call writeln("w", "# emu68hatcher: managed by Network Config")
+        call writeln("w", "default " || hGw)
     end
     call close("w")
     return 1
