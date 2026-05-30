@@ -472,7 +472,7 @@ class BuildConfig(BaseModel):
 def create_default_partition_layout(
     disk_size_gb: int = 8, disk_size_bytes: int | None = None
 ) -> PartitionConfig:
-    """default: SDH0=Workbench (disk/15, max 1GB), SDH1+=Work (split at PFS3's 101GB cap)"""
+    """default: SDH0=Workbench (disk/15), SDH1+=Work (split at PFS3's 101GB cap)"""
     from emu68hatcher.config.defaults import (
         DEFAULT_BOOT_DEVICE,
         DEFAULT_WORK_DEVICE,
@@ -495,8 +495,7 @@ def create_default_partition_layout(
     remaining_for_id76 = disk_size - MBR_OVERHEAD - boot_size
     id76_size = round_to_mbr_sector(remaining_for_id76)
 
-    workbench_default = min(disk_size // 15, 1024 * 1024 * 1024)
-    workbench_size = round_to_cylinder(workbench_default)
+    workbench_size = round_to_cylinder(disk_size // 15)
 
     work_remaining = id76_size - RDB_OVERHEAD - workbench_size
 

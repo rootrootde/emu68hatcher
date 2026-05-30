@@ -175,7 +175,7 @@ class PartitionsTab(QWidget):
     # ── External signals (output tab → here) ────────────────────────────
 
     def set_auto_disk_size(self, size_bytes, label) -> None:
-        """lock disk_size+boot_spin+reset to the SD card's exact bytes; no 95% fudge"""
+        """lock disk_size + reset to the SD card's exact bytes; boot_spin stays editable"""
         gb = max(1, size_bytes // (1024**3))  # for combo display only
         existing = [self.size_combo.itemData(i) for i in range(self.size_combo.count())]
         self.size_combo.blockSignals(True)
@@ -188,17 +188,15 @@ class PartitionsTab(QWidget):
             self.size_combo.setCurrentIndex(idx)
         self.size_combo.blockSignals(False)
         self.size_combo.setEnabled(False)
-        self.boot_spin.setEnabled(False)
         self.reset_btn.setEnabled(False)
         self.auto_size_label.setText(f"Auto: {label}")
         self.auto_size_label.setVisible(True)
         self._apply_disk_size_bytes(size_bytes)
 
     def clear_auto_disk_size(self) -> None:
-        """unlock disk_size combo + boot_spin + reset, re-apply the GB-snapped layout"""
+        """unlock disk_size combo + reset, re-apply the GB-snapped layout"""
         if not self.size_combo.isEnabled():
             self.size_combo.setEnabled(True)
-            self.boot_spin.setEnabled(True)
             self.reset_btn.setEnabled(True)
             self.auto_size_label.setVisible(False)
             self.auto_size_label.clear()

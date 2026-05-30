@@ -20,7 +20,7 @@
     !!! danger "Double-check the target!"
         **Picking the wrong disk will wipe it.** Emu68 Hatcher will refuse to write to mounted root partitions (=your operating system) but has no problem with wiping anything else you have connected.
 
-7. **Partitions tab - configure disk size and partition layout.** Default is 64 GB image with 1 GB Workbench partition and a "Work" partition. You can add/remove/resize partitions, drag the borders on the partition bar to resize them or type exact sizes. With an SD card selected on the Output tab, the disk size matches the card.
+7. **Partitions tab - configure disk size and partition layout.** Default is a 64 GB image with a ~4 GB Workbench partition (disk size / 15) and a "Work" partition filling the rest. You can add/remove/resize partitions, drag the borders on the partition bar to resize them or type exact sizes. With an SD card selected on the Output tab, the disk size matches the card.
 
     Selecting a partition shows an **Extra content directory** picker below the table. Point it at a local folder and its contents get mirrored into that partition during the build (e.g. pre-load a Work partition with WHDLoad games, demos, or backups). The extras mirror runs last, so any file you drop in there overrides the generated one.
 
