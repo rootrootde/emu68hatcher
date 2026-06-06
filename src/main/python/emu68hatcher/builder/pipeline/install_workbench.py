@@ -120,14 +120,20 @@ def _extract_adfs_with_rules(
     workflow: BuildWorkflow, adf_paths: list[Path]
 ) -> tuple[int, list[str]]:
     """extract ADFs per adf_rules.yaml - mirrors upstream Emu68 Imager file/folder picks per ADF"""
-    from emu68hatcher.data.package_loader import get_filtered_adf_rules
-    from emu68hatcher.utils.host_tools import find_hst_imager, get_hst_imager_env
+    from emu68hatcher.utils.host_tools import find_hst_imager
 
     hst_imager = find_hst_imager()
     if not hst_imager:
         # fatal: silently producing 0 files trips later stages on the empty Workbench dir
         raise BuildError("HST Imager not found - run 'emu68hatcher tools setup' first")
 
+    adf_name_to_path = _build_adf_name_map(workflow, adf_paths)
+    adf_rules = _resolve_adf_rules(workflow)
+    return _run_extraction_rules(workflow, adf_rules, adf_name_to_path, hst_imager)
+
+
+def _build_adf_name_map(workflow: BuildWorkflow, adf_paths: list[Path]) -> dict[str, Path]:
+    """resolve every ADF (hash-detected + filename-guessed) to an ADF-name -> path map"""
     ks_version = workflow.config.kickstart.version.value
 
     # ADF name ("Workbench3_2") -> path
@@ -160,7 +166,9 @@ def _extract_adfs_with_rules(
                     break
             continue
 
-        # try common patterns for other ADFs
+        # try common patterns for other ADFs - keep this list aligned with the
+        # ADF names in install_media.py REQUIRED so a non-hash-matched dump (a
+        # redump or fresh Hyperion ISO rip) still resolves by name fragment.
         for name_pattern in [
             "workbench",
             "extras",
@@ -169,6 +177,9 @@ def _extract_adfs_with_rules(
             "locale",
             "install",
             "classes",
+            "backdrops",
+            "update",
+            "diskdoctor",
         ]:
             if name_pattern in stem:
                 # create ADF name like "Workbench3_1"
@@ -181,13 +192,22 @@ def _extract_adfs_with_rules(
                 break
 
     workflow.logger.debug(f"Mapped {len(adf_name_to_path)} ADFs: {list(adf_name_to_path.keys())}")
+    return adf_name_to_path
+
+
+def _resolve_adf_rules(workflow: BuildWorkflow) -> list:
+    """enabled + mandatory packages -> filtered ADF extraction rules for this Kickstart"""
+    from emu68hatcher.data.package_loader import (
+        get_filtered_adf_rules,
+        get_mandatory_packages,
+    )
+
+    ks_version = workflow.config.kickstart.version.value
 
     # enabled package names from user config + mandatory packages (os_install, etc.)
     enabled_packages = {p.name.lower() for p in workflow.config.packages if p.enabled}
-    from emu68hatcher.data.package_loader import get_mandatory_packages as get_mandatory_pkg_objs
-
     emu68_version = workflow.config.emu68_version.value
-    mandatory_pkgs = get_mandatory_pkg_objs(ks_version, emu68_version)
+    mandatory_pkgs = get_mandatory_packages(ks_version, emu68_version)
     enabled_packages.update(pkg.name.lower() for pkg in mandatory_pkgs)
     workflow.logger.debug(f"Enabled packages for ADF rules: {enabled_packages}")
 
@@ -195,9 +215,19 @@ def _extract_adfs_with_rules(
 
     adf_rules = get_filtered_adf_rules(ks_version, enabled_packages, user_icon_set)
     workflow.logger.info(f"Found {len(adf_rules)} ADF extraction rules for Kickstart {ks_version}")
+    return adf_rules
 
-    total_files = 0
-    errors = []
+
+def _run_extraction_rules(
+    workflow: BuildWorkflow,
+    adf_rules: list,
+    adf_name_to_path: dict[str, Path],
+    hst_imager: Path,
+) -> tuple[int, list[str]]:
+    """run each ADF rule through hst-imager; return (file_count, errors)"""
+    from emu68hatcher.utils.host_tools import run_hst_extract
+
+    errors: list[str] = []
     processed_rules = 0
     last_logged_adf: str | None = None
 
@@ -247,31 +277,14 @@ def _extract_adfs_with_rules(
         else:
             dest_path = dest_dir.as_posix() + "/"
 
-        args = [
-            str(hst_imager),
-            "fs",
-            "extract",
-            source_path,
-            dest_path,
-            "--force",
-            "TRUE",
-            # _UAEFSDB.___ sidecars preserve script bit through ADF -> PFS3 (else SYS:System/Help fails)
-            "--uaemetadata",
-            "UaeFsDb",
-        ]
-
-        if copy_recursive:
-            args.extend(["--recursive", "TRUE"])
-
         try:
-            result = subprocess.run(
-                args,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=60,
-                env=get_hst_imager_env(),
+            # _UAEFSDB.___ sidecars preserve script bit through ADF -> PFS3 (else SYS:System/Help fails)
+            result = run_hst_extract(
+                hst_imager,
+                source_path,
+                dest_path,
+                uaemetadata="UaeFsDb",
+                recursive=copy_recursive,
             )
 
             if result.returncode == 0:
@@ -303,6 +316,7 @@ def _extract_adfs_with_rules(
             workflow._milestone(f"Extracting from {source_location}")
             last_logged_adf = source_location
 
+    total_files = 0
     if workflow.state.workbench_dir.exists():
         total_files = sum(1 for _ in workflow.state.workbench_dir.rglob("*") if _.is_file())
 

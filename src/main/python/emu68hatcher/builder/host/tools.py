@@ -6,14 +6,13 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
-import zipfile
 from pathlib import Path
 from urllib.request import urlopen
 
 from emu68hatcher.builder.host.archive import (
     DEFAULT_MAX_EXTRACTED_BYTES,
-    _validate_member_path,
     _validate_tar_member,
+    extract_archive,
 )
 from emu68hatcher.data.data_manager import load_yaml_data
 from emu68hatcher.utils.hashing import verify_hash
@@ -92,21 +91,10 @@ def download_file(url: str, dest: Path, progress_callback=None) -> bool:
 
 def extract_zip(zip_path: Path, dest_dir: Path) -> list[Path]:
     """extract zip with path-traversal + zip-bomb guards, return list of extracted files"""
-    extracted: list[Path] = []
-    with zipfile.ZipFile(zip_path, "r") as zf:
-        infos = zf.infolist()
-        cumulative = 0
-        for info in infos:
-            _validate_member_path(info.filename, dest_dir)
-            cumulative += info.file_size
-            if cumulative > DEFAULT_MAX_EXTRACTED_BYTES:
-                raise RuntimeError(
-                    f"zip would exceed {DEFAULT_MAX_EXTRACTED_BYTES} bytes uncompressed (bomb?)"
-                )
-        for info in infos:
-            extracted_path = zf.extract(info, dest_dir)
-            extracted.append(Path(extracted_path))
-    return extracted
+    result = extract_archive(zip_path, dest_dir)
+    if not result.success:
+        raise RuntimeError(result.error or f"zip extraction failed: {zip_path}")
+    return [p for p in dest_dir.rglob("*") if p.is_file()]
 
 
 def download_7zip(force: bool = False, progress_callback=None) -> Path | None:
@@ -159,46 +147,13 @@ def download_7zip(force: bool = False, progress_callback=None) -> Path | None:
         extract_dir.mkdir()
 
         if extract_method == "self-installer-win":
-            # installer .exe is itself a self-extracting 7-Zip archive - need 7zr.exe to bootstrap
-            bootstrap = resolve_tool_download("7zr-bootstrap")
-            if not bootstrap or not bootstrap.get("url"):
-                print("7zr-bootstrap not configured; cannot unpack installer")
-                return None
-            sevenzr = temp_path / "7zr.exe"
-            print("Downloading 7-Zip bootstrap...")
-            if not download_file(bootstrap["url"], sevenzr):
-                print("Failed to download 7zr.exe bootstrap")
-                return None
-            try:
-                subprocess.run(
-                    [str(sevenzr), "x", str(archive_path), f"-o{extract_dir}", "-y"],
-                    check=True,
-                    capture_output=True,
-                )
-            except subprocess.CalledProcessError as e:
-                stderr = (e.stderr or b"").decode(errors="replace")
-                print(f"7zr extraction failed: {stderr[:300] or e}")
-                return None
-
-            wanted = ["7z.exe", "7z.dll", "License.txt"]
+            wanted = _extract_7z_installer(archive_path, extract_dir, temp_path)
         elif extract_method == "tar-xz":
-            with tarfile.open(archive_path, "r:xz") as tar:
-                members = tar.getmembers()
-                cumulative = 0
-                for member in members:
-                    _validate_tar_member(member, extract_dir)
-                    cumulative += getattr(member, "size", 0) or 0
-                    if cumulative > DEFAULT_MAX_EXTRACTED_BYTES:
-                        raise RuntimeError(
-                            f"tar would exceed {DEFAULT_MAX_EXTRACTED_BYTES} bytes uncompressed (bomb?)"
-                        )
-                try:
-                    tar.extractall(extract_dir, filter="data")
-                except TypeError:
-                    tar.extractall(extract_dir)
-            wanted = ["7zz", "License.txt"]
+            wanted = _extract_7z_tarxz(archive_path, extract_dir)
         else:
             print(f"Unknown 7-Zip extract method: {extract_method}")
+            return None
+        if wanted is None:
             return None
 
         installed_target: Path | None = None
@@ -220,6 +175,52 @@ def download_7zip(force: bool = False, progress_callback=None) -> Path | None:
 
         print("Failed to install 7-Zip binary")
         return None
+
+
+def _extract_7z_installer(
+    archive_path: Path, extract_dir: Path, temp_path: Path
+) -> list[str] | None:
+    """bootstrap 7zr.exe, unpack the self-extracting windows installer; wanted files or None"""
+    # installer .exe is itself a self-extracting 7-Zip archive - need 7zr.exe to bootstrap
+    bootstrap = resolve_tool_download("7zr-bootstrap")
+    if not bootstrap or not bootstrap.get("url"):
+        print("7zr-bootstrap not configured; cannot unpack installer")
+        return None
+    sevenzr = temp_path / "7zr.exe"
+    print("Downloading 7-Zip bootstrap...")
+    if not download_file(bootstrap["url"], sevenzr):
+        print("Failed to download 7zr.exe bootstrap")
+        return None
+    try:
+        subprocess.run(
+            [str(sevenzr), "x", str(archive_path), f"-o{extract_dir}", "-y"],
+            check=True,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError as e:
+        stderr = (e.stderr or b"").decode(errors="replace")
+        print(f"7zr extraction failed: {stderr[:300] or e}")
+        return None
+    return ["7z.exe", "7z.dll", "License.txt"]
+
+
+def _extract_7z_tarxz(archive_path: Path, extract_dir: Path) -> list[str]:
+    """extract the unix tar.xz build with a zip-bomb guard; return wanted files"""
+    with tarfile.open(archive_path, "r:xz") as tar:
+        members = tar.getmembers()
+        cumulative = 0
+        for member in members:
+            _validate_tar_member(member, extract_dir)
+            cumulative += getattr(member, "size", 0) or 0
+            if cumulative > DEFAULT_MAX_EXTRACTED_BYTES:
+                raise RuntimeError(
+                    f"tar would exceed {DEFAULT_MAX_EXTRACTED_BYTES} bytes uncompressed (bomb?)"
+                )
+        try:
+            tar.extractall(extract_dir, filter="data")
+        except TypeError:
+            tar.extractall(extract_dir)
+    return ["7zz", "License.txt"]
 
 
 def _first_in_tree(root: Path, name: str) -> Path | None:

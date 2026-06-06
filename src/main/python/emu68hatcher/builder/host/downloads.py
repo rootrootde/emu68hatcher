@@ -371,6 +371,70 @@ def _resolve_github_download(api_url: str, expected_filename: str, logger) -> st
     return None
 
 
+def _aminet_item(pkg, pkg_name, filename, expected_hash, logger) -> DownloadItem | None:
+    aminet_path = pkg.download.path
+    if not aminet_path:
+        logger.warning(f"Aminet package {pkg_name} has no download path; skipping")
+        return None
+    url = f"https://aminet.net/{aminet_path}"
+    logger.info(f"Queued Aminet download: {pkg_name} from {url}")
+    return DownloadItem(
+        name=pkg_name,
+        url=url,
+        filename=filename,
+        expected_hash=expected_hash or None,
+        extract=True,
+    )
+
+
+def _github_item(pkg, pkg_name, filename, expected_hash, logger) -> DownloadItem | None:
+    repo = pkg.download.repo
+    if not repo:
+        return None
+    if not _GITHUB_REPO_RE.match(repo):
+        logger.error(f"refusing malformed GitHub repo for {pkg_name}: {repo!r}")
+        return None
+    if pkg.download.tag:
+        api_url = f"https://api.github.com/repos/{repo}/releases/tags/{pkg.download.tag}"
+    else:
+        api_url = f"https://api.github.com/repos/{repo}/releases"
+    download_url = _resolve_github_download(api_url, filename, logger)
+    if not download_url:
+        logger.warning(f"Failed to resolve GitHub URL for {pkg_name}")
+        return None
+    logger.info(f"Queued GitHub download: {pkg_name} from {download_url}")
+    return DownloadItem(
+        name=pkg_name,
+        url=download_url,
+        filename=filename,
+        expected_hash=expected_hash or None,
+        extract=True,
+    )
+
+
+def _web_item(pkg, pkg_name, filename, expected_hash, logger) -> DownloadItem | None:
+    url = pkg.download.url
+    if not url:
+        return None
+    backup_url = pkg.download.backup_url
+    logger.info(f"Queued web download: {pkg_name} from {url}")
+    return DownloadItem(
+        name=pkg_name,
+        url=url,
+        filename=filename,
+        expected_hash=expected_hash or None,
+        extract=True,
+        mirrors=[backup_url] if backup_url else [],
+    )
+
+
+_SOURCE_HANDLERS = {
+    SourceType.AMINET: _aminet_item,
+    SourceType.GITHUB: _github_item,
+    SourceType.WEB: _web_item,
+}
+
+
 def get_package_downloads(package_names: list[str]) -> list[DownloadItem]:
     """build DownloadItems from package YAML defs - handles aminet, github, web, local sources"""
     import logging
@@ -414,70 +478,14 @@ def get_package_downloads(package_names: list[str]) -> list[DownloadItem]:
 
         expected_hash = pkg.download.hash
 
-        if source == SourceType.AMINET:
-            aminet_path = pkg.download.path
-            if aminet_path:
-                url = f"https://aminet.net/{aminet_path}"
-                items.append(
-                    DownloadItem(
-                        name=pkg_name,
-                        url=url,
-                        filename=filename,
-                        expected_hash=expected_hash if expected_hash else None,
-                        extract=True,
-                    )
-                )
-                logger.info(f"Queued Aminet download: {pkg_name} from {url}")
-            else:
-                logger.warning(f"Aminet package {pkg_name} has no download path; skipping")
-
-        elif source == SourceType.GITHUB:
-            repo = pkg.download.repo
-
-            if not repo:
-                continue
-            if not _GITHUB_REPO_RE.match(repo):
-                logger.error(f"refusing malformed GitHub repo for {pkg_name}: {repo!r}")
-                continue
-
-            if pkg.download.tag:
-                api_url = f"https://api.github.com/repos/{repo}/releases/tags/{pkg.download.tag}"
-            else:
-                api_url = f"https://api.github.com/repos/{repo}/releases"
-            download_url = _resolve_github_download(api_url, filename, logger)
-            if download_url:
-                items.append(
-                    DownloadItem(
-                        name=pkg_name,
-                        url=download_url,
-                        filename=filename,
-                        expected_hash=expected_hash if expected_hash else None,
-                        extract=True,
-                    )
-                )
-                logger.info(f"Queued GitHub download: {pkg_name} from {download_url}")
-            else:
-                logger.warning(f"Failed to resolve GitHub URL for {pkg_name}")
-
-        elif source == SourceType.WEB:
-            url = pkg.download.url
-            backup_url = pkg.download.backup_url
-
-            if url:
-                items.append(
-                    DownloadItem(
-                        name=pkg_name,
-                        url=url,
-                        filename=filename,
-                        expected_hash=expected_hash if expected_hash else None,
-                        extract=True,
-                        mirrors=[backup_url] if backup_url else [],
-                    )
-                )
-                logger.info(f"Queued web download: {pkg_name} from {url}")
-
-        else:
+        handler = _SOURCE_HANDLERS.get(source)
+        if handler is None:
             logger.debug(f"Unknown source type for {pkg_name}: {source}")
+            continue
+
+        item = handler(pkg, pkg_name, filename, expected_hash, logger)
+        if item:
+            items.append(item)
 
     logger.info(f"Total packages queued for download: {len(items)}")
     return items
