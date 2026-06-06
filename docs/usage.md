@@ -4,7 +4,7 @@
 
 1. **Launch the app.** It will check whether some required tools are installed.
 
-2. **Start tab - install missing tools.** If required tools are shown as missing, click **Download missing tools** and wait for green checkmarks.
+2. **Start tab - install missing tools.** If required tools are shown as missing, click **Download Missing Tools** and wait for green checkmarks.
 
 3. **Amiga Files tab - pick the Workbench version to install.** Add one or more directories that contain your Kickstart ROMs and Workbench ADFs. Click **Add...** to point at a folder; the list re-scans after each add/remove. Files are identified by hash, so filenames don't matter. **Show details...** opens a tabbed view of what was detected: the boot ROM picked, the WHDLoad ROM inventory that gets staged to **DEVS:Kickstarts/**, and the per-ADF breakdown.
 

@@ -5,97 +5,61 @@
 
 - name: "1920*1080-60"
   friendly_name: 1080p 60hz
-  width: 1920
-  height: 1080
-  framerate: 60
   hdmi_group: 2
   hdmi_mode: 82
 
 - name: "1280*720-60"
   friendly_name: 720p 60hz
-  width: 1280
-  height: 720
-  framerate: 60
   hdmi_group: 2
   hdmi_mode: 85
 
 - name: "1920*1080-50"
   friendly_name: 1080p 50hz
-  width: 1920
-  height: 1080
-  framerate: 50
   hdmi_group: 1
   hdmi_mode: 31
 
 - name: "1280*720-50"
   friendly_name: 720p 50hz
-  width: 1280
-  height: 720
-  framerate: 50
   hdmi_group: 1
   hdmi_mode: 19
 
 - name: "1920*1200-60"
   friendly_name: 1920x1200 60hz
-  width: 1920
-  height: 1200
-  framerate: 60
   hdmi_group: 2
   hdmi_mode: 68
 
 - name: "1600*900-60"
   friendly_name: 1600x900 60hz
-  width: 1600
-  height: 900
-  framerate: 60
   hdmi_group: 2
   hdmi_mode: 83
 
 - name: "1280*1024-60"
   friendly_name: 1280x1024 60hz
-  width: 1280
-  height: 1024
-  framerate: 60
   hdmi_group: 2
   hdmi_mode: 35
 
 - name: "1366*768-60"
   friendly_name: 1366x768 60hz
-  width: 1366
-  height: 768
-  framerate: 60
   hdmi_group: 2
   hdmi_mode: 86
 
 - name: "1360*768-60"
   friendly_name: 1360x768 60hz
-  width: 1360
-  height: 768
-  framerate: 60
   hdmi_group: 2
   hdmi_mode: 39
 
 - name: "1024*768-60"
   friendly_name: 1024x768 60hz
-  width: 1024
-  height: 768
-  framerate: 60
   hdmi_group: 2
   hdmi_mode: 60
 
 - name: "800*600-60"
   friendly_name: 800x600 60hz
-  width: 800
-  height: 600
-  framerate: 60
   hdmi_group: 2
   hdmi_mode: 9
 
 - name: "800*600-75"
   friendly_name: 800x600 75hz
-  width: 800
-  height: 600
-  framerate: 75
   hdmi_group: 2
   hdmi_mode: 87
   hdmi_cvt: "800 600 75"

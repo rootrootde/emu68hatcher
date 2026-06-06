@@ -28,14 +28,6 @@ _packages_cache: list[Package] | None = None
 _bundles_cache: dict[str, Bundle] | None = None
 
 
-def invalidate_package_cache() -> None:
-    """clear all package data caches (used by tests when reference paths change)"""
-    global _packages_cache, _bundles_cache, _adf_rules_cache
-    _packages_cache = None
-    _bundles_cache = None
-    _adf_rules_cache = None
-
-
 def load_package(yaml_path: Path) -> Package | None:
     """load a single package from a YAML file"""
     try:
@@ -97,11 +89,6 @@ def get_mandatory_packages(
     """packages that must be installed for a version (System group + anything mandatory=True)"""
     packages = get_packages_for_version(kickstart_version, emu68_version)
     return [p for p in packages if p.mandatory or p.group == "System"]
-
-
-def get_default_packages(kickstart_version: str, emu68_version: str | None = None) -> list[Package]:
-    """get packages enabled by default for a version"""
-    return [p for p in get_packages_for_version(kickstart_version, emu68_version) if p.default]
 
 
 def get_package_by_name(name: str) -> Package | None:

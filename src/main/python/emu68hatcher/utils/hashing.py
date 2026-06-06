@@ -10,8 +10,6 @@ class HashAlgorithm(str, Enum):
     """supported hash algorithms"""
 
     MD5 = "md5"
-    SHA1 = "sha1"
-    SHA256 = "sha256"
 
 
 def calculate_hash(
