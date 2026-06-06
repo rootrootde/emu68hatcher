@@ -352,20 +352,16 @@ def apply_standard_injections(
             count += 1
 
     # apply User-Startup injections based on enabled packages
-    package_to_injection = {
-        "mui38": "S/User-Startup_MUI38",
-        "amissl": "S/User-Startup_AmiSSL",
-        "roadshow": "S/User-Startup_Roadshow",
-        "picasso96": "S/User-Startup_Picasso96",
+    injection_to_package = {
+        "S/User-Startup_MUI38": "mui38",
+        "S/User-Startup_AmiSSL": "amissl",
+        "S/User-Startup_Roadshow": "roadshow",
+        "S/User-Startup_Picasso96": "picasso96",
     }
 
     for injection in USER_STARTUP_INJECTIONS:
         # check if the package is enabled
-        package_name = None
-        for pkg, content_file in package_to_injection.items():
-            if injection.content_file == content_file:
-                package_name = pkg
-                break
+        package_name = injection_to_package.get(injection.content_file)
 
         if enabled_packages and package_name and package_name not in enabled_packages:
             continue

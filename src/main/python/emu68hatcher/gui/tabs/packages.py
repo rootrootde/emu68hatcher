@@ -28,6 +28,7 @@ from emu68hatcher.data.package_loader import (
     get_packages_for_version,
 )
 from emu68hatcher.data.package_schema import Bundle, Package
+from emu68hatcher.gui.widgets import select_combo_by_data
 
 # packages controlled by the network stack radio buttons (hidden from checkbox list)
 _NETWORK_STACK_PACKAGES = {"roadshow"}
@@ -281,10 +282,7 @@ class PackagesTab(QWidget):
 
     def set_icon_set(self, icon_set_name: str):
         """set the icon set dropdown to a specific value"""
-        for i in range(self.icon_set_combo.count()):
-            if self.icon_set_combo.itemData(i) == icon_set_name:
-                self.icon_set_combo.setCurrentIndex(i)
-                return
+        select_combo_by_data(self.icon_set_combo, icon_set_name)
 
     def select_all(self):
         """select all packages"""

@@ -12,7 +12,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from emu68hatcher.config.schema import DisplayConfig, Emu68Version
+from emu68hatcher.config.schema import (
+    DisplayConfig,
+    Emu68Version,
+)
+from emu68hatcher.gui.widgets import select_combo_by_data
 
 
 class Emu68Tab(QWidget):
@@ -37,6 +41,7 @@ class Emu68Tab(QWidget):
                 }
                 for r in modes
             ]
+            self.hdmi_modes.append({"name": "Custom", "friendly": "Custom Resolution"})
         except Exception:
             # fallback defaults
             self.hdmi_modes = [
@@ -87,24 +92,59 @@ class Emu68Tab(QWidget):
 
         # custom resolution (shown only when Custom selected)
         self.custom_res_widget = QWidget()
-        custom_layout = QHBoxLayout(self.custom_res_widget)
-        custom_layout.setContentsMargins(0, 0, 0, 0)
-        custom_layout.addWidget(QLabel("Width:"))
+        custom_outer = QVBoxLayout(self.custom_res_widget)
+        custom_outer.setContentsMargins(0, 0, 0, 0)
+
+        size_row = QHBoxLayout()
+        size_row.addWidget(QLabel("Width:"))
         self.hdmi_width_spin = QSpinBox()
         self.hdmi_width_spin.setRange(640, 1920)
         self.hdmi_width_spin.setValue(800)
-        custom_layout.addWidget(self.hdmi_width_spin)
-        custom_layout.addWidget(QLabel("Height:"))
+        size_row.addWidget(self.hdmi_width_spin)
+        size_row.addWidget(QLabel("Height:"))
         self.hdmi_height_spin = QSpinBox()
         self.hdmi_height_spin.setRange(480, 1200)
         self.hdmi_height_spin.setValue(600)
-        custom_layout.addWidget(self.hdmi_height_spin)
-        custom_layout.addWidget(QLabel("Hz:"))
+        size_row.addWidget(self.hdmi_height_spin)
+        size_row.addWidget(QLabel("Hz:"))
         self.hdmi_hz_spin = QSpinBox()
         self.hdmi_hz_spin.setRange(50, 75)
         self.hdmi_hz_spin.setValue(60)
-        custom_layout.addWidget(self.hdmi_hz_spin)
-        custom_layout.addStretch()
+        size_row.addWidget(self.hdmi_hz_spin)
+        size_row.addStretch()
+        custom_outer.addLayout(size_row)
+
+        cvt_row = QHBoxLayout()
+        cvt_row.addWidget(QLabel("Aspect:"))
+        self.hdmi_aspect_combo = QComboBox()
+        for value, label in (
+            (3, "16:9"),
+            (1, "4:3"),
+            (2, "14:9"),
+            (4, "5:4"),
+            (5, "16:10"),
+            (6, "15:9"),
+        ):
+            self.hdmi_aspect_combo.addItem(label, value)
+        cvt_row.addWidget(self.hdmi_aspect_combo)
+        cvt_row.addWidget(QLabel("Margins:"))
+        self.hdmi_margins_combo = QComboBox()
+        self.hdmi_margins_combo.addItem("Disabled", False)
+        self.hdmi_margins_combo.addItem("Enabled", True)
+        cvt_row.addWidget(self.hdmi_margins_combo)
+        cvt_row.addWidget(QLabel("Scan:"))
+        self.hdmi_interlace_combo = QComboBox()
+        self.hdmi_interlace_combo.addItem("Progressive", False)
+        self.hdmi_interlace_combo.addItem("Interlace", True)
+        cvt_row.addWidget(self.hdmi_interlace_combo)
+        cvt_row.addWidget(QLabel("Blanking:"))
+        self.hdmi_rb_combo = QComboBox()
+        self.hdmi_rb_combo.addItem("Normal", False)
+        self.hdmi_rb_combo.addItem("Reduced", True)
+        cvt_row.addWidget(self.hdmi_rb_combo)
+        cvt_row.addStretch()
+        custom_outer.addLayout(cvt_row)
+
         self.custom_res_widget.setVisible(False)
         hdmi_layout.addWidget(self.custom_res_widget)
 
@@ -133,25 +173,26 @@ class Emu68Tab(QWidget):
     def get_config(self) -> dict:
         """display config (HDMI mode + custom resolution)"""
         hdmi_mode_name = self.hdmi_mode_combo.currentData() or "1280*720-50"
-        custom_cvt = ""
-        if hdmi_mode_name == "Custom":
-            custom_cvt = f"{self.hdmi_width_spin.value()} {self.hdmi_height_spin.value()} {self.hdmi_hz_spin.value()}"
         return {
             "hdmi_mode": hdmi_mode_name,
-            "custom_cvt": custom_cvt,
             "width": self.hdmi_width_spin.value(),
             "height": self.hdmi_height_spin.value(),
             "framerate": self.hdmi_hz_spin.value(),
+            "aspect_ratio": self.hdmi_aspect_combo.currentData(),
+            "margins": self.hdmi_margins_combo.currentData(),
+            "interlace": self.hdmi_interlace_combo.currentData(),
+            "reduced_blanking": self.hdmi_rb_combo.currentData(),
         }
 
     def set_config(self, config: DisplayConfig):
         """populate the HDMI fields from a config object"""
         hdmi_mode = config.hdmi_mode or "1280*720-50"
-        for i in range(self.hdmi_mode_combo.count()):
-            if self.hdmi_mode_combo.itemData(i) == hdmi_mode:
-                self.hdmi_mode_combo.setCurrentIndex(i)
-                break
+        select_combo_by_data(self.hdmi_mode_combo, hdmi_mode)
         if config.custom:
             self.hdmi_width_spin.setValue(config.custom.width)
             self.hdmi_height_spin.setValue(config.custom.height)
             self.hdmi_hz_spin.setValue(config.custom.framerate)
+            select_combo_by_data(self.hdmi_aspect_combo, config.custom.aspect_ratio)
+            select_combo_by_data(self.hdmi_margins_combo, config.custom.margins)
+            select_combo_by_data(self.hdmi_interlace_combo, config.custom.interlace)
+            select_combo_by_data(self.hdmi_rb_combo, config.custom.reduced_blanking)

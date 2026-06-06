@@ -212,15 +212,15 @@ class OutputTab(QWidget):
             return
         if config.type == OutputType.DEVICE:
             self.mode_device.setChecked(True)
-        elif getattr(config, "flash_target", None):
+        elif config.flash_target:
             self.mode_img_flash.setChecked(True)
             if config.path:
                 self.output_path.setText(str(config.path))
-            self.sparse_cb.setChecked(getattr(config, "sparse", True))
+            self.sparse_cb.setChecked(config.sparse)
         else:
             self.mode_img.setChecked(True)
             if config.path:
                 self.output_path.setText(str(config.path))
-            self.sparse_cb.setChecked(getattr(config, "sparse", True))
+            self.sparse_cb.setChecked(config.sparse)
         # programmatic setChecked doesnt fire buttonClicked; call the handler directly
         self._on_mode_changed()

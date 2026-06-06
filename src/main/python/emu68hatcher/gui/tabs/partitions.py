@@ -204,13 +204,8 @@ class PartitionsTab(QWidget):
 
     # ── Event handlers ──────────────────────────────────────────────────
 
-    def _apply_disk_size_bytes(self, disk_size_bytes: int) -> None:
-        """recompute the Workbench+Work default for this exact byte size"""
-        from emu68hatcher.config.schema import create_default_partition_layout
-
-        self._disk_size_bytes = disk_size_bytes
-        # rebuild the Workbench+Work default sized for this exact disk
-        layout = create_default_partition_layout(disk_size_bytes=disk_size_bytes)
+    def _load_boot_and_amiga_from(self, layout) -> None:
+        """pull boot_size + amiga partitions out of an mbr layout into editor state"""
         for mbr in layout.layout:
             if mbr.type == "fat32":
                 self._boot_size = mbr.size
@@ -219,6 +214,15 @@ class PartitionsTab(QWidget):
                 self.boot_spin.blockSignals(False)
             elif mbr.type == "id76" and mbr.amiga_partitions:
                 self._amiga_partitions = list(mbr.amiga_partitions)
+
+    def _apply_disk_size_bytes(self, disk_size_bytes: int) -> None:
+        """recompute the Workbench+Work default for this exact byte size"""
+        from emu68hatcher.config.schema import create_default_partition_layout
+
+        self._disk_size_bytes = disk_size_bytes
+        # rebuild the Workbench+Work default sized for this exact disk
+        layout = create_default_partition_layout(disk_size_bytes=disk_size_bytes)
+        self._load_boot_and_amiga_from(layout)
         self._refresh_table()
 
     def _on_disk_size_changed(self):
@@ -524,17 +528,7 @@ class PartitionsTab(QWidget):
 
         layout = create_default_partition_layout(gb)
         self._disk_size_bytes = layout.disk_size
-
-        # pull boot + amiga partitions from the default layout
-        for mbr in layout.layout:
-            if mbr.type == "fat32":
-                self._boot_size = mbr.size
-                self.boot_spin.blockSignals(True)
-                self.boot_spin.setValue(mbr.size // (1024 * 1024))
-                self.boot_spin.blockSignals(False)
-            elif mbr.type == "id76" and mbr.amiga_partitions:
-                self._amiga_partitions = list(mbr.amiga_partitions)
-
+        self._load_boot_and_amiga_from(layout)
         self._refresh_table()
 
     # ── Config I/O ──────────────────────────────────────────────────────
@@ -560,13 +554,5 @@ class PartitionsTab(QWidget):
         self.size_combo.setCurrentIndex(idx)
         self.size_combo.blockSignals(False)
 
-        for mbr in config.layout:
-            if mbr.type == "fat32":
-                self._boot_size = mbr.size
-                self.boot_spin.blockSignals(True)
-                self.boot_spin.setValue(mbr.size // (1024 * 1024))
-                self.boot_spin.blockSignals(False)
-            elif mbr.type == "id76" and mbr.amiga_partitions:
-                self._amiga_partitions = list(mbr.amiga_partitions)
-
+        self._load_boot_and_amiga_from(config)
         self._refresh_table()

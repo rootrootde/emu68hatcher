@@ -5,6 +5,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from emu68hatcher.builder.host.archive import ARCHIVE_EXTENSIONS, extract_archive
+from emu68hatcher.builder.staging.files import ci_match_child
 from emu68hatcher.config.defaults import DEFAULT_BOOT_DEVICE, DEFAULT_WORK_DEVICE
 from emu68hatcher.data.package_loader import (
     get_mandatory_packages as _get_mandatory,
@@ -162,9 +163,9 @@ class PackageInstaller:
                 return source_dir
 
         # try case-insensitive search
-        for d in self.extracted_dir.iterdir():
-            if d.is_dir() and d.name.lower() == pkg.name.lower():
-                return d
+        matched = ci_match_child(self.extracted_dir, pkg.name)
+        if matched and (self.extracted_dir / matched).is_dir():
+            return self.extracted_dir / matched
 
         self.logger.debug(f"Source directory not found for {pkg.name}")
         return None
@@ -176,13 +177,8 @@ class PackageInstaller:
 
         for i, part in enumerate(parts):
             # try case-insensitive resolution for this component
-            next_path = current_path / part
-            if not next_path.exists() and current_path.is_dir():
-                part_lower = part.lower()
-                for child in current_path.iterdir():
-                    if child.name.lower() == part_lower:
-                        next_path = child
-                        break
+            matched = ci_match_child(current_path, part)
+            next_path = current_path / (matched or part)
 
             # check if this is an archive file that needs extraction
             if next_path.is_file():
