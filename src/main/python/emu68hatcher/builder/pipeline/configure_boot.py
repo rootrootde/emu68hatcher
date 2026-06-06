@@ -121,8 +121,7 @@ def _generate_boot_config(workflow: BuildWorkflow, rom_filename: str) -> None:
         if workflow.config.display.hdmi_mode:
             screen_mode = workflow.config.display.hdmi_mode
         if screen_mode == "Custom" and workflow.config.display.custom:
-            custom = workflow.config.display.custom
-            custom_cvt = f"{custom.width} {custom.height} {custom.framerate}"
+            custom_cvt = workflow.config.display.custom.to_cvt_string()
 
     generate_boot_partition_files(
         workflow.state.staging_dir,

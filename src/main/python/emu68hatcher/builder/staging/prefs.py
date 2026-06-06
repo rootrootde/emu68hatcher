@@ -1,7 +1,12 @@
-"""Amiga prefs generation: IFF binary (wbpattern, locale, input) + Env-Archive text"""
+"""Amiga prefs generation: wbpattern.prefs + Env-Archive defaults"""
+
+from __future__ import annotations
 
 import struct
 from pathlib import Path
+
+# AmigaOS IFF prefs PRHD: BYTE ph_Version + BYTE ph_Type + ULONG ph_Flags = 6 bytes.
+_PRHD_BODY = b"\x00\x00\x00\x00\x00\x00"
 
 
 def make_iff_chunk(chunk_id: bytes, data: bytes) -> bytes:
@@ -25,41 +30,11 @@ def generate_wbpattern_prefs(
     backdrop: bool = True,
 ) -> bytes:
     """generate WBPattern.prefs file content"""
-    prhd_chunk = make_iff_chunk(b"PRHD", b"\x00\x00\x00\x00")
+    prhd_chunk = make_iff_chunk(b"PRHD", _PRHD_BODY)
     flags = 0x01 if backdrop else 0
     ptrn_data = struct.pack(">BB HH", wb_pattern, window_pattern, flags, 0)
     ptrn_chunk = make_iff_chunk(b"PTRN", ptrn_data)
     return make_iff_form(b"PREF", [prhd_chunk, ptrn_chunk])
-
-
-def generate_locale_prefs(
-    country: str,
-    language: str,
-    gmt_offset: int = 0,
-) -> bytes:
-    """generate Locale.prefs file content"""
-    country_bytes = country.encode("ascii")[:31].ljust(32, b"\x00")
-    language_bytes = language.encode("ascii")[:29].ljust(30, b"\x00")
-    prhd_chunk = make_iff_chunk(b"PRHD", b"\x00\x00\x00\x00")
-    lcle_data = country_bytes + language_bytes + struct.pack(">h", gmt_offset)
-    lcle_chunk = make_iff_chunk(b"LCLE", lcle_data)
-    return make_iff_form(b"PREF", [prhd_chunk, lcle_chunk])
-
-
-def generate_input_prefs(
-    keymap: str,
-    key_repeat_delay: int,
-    key_repeat_speed: int,
-    mouse_acceleration: int = 2,
-) -> bytes:
-    """generate Input.prefs file content"""
-    keymap_bytes = keymap.encode("ascii")[:29].ljust(30, b"\x00")
-    prhd_chunk = make_iff_chunk(b"PRHD", b"\x00\x00\x00\x00")
-    inpt_data = keymap_bytes + struct.pack(
-        ">HHH", key_repeat_delay, key_repeat_speed, mouse_acceleration
-    )
-    inpt_chunk = make_iff_chunk(b"INPT", inpt_data)
-    return make_iff_form(b"PREF", [prhd_chunk, inpt_chunk])
 
 
 def write_env_var(env_archive_dir: Path, name: str, value: str) -> None:
@@ -84,17 +59,11 @@ def generate_default_env_vars(env_archive_dir: Path) -> None:
 
 
 def install_default_prefs(prefs_dir: Path) -> None:
-    """install default preference files (locale, input, pattern) + env vars"""
+    """install default wbpattern.prefs + env vars (locale/input handled separately)"""
     prefs_dir.mkdir(parents=True, exist_ok=True)
     env_archive = prefs_dir / "Env-Archive"
     env_archive.mkdir(exist_ok=True)
 
-    (prefs_dir / "locale.prefs").write_bytes(
-        generate_locale_prefs(country="united_kingdom", language="english")
-    )
-    (prefs_dir / "input.prefs").write_bytes(
-        generate_input_prefs(keymap="usa", key_repeat_delay=50, key_repeat_speed=10)
-    )
     (prefs_dir / "wbpattern.prefs").write_bytes(generate_wbpattern_prefs())
 
     generate_default_env_vars(env_archive)

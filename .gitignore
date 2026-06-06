@@ -80,3 +80,6 @@ build-and-extract.sh
 site/
 # local-only macos signing env
 .env-mac.sh
+
+# vscode workspace files
+*.code-workspace

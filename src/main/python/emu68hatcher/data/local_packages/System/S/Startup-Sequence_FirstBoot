@@ -34,62 +34,9 @@ ELSE
    ENDIF
 ENDIF
 
-; === First boot setup wizard ===
-IF $FIRSTTIMEBOOT EQ "TRUE"
-   C:Echo ""
-   C:Echo "============================================"
-   C:Echo "   Emu68 Hatcher - First Boot Setup"
-   C:Echo "============================================"
-   C:Echo ""
-   IF $System EQ "PiStorm"
-      C:Echo "Detected: PiStorm on $RpiType"
-   ELSE
-      C:Echo "Detected: UAE emulator"
-   ENDIF
-   C:Echo ""
-ENDIF
-
-IF NOT EXISTS S:FirstBoot.done
-   IF $FIRSTTIMEBOOT EQ "TRUE"
-      C:Echo "Step 1/4: Configuring hardware..."
-   ENDIF
-   C:CE >NIL: S:FirstBoot
-   IF WARN
-      C:Echo >T:RunTimeScript "FailAt 21"
-      IF $SYSTEM EQ "UAE"
-         C:List >>T:RunTimeScript S:FirstBoot PAT=~(#?.info|#?_pistorm) LFORMAT="C:Echo *"  - %n*"*nC:Execute *"%p%n*"*nC:Delete *"%p%n*"*n" ALL FILES
-      ELSE
-         C:List >>T:RunTimeScript S:FirstBoot PAT=~(#?.info|) LFORMAT="C:Echo *"  - %n*"*nC:Execute *"%p%n*"*nC:Delete *"%p%n*"*n" ALL FILES
-      ENDIF
-      C:Execute T:RunTimeScript
-      FailAt 21
-      C:Delete >NIL: T:RunTimeScript
-   ENDIF
-   C:Echo >S:FirstBoot.done "TRUE"
-   IF $FIRSTTIMEBOOT EQ "TRUE"
-      C:Echo ""
-   ENDIF
-ENDIF
-
-IF $FIRSTTIMEBOOT EQ "TRUE"
-   C:Echo "Step 2/4: Setting up display driver..."
-   C:Echo ""
-ENDIF
-
-; Display driver setup happens here (UAEGFX injection follows this block)
+; capture FIRSTTIMEBOOT before the wizard clears it so the wizard body
+; can gate on a stable per-boot flag
 C:SetEnv HATCHERFIRSTBOOT $FIRSTTIMEBOOT
-
-; Mark first boot done early (before potential reboot)
-IF $FIRSTTIMEBOOT EQ "TRUE"
-   C:Echo "FALSE" > SYS:PREFS/ENV-ARCHIVE/FIRSTTIMEBOOT
-ENDIF
-IF $REBOOT EQ "TRUE"
-   C:Echo "FALSE" > SYS:PREFS/ENV-ARCHIVE/REBOOT
-   C:Echo "The Amiga will REBOOT in 3 seconds!"
-   C:DiskChange SDH0:
-   C:Wait 3
-   C:Reboot
-ENDIF
 
 ; Assign EMU68BOOT: to SD0: (SD0 is mounted by the stock Startup-Sequence's
 ; Mount DEVS:DOSDrivers/~(#?.info) line, or by BindDrivers on second+ boots)
@@ -103,59 +50,9 @@ ELSE
    C:Assign >NIL: EMU68BOOT: RAM:EMU68BOOT
 ENDIF
 
-IF $HATCHERFIRSTBOOT EQ "TRUE"
-   C:Echo "Step 3/4: Mounting boot partition..."
-   C:Echo ""
-
-   ; --- Run FirstBootWB scripts (Locale, Cmdline) before LoadWB ---
-   C:Echo "Step 4/4: Regional settings"
-   C:Echo ""
-
-   ; Restore cmdline.txt backup (PiStorm only)
-   IF NOT $SYSTEM EQ "UAE"
-      C:Assign >NIL: EXISTS EMU68BOOT:
-      IF NOT WARN
-         IF EXISTS EMU68BOOT:cmdlineBAK.txt
-            C:Delete EMU68BOOT:cmdline.txt QUIET
-            C:Rename FROM EMU68BOOT:cmdlineBAK.txt TO EMU68BOOT:cmdline.txt
-         ENDIF
-      ENDIF
-   ENDIF
-
-   ; Locale preferences
-   C:Echo "The Locale preferences window will open next."
-   C:Echo "Choose your regional settings, then click Save."
-   C:Echo ""
-   C:Ask "Press RETURN to continue..."
-   IF $KickstartVersion EQ 3.9
-      C:AddDataTypes REFRESH QUIET
-   ENDIF
-   SYS:Prefs/Locale
-
-   ; Clean up FirstBootWB scripts (no longer needed from WBStartup)
-   C:Delete >NIL: S:FirstBootWB/#? ALL QUIET FORCE
-   C:Delete >NIL: S:FirstBootWB QUIET FORCE
-
-   ; Re-enable disabled WBStartup items
-   IF EXISTS SYS:WBStartup/Disabled
-      C:Copy >NIL: "SYS:WBStartup/Disabled/#?" TO "SYS:WBStartup/" ALL FORCE CLONE
-      C:Delete >NIL: "SYS:WBStartup/Disabled" ALL FORCE
-   ENDIF
-
-   ; Set flag for second boot - FirstBootWB self-deletes after the wizard runs
-   C:Echo "TRUE" > SYS:PREFS/ENV-ARCHIVE/SCREENMODESETUP
-
-   C:Echo ""
-   C:Echo "Setup will now reboot to apply changes."
-   C:Echo "One more brief setup step after reboot (display settings)."
-   C:Echo ""
-   C:Ask "Press RETURN to reboot..."
-   C:DiskChange SDH0:
-   IF $System EQ "UAE"
-      C:Reboot
-   ELSE
-      C:EMU68INFO HARDRESET
-   ENDIF
+; first-boot wizard lives in S:Hatcher-FirstBoot and self-deletes when done
+IF EXISTS S:Hatcher-FirstBoot
+   C:Execute S:Hatcher-FirstBoot
 ENDIF
 
 FailAt 21

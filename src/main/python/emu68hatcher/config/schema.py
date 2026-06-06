@@ -130,6 +130,19 @@ class CustomScreenMode(BaseModel):
     width: int = Field(ge=320, le=1920, default=640)
     height: int = Field(ge=200, le=1200, default=480)
     framerate: int = Field(ge=24, le=75, default=50)
+    # 1=4:3, 2=14:9, 3=16:9, 4=5:4, 5=16:10, 6=15:9 - matches RPi hdmi_cvt aspect field
+    aspect_ratio: int = Field(ge=1, le=6, default=3)
+    margins: bool = False
+    interlace: bool = False
+    reduced_blanking: bool = False
+
+    def to_cvt_string(self) -> str:
+        """RPi hdmi_cvt line: width height framerate aspect margins interlace reduced_blanking"""
+        return (
+            f"{self.width} {self.height} {self.framerate} "
+            f"{self.aspect_ratio} {int(self.margins)} "
+            f"{int(self.interlace)} {int(self.reduced_blanking)}"
+        )
 
 
 class DisplayConfig(BaseModel):

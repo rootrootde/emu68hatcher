@@ -1,6 +1,8 @@
 """GUI dialogs"""
 
-from PySide6.QtCore import Qt, Slot
+from pathlib import Path
+
+from PySide6.QtCore import Qt, QThread, Signal, Slot
 from PySide6.QtGui import QBrush, QColor, QFont
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -8,6 +10,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QMessageBox,
     QProgressBar,
     QPushButton,
     QTableWidget,
@@ -18,8 +21,36 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from emu68hatcher.config.schema import BuildConfig
+from emu68hatcher.config.schema import BuildConfig, OutputType
 from emu68hatcher.gui.workers import BuildWorker
+
+
+class EmulatorLaunchThread(QThread):
+    """carve partition + spawn the emulator off the Qt thread - carve can take 30+s on large images"""
+
+    progress = Signal(float)
+    finished_ok = Signal()
+    failed = Signal(str)
+
+    def __init__(self, img_path: Path, kickstart_rom: Path, parent=None):
+        super().__init__(parent)
+        self._img = img_path
+        self._rom = kickstart_rom
+
+    def run(self):
+        from emu68hatcher.emulator import EmulatorError, launch_image
+
+        try:
+            launch_image(
+                self._img,
+                self._rom,
+                progress_cb=lambda p: self.progress.emit(p),
+            )
+            self.finished_ok.emit()
+        except EmulatorError as e:
+            self.failed.emit(str(e))
+        except Exception as e:  # noqa: BLE001
+            self.failed.emit(f"unexpected error: {e}")
 
 
 class BuildProgressDialog(QDialog):
@@ -68,6 +99,13 @@ class BuildProgressDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
 
+        # only shown after a successful IMG-mode build (no .img file in DEVICE mode);
+        # label updates to the detected emulator (FS-UAE / WinUAE) at offer time
+        self.emu_btn = QPushButton("Launch in emulator")
+        self.emu_btn.setVisible(False)
+        self.emu_btn.clicked.connect(self._launch_emulator)
+        btn_layout.addWidget(self.emu_btn)
+
         self.cancel_btn = QPushButton("Cancel")
         self.cancel_btn.clicked.connect(self.cancel_build)
         btn_layout.addWidget(self.cancel_btn)
@@ -78,6 +116,9 @@ class BuildProgressDialog(QDialog):
         btn_layout.addWidget(self.close_btn)
 
         layout.addLayout(btn_layout)
+
+        self._emu_thread: EmulatorLaunchThread | None = None
+        self._emu_label: str = "emulator"
 
     def start_build(self):
         """kick off the build worker"""
@@ -127,10 +168,92 @@ class BuildProgressDialog(QDialog):
             self.progress_bar.setValue(100)
             self.status_label.setText(f"Output: {output_path}")
             self.log_output.append(f"\nBuild successful!\nOutput: {output_path}")
+            self._maybe_offer_emulator(output_path)
         else:
             self.stage_label.setText("Build Failed")
             self.status_label.setText(error)
             self.log_output.append(f"\nBuild failed: {error}")
+
+    def _maybe_offer_emulator(self, output_path: str) -> None:
+        """show the launch button only when the build produced an .img file and an emulator is installed"""
+        from emu68hatcher.emulator import find_any_emulator
+
+        out = self.config.output
+        if out is None or out.type != OutputType.IMG:
+            return  # device-only builds have no file to feed the emulator
+        img = Path(output_path) if output_path else None
+        if img is None or not img.is_file():
+            return
+        found = find_any_emulator()
+        if found is None:
+            return  # no emulator installed; nothing to offer
+        backend_name, _binary = found
+        self._emu_label = "FS-UAE" if backend_name == "fsuae" else "WinUAE"
+        self.emu_btn.setText(f"Launch in {self._emu_label}")
+        self.emu_btn.setVisible(True)
+
+    def _launch_emulator(self) -> None:
+        """resolve the kickstart ROM, then run carve + emulator spawn on a worker thread"""
+        from emu68hatcher.data.rom_detection import find_kickstart_for_version
+        from emu68hatcher.emulator import find_any_emulator
+
+        if find_any_emulator() is None:
+            QMessageBox.warning(
+                self,
+                "Emulator not found",
+                "No FS-UAE or WinUAE binary detected. macOS: <code>brew install fs-uae-emulator</code>; "
+                "Linux: <code>apt install fs-uae</code>; Windows: install from https://www.winuae.net.",
+            )
+            return
+
+        out = self.config.output
+        if out is None or not out.path:
+            return
+        img = Path(out.path)
+        if not img.is_file():
+            QMessageBox.warning(self, "Image missing", f"No file at {img}")
+            return
+
+        asset_dirs = [Path(d) for d in self.config.asset_directories if Path(d).exists()]
+        rom = find_kickstart_for_version(asset_dirs, self.config.kickstart.version.value)
+        if rom is None:
+            QMessageBox.warning(
+                self,
+                "Kickstart ROM not found",
+                f"No Kickstart {self.config.kickstart.version.value} ROM in the configured asset dirs.",
+            )
+            return
+
+        self.emu_btn.setEnabled(False)
+        self.close_btn.setEnabled(False)
+        self.log_output.append(f"\nCarving partition for emulator from {img.name}...")
+
+        self._emu_thread = EmulatorLaunchThread(img, rom, self)
+        self._emu_thread.progress.connect(self._on_emu_progress)
+        self._emu_thread.finished_ok.connect(self._on_emu_launched)
+        self._emu_thread.failed.connect(self._on_emu_failed)
+        self._emu_thread.start()
+
+    @Slot(float)
+    def _on_emu_progress(self, frac: float) -> None:
+        self.status_label.setText(f"Preparing emulator image: {frac * 100:.0f}%")
+
+    @Slot()
+    def _on_emu_launched(self) -> None:
+        msg = f"{self._emu_label} launched."
+        self.status_label.setText(msg)
+        self.log_output.append(msg)
+        self.emu_btn.setEnabled(True)
+        self.close_btn.setEnabled(True)
+
+    @Slot(str)
+    def _on_emu_failed(self, message: str) -> None:
+        prefix = f"{self._emu_label} launch failed"
+        self.status_label.setText(f"{prefix}.")
+        self.log_output.append(f"{prefix}: {message}")
+        self.emu_btn.setEnabled(True)
+        self.close_btn.setEnabled(True)
+        QMessageBox.critical(self, prefix, message)
 
     def cancel_build(self):
         """ask the worker to cancel"""
@@ -149,6 +272,11 @@ class BuildProgressDialog(QDialog):
                 )
                 event.ignore()
                 return
+        if self._emu_thread is not None and self._emu_thread.isRunning():
+            # carve is in flight - tearing down mid-write would corrupt the .hdf
+            self.status_label.setText("Preparing emulator image - close blocked")
+            event.ignore()
+            return
         super().closeEvent(event)
 
 

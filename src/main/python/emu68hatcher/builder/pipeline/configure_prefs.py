@@ -35,12 +35,27 @@ VIDEOCORE_TOOLTYPES = [
     "VC4_LEGACY_ID",
 ]
 
-# tooltypes for uaegfx.info (UAE mode)
+# tooltypes for uaegfx.info (UAE mode) - points at the UAE-flavoured settings file
+# so Picasso96 picks up the uaegfx board defs (modeIDs 0x6000_xxxx, BDNM "UAE").
+# Set matches the CaffeineOS UAEgfx.info layout verified from a known-working
+# WinUAE bring-up, so the monitor stub finds every key it might read.
 UAEGFX_TOOLTYPES = [
     "BOARDTYPE=uaegfx",
-    "SETTINGSFILE=SYS:DEVS/Picasso96Settings",
-    "SOFTSPRITE=Yes",
+    "SETTINGSFILE=SYS:Devs/Picasso96Settings.UAE",
+    "BIGSPRITE=NO",
+    "DISPLAYCHAIN=Yes",
+    "FAKENATIVEMODES=NO",
+    "FONTSFIX=NO",
+    "GRANTDIRECTACCESS=NO",
     "IGNOREMASK=Yes",
+    "NOBLITTER=NO",
+    "NOPLANAR2CHUNKYBLITS=Yes",
+    "OVERCLOCK=NO",
+    "SOFTSPRITE=NO",
+    "SYSTEM2SCREENBLITS=NO",
+    "(BORDERBLANK=System)",
+    "(MEMORYCLOCK=0)",
+    "(QUIET)",
 ]
 
 
@@ -106,7 +121,7 @@ def configure_preferences(
 
     install_default_prefs(prefs_dir)
 
-    workflow.logger.info("Configured Amiga preferences (locale, input, pattern)")
+    workflow.logger.info("Configured Amiga preferences (wbpattern + env vars)")
 
     # schema enforces password min_length=8, so wifi-set implies pw-set
     if workflow.config.wifi:

@@ -2,25 +2,22 @@ WAIT 1
 ; second-boot ScreenMode wizard. self-deletes after running so it doesn't
 ; hang around in WBStartup forever.
 
-IF $SCREENMODESETUP EQ "TRUE"
-   C:Echo "FALSE" > SYS:PREFS/ENV-ARCHIVE/SCREENMODESETUP
-   ECHO ""
-   ECHO "============================================"
-   ECHO "   Emu68 Hatcher - Display Setup (2/2)"
-   ECHO "============================================"
-   ECHO ""
-   ECHO "The Screen Mode preferences window will open next."
-   ECHO "Choose your preferred display resolution, then click Save."
-   ECHO ""
-   ECHO "After saving, setup is complete! No more reboots."
-   ECHO ""
-   C:Ask "Press RETURN to continue..."
-   SYS:Prefs/ScreenMode
-   ECHO ""
-   ECHO "Setup complete. Enjoy your Amiga!"
-   ECHO ""
-   C:Wait 3
-ENDIF
+ECHO ""
+ECHO "============================================"
+ECHO "   Emu68 Hatcher - Display Setup (2/2)"
+ECHO "============================================"
+ECHO ""
+ECHO "The Screen Mode preferences window will open next."
+ECHO "Choose your preferred display resolution, then click Save."
+ECHO ""
+ECHO "After saving, setup is complete! No more reboots."
+ECHO ""
+C:Ask "Press RETURN to continue..."
+SYS:Prefs/ScreenMode
+ECHO ""
+ECHO "Setup complete. Enjoy your Amiga!"
+ECHO ""
+C:Wait 3
 
 C:Delete >NIL: SYS:WBStartup/FirstBootWB.info FORCE
 C:Delete >NIL: SYS:WBStartup/FirstBootWB FORCE

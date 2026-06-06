@@ -1,6 +1,7 @@
 """data management"""
 
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 
 import yaml
@@ -8,8 +9,9 @@ import yaml
 _REFERENCE_DIR = Path(__file__).parent / "reference"
 
 
+@cache
 def load_yaml_data(name: str):
-    """load a YAML data file from the data directory"""
+    """load a YAML data file from the data directory (result cached per name)"""
     path = _REFERENCE_DIR / f"{name}.yaml"
     if not path.exists():
         return []
