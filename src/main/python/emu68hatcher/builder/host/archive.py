@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from emu68hatcher.utils.host_tools import find_7z, find_hst_imager
+from emu68hatcher.utils.host_tools import find_7z, find_hst_imager, run_hst_extract
 from emu68hatcher.utils.paths import get_extracted_dir
 
 
@@ -238,24 +238,13 @@ def _extract_lha(
 
     hst = find_hst_imager()
     if hst:
-        result = subprocess.run(
-            [
-                str(hst),
-                "fs",
-                "extract",
-                f"{archive_path}/*",
-                str(output_dir) + "/",
-                "--recursive",
-                "TRUE",
-                "--force",
-                "TRUE",
-                "--uaemetadata",
-                "None",
-            ],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
+        result = run_hst_extract(
+            hst,
+            f"{archive_path}/*",
+            str(output_dir) + "/",
+            uaemetadata="None",
+            recursive=True,
+            timeout=None,
         )
         if result.returncode == 0:
             return sum(1 for _ in output_dir.rglob("*") if _.is_file())

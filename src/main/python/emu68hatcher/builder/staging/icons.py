@@ -2,12 +2,11 @@
 
 import logging
 import shutil
-import subprocess
 import tempfile
 from pathlib import Path
 
 from emu68hatcher.data.package_loader import get_local_packages_dir
-from emu68hatcher.utils.host_tools import find_hst_imager
+from emu68hatcher.utils.host_tools import find_hst_imager, run_hst_extract
 
 logger = logging.getLogger(__name__)
 
@@ -99,24 +98,11 @@ def extract_icon_from_adf(
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_dir = Path(tmp)
-        args = [
-            str(hst_imager),
-            "fs",
-            "extract",
+        result = run_hst_extract(
+            hst_imager,
             f"{adf_path.as_posix()}/{file_in_adf}",
             tmp_dir.as_posix() + "/",
-            "--force",
-            "TRUE",
-            "--uaemetadata",
-            "None",
-        ]
-        result = subprocess.run(
-            args,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=60,
+            uaemetadata="None",
         )
         if result.returncode != 0:
             logger.warning(

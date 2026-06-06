@@ -76,9 +76,7 @@ def _extract_ffs_handler_if_needed(workflow: BuildWorkflow) -> None:
     if not workflow.config.partitions or not workflow.config.partitions.uses_ffs:
         return
 
-    import subprocess
-
-    from emu68hatcher.utils.host_tools import find_hst_imager
+    from emu68hatcher.utils.host_tools import find_hst_imager, run_hst_extract
 
     # match KS and WB on parsed version tuples (string startswith would treat "3.1" as a prefix of "3.10")
     ks_version = workflow.config.kickstart.version.value
@@ -122,26 +120,13 @@ def _extract_ffs_handler_if_needed(workflow: BuildWorkflow) -> None:
         raise BuildError("hst-imager not available; cannot extract FFS handler")
 
     scratch = ensure_dir(workflow.state.extracted_dir / "ffs_handler")
-    args = [
-        str(hst_imager),
-        "fs",
-        "extract",
-        f"{install_adf.as_posix()}/L/FastFileSystem",
-        scratch.as_posix() + "/",
-        "--force",
-        "TRUE",
-        "--uaemetadata",
-        "UaeFsDb",
-    ]
     workflow._update_state(progress=3.0)
     workflow._milestone("Extracting FFS handler from Install ADF")
-    result = subprocess.run(
-        args,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=60,
+    result = run_hst_extract(
+        hst_imager,
+        f"{install_adf.as_posix()}/L/FastFileSystem",
+        scratch.as_posix() + "/",
+        uaemetadata="UaeFsDb",
     )
     handler = scratch / "FastFileSystem"
     if result.returncode != 0 or not handler.exists():

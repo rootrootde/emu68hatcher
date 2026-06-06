@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import subprocess
 from pathlib import Path
 
 from emu68hatcher.utils.paths import (
@@ -109,3 +110,31 @@ def get_hst_imager_env() -> dict[str, str]:
     env = os.environ.copy()
     env[DOTNET_BUNDLE_ENV_VAR] = str(get_dotnet_bundle_dir())
     return env
+
+
+def run_hst_extract(
+    hst_imager: str | Path,
+    source: str,
+    dest: str,
+    *,
+    uaemetadata: str = "UaeFsDb",
+    recursive: bool = False,
+    force: bool = True,
+    timeout: int | None = 60,
+) -> subprocess.CompletedProcess:
+    """run `hst-imager fs extract`, always passing the DOTNET_BUNDLE env"""
+    args = [str(hst_imager), "fs", "extract", source, dest]
+    if recursive:
+        args += ["--recursive", "TRUE"]
+    if force:
+        args += ["--force", "TRUE"]
+    args += ["--uaemetadata", uaemetadata]
+    return subprocess.run(
+        args,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout,
+        env=get_hst_imager_env(),
+    )
