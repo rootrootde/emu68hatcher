@@ -14,8 +14,6 @@ download:
 install:
 - from: System/FirstBoot/*
   to: S/FirstBoot/
-- from: System/FirstBootWB/*
-  to: S/FirstBootWB/
 - from: System/WBStartup/FirstBootWB
   to: WBStartup/
 - from: System/WBStartup/FirstBootWB.info

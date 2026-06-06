@@ -378,8 +378,13 @@ InterfaceIpScreen:
         if hNewGw ~= "" then
             hMsg = hMsg || '0a'x || "default route=" || hNewGw
     end
-    else
+    else do
+        if ~WriteDefaultRoute(hRoutesCfg, "") then do
+            call rtezrequest("Could not write " || hRoutesCfg, "OK", hTitle)
+            return
+        end
         hMsg = hLabel || " set to DHCP"
+    end
     call rtezrequest(hMsg, "OK", hLabel || " IP")
     return
 
