@@ -282,6 +282,7 @@
   adf: Locale3_2
   from: Support/Fonts
   to: Fonts/
+  recursive: true
   sequence: 1
   package: os_install
 - &id017
