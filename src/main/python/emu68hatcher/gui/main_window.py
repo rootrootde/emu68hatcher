@@ -202,7 +202,13 @@ class MainWindow(QMainWindow):
                 width=disp["width"],
                 height=disp["height"],
                 framerate=disp.get("framerate", 60),
+                aspect_ratio=disp.get("aspect_ratio", 3),
+                margins=disp.get("margins", False),
+                interlace=disp.get("interlace", False),
+                reduced_blanking=disp.get("reduced_blanking", False),
             )
+        else:
+            self.config.display.custom = None
 
         # selected Emu68 release
         self.config.emu68_version = self.emu68_tab.get_emu68_version()
