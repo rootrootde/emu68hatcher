@@ -32,6 +32,30 @@ hGenetDevice   = "SYS:Devs/Networks/genet.device"
 
 address command
 
+/* non-interactive entry: 'rx NetworkConfig.rexx ONLINE WIFI|ETHERNET'.
+   used by the Connect WiFi / Connect Ethernet launcher icons - bring up
+   the named interface and exit so the launcher window auto-closes. on
+   failure a requester carries the reason before exiting. */
+parse arg hCmd hIface .
+hAuto = 0
+if upper(strip(hCmd)) = "ONLINE" then do
+    hAuto = 1
+    hIface = upper(strip(hIface))
+    hConnResult = 0
+    select
+        when hIface = "WIFI" then call HatcherOnlineWifi
+        when hIface = "ETHERNET" then call HatcherOnlineGenet
+        when hIface = "GENET" then call HatcherOnlineGenet
+        otherwise say "Unknown interface: " || hIface
+    end
+    if hConnResult ~= 1 then do
+        call rtezrequest("Could not connect via " || hIface || ".", "OK", "Hatcher Network")
+        exit 10
+    end
+    "C:Wait 2"
+    exit 0
+end
+
 /* main loop */
 do forever
     "RequestChoice >"hChoiceFile ,
@@ -84,6 +108,7 @@ HatcherOnlineWifi:
     say ""
     say "--- Online: WiFi ---"
     say ""
+    hConnResult = 0
 
     if ~exists("Libs:bsdsocket.library") then do
         say "Roadshow's bsdsocket.library is not installed."
@@ -98,6 +123,10 @@ HatcherOnlineWifi:
 
     call ReadSsid
     if hSsid = "" then do
+        if hAuto then do
+            say "No WiFi credentials configured."
+            return
+        end
         "RequestChoice >"hChoiceFile ,
             "TITLE ""Hatcher Network""" ,
             "BODY ""No WiFi config.*nOpen WiFi credentials?""" ,
@@ -142,6 +171,7 @@ HatcherOnlineGenet:
     say ""
     say "--- Online: Ethernet ---"
     say ""
+    hConnResult = 0
 
     if ~exists("Libs:bsdsocket.library") then do
         say "Roadshow's bsdsocket.library is not installed."
@@ -184,7 +214,10 @@ HatcherAttach:
     if rc ~= 0 then do
         say "Error: could not add network interface (rc=" || rc || ")."
         if hDev = "wifipi" then call HatcherKillWm
+        hConnResult = 0
     end
+    else
+        hConnResult = 1
     return
 
 HatcherKillWm:

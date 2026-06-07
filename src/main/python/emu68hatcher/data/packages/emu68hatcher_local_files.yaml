@@ -22,3 +22,11 @@ install:
   to: Utilities/
 - from: System/Utilities/Network Config.info
   to: Utilities/
+- from: System/Utilities/Connect WiFi
+  to: Utilities/
+- from: System/Utilities/Connect WiFi.info
+  to: Utilities/
+- from: System/Utilities/Connect Ethernet
+  to: Utilities/
+- from: System/Utilities/Connect Ethernet.info
+  to: Utilities/
