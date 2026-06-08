@@ -11,8 +11,7 @@ versions:
 mandatory: true
 download:
   source: local
+  path: System/Devs/Picasso96Settings
 install:
 - from: System/Devs/Picasso96Settings
-  to: Devs/
-- from: System/Devs/Picasso96Settings.UAE
   to: Devs/

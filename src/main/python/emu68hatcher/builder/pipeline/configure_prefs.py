@@ -35,27 +35,12 @@ VIDEOCORE_TOOLTYPES = [
     "VC4_LEGACY_ID",
 ]
 
-# tooltypes for uaegfx.info (UAE mode) - points at the UAE-flavoured settings file
-# so Picasso96 picks up the uaegfx board defs (modeIDs 0x6000_xxxx, BDNM "UAE").
-# Set matches the CaffeineOS UAEgfx.info layout verified from a known-working
-# WinUAE bring-up, so the monitor stub finds every key it might read.
+# tooltypes for uaegfx.info (UAE mode)
 UAEGFX_TOOLTYPES = [
     "BOARDTYPE=uaegfx",
-    "SETTINGSFILE=SYS:Devs/Picasso96Settings.UAE",
-    "BIGSPRITE=NO",
-    "DISPLAYCHAIN=Yes",
-    "FAKENATIVEMODES=NO",
-    "FONTSFIX=NO",
-    "GRANTDIRECTACCESS=NO",
+    "SETTINGSFILE=SYS:DEVS/Picasso96Settings",
+    "SOFTSPRITE=Yes",
     "IGNOREMASK=Yes",
-    "NOBLITTER=NO",
-    "NOPLANAR2CHUNKYBLITS=Yes",
-    "OVERCLOCK=NO",
-    "SOFTSPRITE=NO",
-    "SYSTEM2SCREENBLITS=NO",
-    "(BORDERBLANK=System)",
-    "(MEMORYCLOCK=0)",
-    "(QUIET)",
 ]
 
 

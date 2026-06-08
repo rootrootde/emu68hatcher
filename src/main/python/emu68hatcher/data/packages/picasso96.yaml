@@ -25,10 +25,10 @@ install:
   to: Devs/Monitors/
   rename: Videocore
 - from: Picasso96Install/Devs/Monitors/Picasso96.info
-  to: Devs/Monitors/
+  to: Storage/Monitors/
   rename: uaegfx.info
 - from: Picasso96Install/Devs/Monitors/Picasso96
-  to: Devs/Monitors/
+  to: Storage/Monitors/
   rename: uaegfx
 - from: Picasso96Install/Libs/*
   to: Libs/
