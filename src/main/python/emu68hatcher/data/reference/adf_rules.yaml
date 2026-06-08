@@ -278,13 +278,6 @@
   to: Locale/Catalogs/
   sequence: 1
   package: os_install
-- &id016
-  adf: Locale3_2
-  from: Support/Fonts
-  to: Fonts/
-  recursive: true
-  sequence: 1
-  package: os_install
 - &id017
   adf: LocaleDE3_2
   from: '*'
@@ -663,7 +656,6 @@
 - *id013
 - *id014
 - *id015
-- *id016
 - *id017
 - *id018
 - *id019
@@ -964,7 +956,6 @@
 - *id013
 - *id014
 - *id015
-- *id016
 - *id017
 - *id018
 - *id019
