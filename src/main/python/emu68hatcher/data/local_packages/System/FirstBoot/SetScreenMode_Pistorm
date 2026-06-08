@@ -1,0 +1,10 @@
+; apply the WB screenmode that matches the detected chipset (PiStorm/VideoCore).
+; one-shot: dispatched by Hatcher-FirstBoot, then this script self-deletes.
+IF EXISTS SYS:System/RexxMast
+   SYS:System/RexxMast >NIL:
+   C:Wait 1
+ENDIF
+IF EXISTS SYS:S/CheckScreenModeandChipset.rexx
+   SYS:Rexxc/RX SYS:S/CheckScreenModeandChipset.rexx
+   C:Delete >NIL: SYS:S/CheckScreenModeandChipset.rexx
+ENDIF
