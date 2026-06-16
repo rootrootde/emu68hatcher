@@ -19,6 +19,14 @@ IF $System EQ "UAE"
 		C:Copy >NIL: SYS:Storage/Monitors/Uaegfx.info Devs:Monitors/
 		C:Delete SYS:Storage/Monitors/Uaegfx.info ALL QUIET FORCE
 	ENDIF
+	; emulation cannot open the VideoCore RTG mode - apply the native fallback
+	IF EXISTS Sys:Prefs/Env-Archive/Sys/screenmode.prefs.User
+		IF $ScreenModeChipset EQ "RTG"
+			Sys:Prefs/ScreenMode FROM Sys:Prefs/Env-Archive/Sys/screenmode.prefs.Native USE >NIL:
+		ELSE
+			Sys:Prefs/ScreenMode FROM Sys:Prefs/Env-Archive/Sys/screenmode.prefs.User USE >NIL:
+		ENDIF
+	ENDIF
 ELSE
 	IF EXISTS Devs:Monitors/Uaegfx
 		C:Copy >NIL: Devs:Monitors/Uaegfx SYS:Storage/Monitors/
