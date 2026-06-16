@@ -123,7 +123,6 @@ def configure_preferences(
     workflow._milestone("Configuring Picasso96 monitor")
     _configure_videocore_tooltypes(workflow, boot_staging)
     _override_videocore_card(workflow, boot_staging)
-    _setup_wb_screenmode(workflow, env_archive)
 
     # HDToolBox SCSI name: brcm-emmc on Pi4/CM4, brcm-sdhc on Pi3/Zero (FirstBoot picks at runtime)
     _configure_hdtoolbox_tooltypes(workflow, boot_staging)
@@ -160,46 +159,6 @@ def _override_videocore_card(workflow: BuildWorkflow, boot_staging: Path) -> Non
         return
     shutil.copy2(src, dest)
     workflow.logger.info(f"Overrode VideoCore.card with {src.name}")
-
-
-# VideoCore:1280x720 (mode id from the bundled Picasso96Settings, board base 0x50000000).
-# fixed instead of matched-to-HDMI: 8-bit fits in board memory at this size where it does
-# not at 1080p, and VideoCore.card scales it to whatever the HDMI output is.
-_WB_SCREEN_MODE_ID = 0x500A1000
-_WB_SCREEN_DEPTH = 8  # 256-colour palette screen
-
-
-def _setup_wb_screenmode(workflow: BuildWorkflow, env_archive: Path) -> None:
-    """prepare screenmode.prefs.User (RTG VideoCore mode) + .Native fallback + ScreenModeChipset.
-    on PiStorm CheckScreenModeandChipset.rexx applies .User at first boot; under emulation
-    Startup-Sequence_UAEGFX applies .Native (uaegfx cannot open the VideoCore mode)."""
-    import struct
-
-    sm = env_archive / "Sys" / "screenmode.prefs"
-    if not sm.exists():
-        workflow.logger.warning("screenmode.prefs not staged - skipping WB screenmode setup")
-        return
-
-    base = bytearray(sm.read_bytes())
-    i = base.find(b"SCRM")
-    if i < 0:
-        workflow.logger.warning("screenmode.prefs has no SCRM chunk - skipping WB screenmode setup")
-        return
-    body = i + 8
-
-    # .Native = the shipped native screenmode, untouched (fallback when RTG can't open)
-    (env_archive / "Sys" / "screenmode.prefs.Native").write_bytes(bytes(base))
-
-    # .User = VideoCore RTG mode + 8-bit
-    user = bytearray(base)
-    struct.pack_into(">I", user, body + 16, _WB_SCREEN_MODE_ID)  # smp_DisplayID
-    struct.pack_into(">H", user, body + 24, _WB_SCREEN_DEPTH)  # smp_Depth
-    (env_archive / "Sys" / "screenmode.prefs.User").write_bytes(bytes(user))
-
-    (env_archive / "ScreenModeChipset").write_text("RTG", encoding="iso-8859-1")
-    workflow.logger.info(
-        f"Prepared WB screenmode (mode 0x{_WB_SCREEN_MODE_ID:08x}, depth {_WB_SCREEN_DEPTH}) + .Native"
-    )
 
 
 def _configure_videocore_tooltypes(workflow: BuildWorkflow, boot_staging: Path) -> None:

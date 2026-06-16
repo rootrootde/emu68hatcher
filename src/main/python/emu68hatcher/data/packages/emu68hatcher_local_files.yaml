@@ -18,8 +18,6 @@ install:
   to: S/
 - from: System/S/Hatcher-FirstBoot
   to: S/
-- from: System/S/CheckScreenModeandChipset.rexx
-  to: S/
 - from: System/Utilities/Network Config
   to: Utilities/
 - from: System/Utilities/Network Config.info
