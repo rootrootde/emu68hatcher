@@ -219,22 +219,11 @@ def _action_remove(
 
 # InjectAfter BindDrivers stacks LIFO; list reverse of exec order: UAEGFX, FirstBoot, iconlib, REXXMAST
 STARTUP_SEQUENCE_INJECTIONS = [
-    # ROM CheckInstall LoadModule fails on Emu68 (no L: update files); also QUITs the script
-    ScriptInjection(
-        target_script="S/Startup-Sequence",
-        action=InjectionAction.REMOVE,
-        start_pattern=r";-+\s*ROM CheckInstall",
-        end_pattern=r"^SetPatch",
-        name="ROM CheckInstall (not needed for Emu68)",
-    ),
-    # re-add SetPatch + KEYMAPS assign (consumed by the ROM CheckInstall removal above)
-    ScriptInjection(
-        target_script="S/Startup-Sequence",
-        action=InjectionAction.INJECT_BEFORE,
-        content="SetPatch >NIL:\nAssign >NIL: KEYMAPS: DEVS:Keymaps",
-        start_pattern=r";-+\s*CPU CheckInstall|FailAt 10",
-        name="SetPatch",
-    ),
+    # ROM CheckInstall block is kept intact (matches the reference imager). its
+    # LoadModule steps soft-kick the patched graphics/intuition modules from L:
+    # when the ROM is older than the installed update; for a current 3.2.3 ROM the
+    # version checks skip LoadModule and just run SetPatch. the L: update files are
+    # installed, so the old "no L: files -> QUIT" failure no longer applies.
     # remove CPU CHECKINSTALL section - not needed for Emu68 (causes error on 68040)
     ScriptInjection(
         target_script="S/Startup-Sequence",
