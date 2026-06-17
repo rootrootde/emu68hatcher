@@ -55,10 +55,36 @@ def load_all_packages() -> list[Package]:
                 pkg = load_package(yaml_file)
                 if pkg:
                     packages.append(pkg)
+        _validate_dependency_graph(packages)  # fail fast on bad requires/conflicts/provides
         _packages_cache = packages
 
     # return a copy so callers can't mutate the shared cache
     return list(_packages_cache)
+
+
+def _validate_dependency_graph(packages: list[Package]) -> None:
+    """check requires/recommends/conflicts reference known packages or provides-tokens."""
+    # raise on bad refs so a yaml typo fails the build instead of under-resolving silently
+    tokens = {p.name.lower() for p in packages}
+    for p in packages:
+        tokens.update(t.lower() for t in p.provides)
+
+    errors: list[str] = []
+    for p in packages:
+        for t in p.requires + p.recommends:
+            if t.lower() not in tokens:
+                errors.append(
+                    f"{p.name}: requires/recommends unknown '{t}' (no package or provides)"
+                )
+        unknown_conflicts = [t for t in p.conflicts if t.lower() not in tokens]
+        if unknown_conflicts:
+            logger.warning(f"{p.name}: conflicts reference unknown token(s) {unknown_conflicts}")
+        both = {t.lower() for t in p.requires} & {t.lower() for t in p.conflicts}
+        if both:
+            errors.append(f"{p.name}: both requires and conflicts {sorted(both)}")
+
+    if errors:
+        raise ValueError("invalid package dependency graph:\n  " + "\n  ".join(errors))
 
 
 def get_packages_for_version(
