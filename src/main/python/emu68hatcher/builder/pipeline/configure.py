@@ -62,11 +62,9 @@ def _resolve_boot_device(workflow: BuildWorkflow) -> str:
 
 
 def _collect_enabled_packages(workflow: BuildWorkflow) -> set[str]:
-    """build set of all enabled package names (user-selected + mandatory)"""
-    from emu68hatcher.data.package_loader import get_mandatory_packages
+    """all package names to install (user-selected + mandatory + resolved deps)"""
+    from emu68hatcher.builder.pipeline._selection import resolve_selection
 
-    enabled = {p.name.lower() for p in workflow.config.packages if p.enabled}
     ks_version = workflow.config.kickstart.version.value
     emu68_version = workflow.config.emu68_version.value
-    mandatory = {p.name.lower() for p in get_mandatory_packages(ks_version, emu68_version)}
-    return enabled | mandatory
+    return resolve_selection(workflow.config, ks_version, emu68_version).selected

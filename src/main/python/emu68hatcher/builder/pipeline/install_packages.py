@@ -44,15 +44,14 @@ def stage_install_packages(workflow: BuildWorkflow) -> None:
         emu68_version=emu68_version,
     )
 
-    # dict.fromkeys dedupes while preserving order - install order matters for some amiga packages
-    user_packages = [p.name for p in workflow.config.packages if p.enabled]
-    user_lower = {n.lower() for n in user_packages}
-    if workflow.config.network_stack:
-        stack_name = workflow.config.network_stack.value.lower()
-        if stack_name not in user_lower:
-            user_packages.append(stack_name)
-    mandatory = installer.get_mandatory_packages()
-    all_packages = list(dict.fromkeys(user_packages + mandatory))
+    from emu68hatcher.builder.pipeline._selection import resolve_selection
+
+    resolution = resolve_selection(workflow.config, ks_version, emu68_version)
+    all_packages = resolution.install_order  # dep-before-dependent; independent order preserved
+    for token, reqs in resolution.unsatisfiable.items():
+        workflow.logger.warning(f"unsatisfiable dependency '{token}' required by {sorted(reqs)}")
+    for name, reason in resolution.dropped.items():
+        workflow.logger.info(f"dropped {name}: {reason}")
 
     workflow.logger.info(f"Installing {len(all_packages)} packages using YAML rules")
 

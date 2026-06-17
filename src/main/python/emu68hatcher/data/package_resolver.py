@@ -53,9 +53,11 @@ def resolve(
     *,
     packages: list[Package] | None = None,
     mandatory: list[Package] | None = None,
+    order_hint: list[str] | None = None,
 ) -> Resolution:
     """resolve a user selection into a complete, conflict-free, ordered install set."""
-    # deselected suppresses recommends only; packages/mandatory are injectable for tests
+    # deselected suppresses recommends only; packages/mandatory are injectable for tests;
+    # order_hint keeps independent packages in the caller's order (deps still install first)
     requested = {n.lower() for n in requested}
     deselected = {n.lower() for n in deselected}
 
@@ -235,7 +237,7 @@ def resolve(
         if n not in requested and n not in mandatory_names and requirers.get(n)
     }
 
-    install_order = _topological_order(selected, by_name, requirers)
+    install_order = _topological_order(selected, by_name, requirers, order_hint)
 
     return Resolution(
         selected=selected,
@@ -251,8 +253,9 @@ def _topological_order(
     selected: set[str],
     by_name: dict[str, Package],
     requirers: dict[str, set[str]],
+    order_hint: list[str] | None = None,
 ) -> list[str]:
-    """kahn topo-sort on requires edges; ties by (group, name) to keep existing order."""
+    """kahn topo-sort on requires edges; ties by order_hint then (group, name)."""
     # edge dep -> dependent means dep installs first; in-degree counts requirers within selected
     deps: dict[str, set[str]] = {n: set() for n in selected}
     for prov, reqs in requirers.items():
@@ -262,8 +265,11 @@ def _topological_order(
             if r in selected:
                 deps[r].add(prov)  # r depends on prov -> prov first
 
-    def rank(n: str) -> tuple[int, str]:
-        return (_group_rank(by_name[n]), n)
+    hint_idx = {n: i for i, n in enumerate(order_hint or [])}
+    big = len(hint_idx)
+
+    def rank(n: str) -> tuple[int, int, str]:
+        return (hint_idx.get(n, big), _group_rank(by_name[n]), n)
 
     indeg = {n: len(deps[n]) for n in selected}
     ready = sorted((n for n in selected if indeg[n] == 0), key=rank)

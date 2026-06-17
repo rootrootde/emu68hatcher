@@ -107,14 +107,11 @@ def _check_optional_package_adfs(
     kickstart_version: str,
 ) -> None:
     """flag ADFs needed by enabled packages but missing from the user's library"""
-    from emu68hatcher.data.package_loader import (
-        get_adf_rules_for_version,
-        get_mandatory_packages,
-    )
+    from emu68hatcher.builder.pipeline._selection import resolve_selection
+    from emu68hatcher.data.package_loader import get_adf_rules_for_version
 
     emu68_version = workflow.config.emu68_version.value
-    enabled = {p.name.lower() for p in workflow.config.packages if p.enabled}
-    enabled.update(p.name.lower() for p in get_mandatory_packages(kickstart_version, emu68_version))
+    enabled = resolve_selection(workflow.config, kickstart_version, emu68_version).selected
 
     # core required-disk set is checked by check_install_media_complete; here only
     # ADFs gated behind an optional package
