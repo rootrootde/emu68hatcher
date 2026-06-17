@@ -1,0 +1,32 @@
+name: ahi
+friendly_name: AHI
+group: System
+description: 'AHI retargetable audio system (Paula output)'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+download:
+  source: aminet
+  path: driver/audio/ahiusr_4.18.lha
+  hash: 52131E5F771927FF5D5AAAA64FD97ABC
+  filename: ahiusr_4.18.lha
+install:
+- from: AHI/User/Devs/ahi.device
+  to: Devs/
+- from: AHI/User/Devs/AHI/paula.audio
+  to: Devs/AHI/
+- from: AHI/User/Devs/AHI/filesave.audio
+  to: Devs/AHI/
+- from: AHI/User/Devs/AudioModes/PAULA
+  to: Devs/AudioModes/
+- from: AHI/User/Devs/AudioModes/FILESAVE
+  to: Devs/AudioModes/
+- from: AHI/User/Prefs/AHI_MUI
+  to: Prefs/
+  rename: AHI
+- from: AHI/User/Prefs/AHI.info
+  to: Prefs/
