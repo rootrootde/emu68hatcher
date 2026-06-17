@@ -214,6 +214,9 @@ def _list_linux() -> list[DiskInfo]:
             continue
         if dev.get("ro"):
             continue
+        size = int(dev.get("size") or 0)
+        if size == 0:
+            continue  # empty multi-slot card-reader slot (no media)
         children = dev.get("children", []) or []
         mounted = [
             mp for c in children for mp in (c.get("mountpoints") or [c.get("mountpoint")]) if mp
@@ -227,7 +230,7 @@ def _list_linux() -> list[DiskInfo]:
             DiskInfo(
                 device=f"/dev/{dev['name']}",
                 name=name,
-                size_bytes=int(dev.get("size") or 0),
+                size_bytes=size,
                 is_removable=True,
                 is_system_disk=is_system,
                 mounted_partitions=mounted,
@@ -268,6 +271,8 @@ def _list_macos() -> list[DiskInfo]:
             if mp in ("/", "/System/Volumes/Data"):
                 is_system = True
         size = int(info.get("TotalSize") or whole.get("Size") or 0)
+        if size == 0:
+            continue  # empty multi-slot card-reader slot (no media)
         name = (
             info.get("MediaName") or info.get("IORegistryEntryName") or device_id
         ).strip() or device_id
@@ -353,6 +358,9 @@ def _list_windows() -> list[DiskInfo]:
             continue
         if d.get("IsBoot") or d.get("IsSystem"):
             continue
+        size = int(d.get("Size") or 0)
+        if size == 0:
+            continue  # empty multi-slot card-reader slot (no media)
         partitions = d.get("Partitions") or []
         if not isinstance(partitions, list):
             partitions = [partitions]
@@ -365,7 +373,7 @@ def _list_windows() -> list[DiskInfo]:
             DiskInfo(
                 device=f"\\\\.\\PhysicalDrive{d['Number']}",
                 name=(d.get("FriendlyName") or f"Disk {d['Number']}").strip(),
-                size_bytes=int(d.get("Size") or 0),
+                size_bytes=size,
                 is_removable=True,
                 is_system_disk=is_system,
                 mounted_partitions=mounted,
