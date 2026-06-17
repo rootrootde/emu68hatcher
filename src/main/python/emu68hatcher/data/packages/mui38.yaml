@@ -8,7 +8,11 @@ versions:
 - 3.2.2.1
 - 3.2.3
 - '3.9'
-mandatory: true
+default: true
+provides:
+- mui
+conflicts:
+- mui
 download:
   source: aminet
   path: util/libs/mui38usr.lha

@@ -97,6 +97,21 @@ class PackagesTab(QWidget):
         icon_layout.addStretch()
         layout.addWidget(icon_group)
 
+        # MUI toolkit version (mutually exclusive - one always installs)
+        mui_group = QGroupBox("MUI Toolkit")
+        mui_layout = QHBoxLayout(mui_group)
+        self.radio_mui38 = QRadioButton("MUI 3.8")
+        self.radio_mui5 = QRadioButton("MUI 5.0")
+        self.radio_mui38.setChecked(True)
+        self.radio_mui38.setToolTip("MUI 3.8 by Stefan Stuntz - installed by default")
+        self.radio_mui5.setToolTip(
+            "68020+ successor to 3.8; needs an old mui.key for full prefs access"
+        )
+        mui_layout.addWidget(self.radio_mui38)
+        mui_layout.addWidget(self.radio_mui5)
+        mui_layout.addStretch()
+        layout.addWidget(mui_group)
+
         # network stack selection (radio buttons)
         net_group = QGroupBox("Network Stack")
         net_layout = QVBoxLayout(net_group)
@@ -315,6 +330,17 @@ class PackagesTab(QWidget):
         else:
             self.radio_roadshow.setChecked(True)
 
+    def get_mui_version(self) -> str:
+        """selected MUI package name (mui38 or mui5)"""
+        return "mui5" if self.radio_mui5.isChecked() else "mui38"
+
+    def set_mui_version(self, name: str):
+        """set the MUI radio from a package name"""
+        if name == "mui5":
+            self.radio_mui5.setChecked(True)
+        else:
+            self.radio_mui38.setChecked(True)
+
     def _update_wifi_visibility(self):
         """hide WiFi fields when no network stack is selected"""
         has_stack = not self.radio_none.isChecked()
@@ -396,11 +422,19 @@ class PackagesTab(QWidget):
         stack = self.get_network_stack()
         if stack is not None:
             result.append({"name": "roadshow", "enabled": True})
+
+        # mui is a hidden System package driven by the radio, not the checkbox tree
+        chosen_mui = self.get_mui_version()
+        for name in ("mui38", "mui5"):
+            result.append({"name": name, "enabled": name == chosen_mui})
         return result
 
     def set_config(self, packages: list[PackageConfig]):
         """populate from config; partial bundle state is intentionally collapsed to 'on'"""
         pkg_enabled = {p.name: p.enabled for p in packages}
+
+        # restore the MUI radio (defaults to 3.8 when neither is recorded enabled)
+        self.set_mui_version("mui5" if pkg_enabled.get("mui5") else "mui38")
 
         # reverse lookup: package name -> checkbox key
         pkg_to_key: dict[str, str] = {}

@@ -340,23 +340,23 @@ def apply_standard_injections(
         if inject_script(target, injection, content_base_path):
             count += 1
 
-    # apply User-Startup injections based on enabled packages
-    injection_to_package = {
-        "S/User-Startup_MUI38": "mui38",
-        "S/User-Startup_AmiSSL": "amissl",
-        "S/User-Startup_Roadshow": "roadshow",
-        "S/User-Startup_Picasso96": "picasso96",
+    # apply User-Startup injections based on enabled packages. the MUI snippet only
+    # assigns MUI: + adds its libs, so either mui provider satisfies it.
+    injection_to_packages = {
+        "S/User-Startup_MUI38": {"mui38", "mui5"},
+        "S/User-Startup_AmiSSL": {"amissl"},
+        "S/User-Startup_Roadshow": {"roadshow"},
+        "S/User-Startup_Picasso96": {"picasso96"},
     }
 
     for injection in USER_STARTUP_INJECTIONS:
-        # check if the package is enabled
-        package_name = injection_to_package.get(injection.content_file)
+        gate = injection_to_packages.get(injection.content_file)
 
-        if enabled_packages and package_name and package_name not in enabled_packages:
+        if enabled_packages and gate and not (gate & enabled_packages):
             continue
 
         # full Roadshow auto-runs Network-Startup; the demo snippet leaves it off
-        if package_name == "roadshow" and roadshow_full:
+        if gate == {"roadshow"} and roadshow_full:
             injection = replace(injection, content_file="S/User-Startup_Roadshow_Full")
 
         target = staging_dir / injection.target_script

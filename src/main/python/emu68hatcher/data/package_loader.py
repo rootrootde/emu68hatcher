@@ -112,9 +112,9 @@ def get_packages_for_version(
 def get_mandatory_packages(
     kickstart_version: str, emu68_version: str | None = None
 ) -> list[Package]:
-    """packages that must be installed for a version (System group + anything mandatory=True)"""
+    """packages that must be installed for a version (anything mandatory=True)"""
     packages = get_packages_for_version(kickstart_version, emu68_version)
-    return [p for p in packages if p.mandatory or p.group == "System"]
+    return [p for p in packages if p.mandatory]
 
 
 def get_package_by_name(name: str) -> Package | None:
