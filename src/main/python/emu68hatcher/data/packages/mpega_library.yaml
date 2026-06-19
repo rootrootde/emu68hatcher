@@ -1,0 +1,21 @@
+name: mpega_library
+friendly_name: mpega.library
+group: System
+description: 'MPEG audio decoder library (MP3 playback)'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+download:
+  source: aminet
+  path: util/libs/mpega_library.lha
+  hash: A4704A87E8A810978AAE55193631C7DB
+  filename: mpega_library.lha
+install:
+# integer build, 68020 baseline. the FPU variants check for a hardware-FPU
+# AttnFlag that Emu68's 68040-class fpu doesn't advertise, so they won't OpenLibrary.
+- from: mpega_library/libs/mpega020.library
+  to: Libs/
+  rename: mpega.library

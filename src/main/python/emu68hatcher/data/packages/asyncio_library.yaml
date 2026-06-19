@@ -1,0 +1,18 @@
+name: asyncio_library
+friendly_name: asyncio.library
+group: System
+description: 'asynchronous file I/O library'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+download:
+  source: aminet
+  path: util/libs/asyncioppc.lha
+  hash: BE3454C8811CEE206719B564CAD1A822
+  filename: asyncioppc.lha
+install:
+- from: asyncioppc/libs/asyncio.library
+  to: Libs/

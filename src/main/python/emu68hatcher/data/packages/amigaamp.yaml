@@ -9,13 +9,16 @@ versions:
 - 3.2.3
 - '3.9'
 default: false
+requires:
+- asyncio_library
+- mpega_library
 recommends:
 - ahi
 download:
   source: aminet
-  path: mus/play/AmigaAMP3.lha
-  hash: 0232EE519462FB5C2571A78AD1705B19
-  filename: AmigaAMP3.lha
+  path: mus/play/AmigaAMP3-68k.lha
+  hash: EAB52AEA2BD9E392F5D801CDF88E131B
+  filename: AmigaAMP3-68k.lha
 install:
 - from: AmigaAMP3.info
   to: Programs/
