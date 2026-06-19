@@ -1,15 +1,13 @@
 """package installer driven by YAML defs - extract (incl nested), copy locals, edit scripts"""
 
 import shutil
+import struct
 from collections.abc import Callable
 from pathlib import Path
 
 from emu68hatcher.builder.host.archive import ARCHIVE_EXTENSIONS, extract_archive
 from emu68hatcher.builder.staging.files import ci_match_child
 from emu68hatcher.config.defaults import DEFAULT_BOOT_DEVICE, DEFAULT_WORK_DEVICE
-from emu68hatcher.data.package_loader import (
-    get_mandatory_packages as _get_mandatory,
-)
 from emu68hatcher.data.package_loader import (
     get_package_by_name,
     get_packages_for_version,
@@ -28,6 +26,15 @@ def _ci_glob_pattern(pattern: str) -> str:
         else:
             result.append(ch)
     return "".join(result)
+
+
+def _set_icon_stack(info_path: Path, size: int) -> None:
+    """patch a workbench icon's do_StackSize (BE long at offset 74) so WB launches it with more stack"""
+    data = bytearray(info_path.read_bytes())
+    # only touch real DiskObjects (magic 0xE310); leave anything else untouched
+    if len(data) >= 78 and data[0] == 0xE3 and data[1] == 0x10:
+        struct.pack_into(">i", data, 74, size)
+        info_path.write_bytes(data)
 
 
 def _ci_resolve_path(base: Path, rel_path: str) -> Path | None:
@@ -101,10 +108,6 @@ class PackageInstaller:
             "Work": DEFAULT_WORK_DEVICE,
             "Emu68Boot": "EMU68BOOT",
         }
-
-    def get_mandatory_packages(self) -> list[str]:
-        """get list of mandatory package names"""
-        return [p.name for p in _get_mandatory(self.kickstart_version, self.emu68_version)]
 
     def install_package(
         self,
@@ -280,6 +283,8 @@ class PackageInstaller:
                     if source_item.is_file():
                         dest_path.parent.mkdir(parents=True, exist_ok=True)
                         shutil.copy2(source_item, dest_path)
+                        if rule.stack:
+                            _set_icon_stack(dest_path, rule.stack)
                         files_installed += 1
                     elif source_item.is_dir():
                         files_installed += _merge_tree(source_item, dest_path)
@@ -301,6 +306,8 @@ class PackageInstaller:
                     files_installed += _merge_tree(source_file, dest_path)
                 else:
                     shutil.copy2(source_file, dest_path)
+                    if rule.stack:
+                        _set_icon_stack(dest_path, rule.stack)
                     files_installed = 1
 
         return files_installed

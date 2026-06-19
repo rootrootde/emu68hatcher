@@ -30,3 +30,4 @@ install:
   rename: AHI
 - from: AHI/User/Prefs/AHI.info
   to: Prefs/
+  stack: 32000
