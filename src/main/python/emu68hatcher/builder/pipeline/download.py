@@ -181,26 +181,18 @@ def stage_download(workflow: BuildWorkflow) -> None:
     else:
         workflow.logger.warning("Could not get Emu68 boot file download info from GitHub")
 
-    user_package_names = [p.name for p in workflow.config.packages if p.enabled]
-    user_lower = {n.lower() for n in user_package_names}
+    # resolver gives the full set: user-enabled + network stack + mandatory + anything
+    # pulled in via requires. download has to see the requires deps or they never reach install.
+    from emu68hatcher.builder.pipeline._selection import resolve_selection
 
-    # include the network stack set in config (not in packages[])
-    if workflow.config.network_stack:
-        stack_name = workflow.config.network_stack.value.lower()
-        if stack_name not in user_lower:
-            user_package_names.append(stack_name)
-            workflow.logger.info(f"Added network stack package: {stack_name}")
-
-    # get mandatory packages (all System group + any mandatory=True)
     ks_version = workflow.config.kickstart.version.value
     emu68_version = workflow.config.emu68_version.value
+    all_package_names = resolve_selection(workflow.config, ks_version, emu68_version).install_order
+
+    # only genuinely-mandatory packages are fatal on download failure; a requires-pulled
+    # dep of an optional app fails as a warning (the app just won't be usable).
     mandatory_names = get_mandatory_packages(ks_version, emu68_version)
 
-    # dict.fromkeys dedupes while preserving order (set() would shuffle via hash randomisation)
-    all_package_names = list(dict.fromkeys(user_package_names + mandatory_names))
-
-    workflow.logger.info(f"User-selected packages: {user_package_names}")
-    workflow.logger.info(f"Mandatory packages: {mandatory_names}")
     workflow.logger.info(f"Total packages to process: {len(all_package_names)}")
 
     if all_package_names:
@@ -369,17 +361,12 @@ def stage_extract(workflow: BuildWorkflow) -> None:
 
     local_packages_dir = get_local_packages_dir()
 
-    # build full package name list (same logic as stage_download)
-    user_package_names = [p.name for p in workflow.config.packages if p.enabled]
-    user_lower = {n.lower() for n in user_package_names}
-    if workflow.config.network_stack:
-        stack_name = workflow.config.network_stack.value.lower()
-        if stack_name not in user_lower:
-            user_package_names.append(stack_name)
+    # full resolved set (same as stage_download) so requires-pulled local archives extract too
+    from emu68hatcher.builder.pipeline._selection import resolve_selection
+
     ks_version = workflow.config.kickstart.version.value
     emu68_version = workflow.config.emu68_version.value
-    mandatory_names = get_mandatory_packages(ks_version, emu68_version)
-    all_package_names = list(dict.fromkeys(user_package_names + mandatory_names))
+    all_package_names = resolve_selection(workflow.config, ks_version, emu68_version).install_order
 
     local_extracted = 0
     for pkg_name in all_package_names:
