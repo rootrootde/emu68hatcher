@@ -9,6 +9,8 @@ versions:
 - 3.2.3
 - '3.9'
 mandatory: true
+requires:
+- mui
 download:
   source: aminet
   path: dev/mui/MCC_NList-0.128.lha

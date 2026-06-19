@@ -288,6 +288,9 @@ def _topological_order(
                 ready.append(m)
         ready.sort(key=rank)
     if len(order) != len(selected):
-        # a requires-cycle: append the remainder in stable order (they co-install)
-        order.extend(sorted(selected - set(order), key=rank))
+        # a requires-cycle: append the remainder in stable order (they co-install). order
+        # among them may not honour their edges - log it, it's an authoring error in the yaml.
+        leftover = sorted(selected - set(order), key=rank)
+        logger.warning(f"requires cycle among {leftover}; install order may be wrong")
+        order.extend(leftover)
     return order

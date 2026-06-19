@@ -28,5 +28,5 @@ def resolve_selection(
     mandatory = [p.name for p in get_mandatory_packages(kickstart_version, emu68_version)]
     order_hint = [n.lower() for n in (enabled + net + mandatory)]
 
-    # deselected is empty until recommends exist in the catalogue and the gui tracks unticks
+    # deselected stays empty until the gui lets users untick a recommended package
     return resolve(requested, set(), kickstart_version, emu68_version, order_hint=order_hint)

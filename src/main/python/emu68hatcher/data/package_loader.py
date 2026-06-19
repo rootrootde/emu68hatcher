@@ -82,6 +82,13 @@ def _validate_dependency_graph(packages: list[Package]) -> None:
         both = {t.lower() for t in p.requires} & {t.lower() for t in p.conflicts}
         if both:
             errors.append(f"{p.name}: both requires and conflicts {sorted(both)}")
+        # a package's own name in its requires/conflicts is always an authoring mistake
+        # (the provides+conflicts mutual-exclusion idiom uses a separate token, not the name)
+        name = p.name.lower()
+        if name in {t.lower() for t in p.requires}:
+            errors.append(f"{p.name}: requires itself")
+        if name in {t.lower() for t in p.conflicts}:
+            errors.append(f"{p.name}: conflicts with itself")
 
     if errors:
         raise ValueError("invalid package dependency graph:\n  " + "\n  ".join(errors))
