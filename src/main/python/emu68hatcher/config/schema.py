@@ -339,10 +339,70 @@ class NetworkStack(str, Enum):
 
 
 class WifiConfig(BaseModel):
-    """wifi creds - never written to disk"""
+    """wifi creds - never written to disk; empty password means an open network"""
 
     ssid: str = Field(min_length=1, max_length=32)
-    password: str = Field(min_length=8, max_length=63)
+    password: str = Field(default="", max_length=63)
+
+
+class IpMode(str, Enum):
+    """per-interface address assignment"""
+
+    DHCP = "dhcp"
+    STATIC = "static"
+
+
+def _ipv4_or_none(v) -> str | None:
+    """validate a dotted IPv4 string; empty/None pass through as None"""
+    if v is None:
+        return None
+    v = str(v).strip()
+    if not v:
+        return None
+    import ipaddress
+
+    ipaddress.IPv4Address(v)  # raises ValueError on garbage
+    return v
+
+
+class InterfaceIp(BaseModel):
+    """per-interface IPv4 settings for the Roadshow stack"""
+
+    mode: IpMode = IpMode.DHCP
+    address: str | None = None  # static only
+    netmask: str | None = None  # static only
+
+    @field_validator("address", "netmask", mode="before")
+    @classmethod
+    def _check_ipv4(cls, v):
+        return _ipv4_or_none(v)
+
+    @model_validator(mode="after")
+    def _require_static_fields(self):
+        if self.mode == IpMode.STATIC and (not self.address or not self.netmask):
+            raise ValueError("a static interface needs both an address and a netmask")
+        return self
+
+
+class NetworkSettings(BaseModel):
+    """per-interface IP plus global gateway/DNS (roadshow has one default route + resolver list)"""
+
+    ethernet: InterfaceIp = Field(default_factory=InterfaceIp)
+    wifi: InterfaceIp = Field(default_factory=InterfaceIp)
+    gateway: str | None = None  # global default route
+    dns_servers: list[str] = Field(default_factory=list)
+
+    @field_validator("gateway", mode="before")
+    @classmethod
+    def _check_gateway(cls, v):
+        return _ipv4_or_none(v)
+
+    @field_validator("dns_servers", mode="before")
+    @classmethod
+    def _check_dns(cls, v):
+        if not v:
+            return []
+        return [s for s in (_ipv4_or_none(x) for x in v) if s]
 
 
 ############################
@@ -384,6 +444,9 @@ class BuildConfig(BaseModel):
 
     # wifi creds - never serialized, never in repr
     wifi: WifiConfig | None = Field(default=None, exclude=True, repr=False)
+
+    # per-interface IP mode + global gateway/DNS (creds live in `wifi` above)
+    network: NetworkSettings = Field(default_factory=NetworkSettings)
 
     # boot
     emu68_version: Emu68Version = Field(

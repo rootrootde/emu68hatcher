@@ -4,8 +4,10 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QFileDialog,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -22,6 +24,7 @@ from emu68hatcher.config.schema import (
     KickstartConfig,
     KickstartVersion,
 )
+from emu68hatcher.gui.widgets import select_combo_by_data
 from emu68hatcher.gui.workers import ADFScanWorker, ROMScanWorker
 
 # dropdown order follows schema.SUPPORTED_KICKSTARTS (add a version there to expose it here)
@@ -40,6 +43,8 @@ class KickstartTab(QWidget):
         self._rom_scan_worker = None
         self._adf_scan_worker = None
         self._active_scans = 0
+        self.icon_sets: list[dict] = []
+        self._locale_checks: dict[str, QCheckBox] = {}
         self.setup_ui()
 
     def setup_ui(self):
@@ -60,6 +65,18 @@ class KickstartTab(QWidget):
         version_layout.addWidget(self.version_combo)
         version_layout.addStretch()
         version_group_layout.addLayout(version_layout)
+
+        # icon set picker sits with the WB version - the available icon sets depend on it
+        self._load_icon_sets(self.get_selected_version())
+        icon_layout = QHBoxLayout()
+        icon_layout.addWidget(QLabel("Icons:"))
+        self.icon_set_combo = QComboBox()
+        self.icon_set_combo.setMinimumWidth(200)
+        self.icon_set_combo.setToolTip("GlowIcons recommended for high color displays")
+        self._populate_icon_set_combo()
+        icon_layout.addWidget(self.icon_set_combo)
+        icon_layout.addStretch()
+        version_group_layout.addLayout(icon_layout)
 
         layout.addWidget(version_group)
 
@@ -126,6 +143,16 @@ class KickstartTab(QWidget):
         self._adf_dialog_title: str = ""
 
         layout.addWidget(detected_group)
+
+        #############
+        # languages #
+        #############
+        # locale disks vary by Workbench version, so they live here next to the version picker
+        self._lang_group = QGroupBox("Languages")
+        self._lang_grid = QGridLayout(self._lang_group)
+        self._build_language_grid()
+        layout.addWidget(self._lang_group)
+
         layout.addStretch()
 
     #####################
@@ -183,9 +210,98 @@ class KickstartTab(QWidget):
         self.rescan_btn.setEnabled(not scanning)
 
     def on_version_changed(self):
-        """re-scan when version selection changes"""
+        """re-scan + refresh the icon-set list and language grid when version changes"""
         self.version_changed.emit(self.get_selected_version())
+        if hasattr(self, "icon_set_combo"):
+            self._load_icon_sets(self.get_selected_version())
+            self._populate_icon_set_combo()
+        if hasattr(self, "_lang_grid"):
+            self._build_language_grid()
         self._fire_scans()
+
+    def _build_language_grid(self, columns: int = 3):
+        """(re)build the locale checkbox grid for the selected Workbench version"""
+        from emu68hatcher.data.package_loader import get_packages_for_version
+
+        self._locale_checks.clear()
+        while self._lang_grid.count():
+            item = self._lang_grid.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        locales = [
+            p for p in get_packages_for_version(self.get_selected_version()) if p.group == "Locale"
+        ]
+        for i, p in enumerate(sorted(locales, key=lambda p: p.friendly_name or p.name)):
+            # "German (DE) Locale Files" -> "German (DE)"; the 3.1 bundle stays "Locale Files"
+            label = (p.friendly_name or p.name).replace(" Locale Files", "").strip()
+            cb = QCheckBox(label or (p.friendly_name or p.name))
+            cb.setChecked(p.default)
+            self._lang_grid.addWidget(cb, i // columns, i % columns)
+            self._locale_checks[p.name] = cb
+        self._lang_group.setVisible(bool(locales))
+
+    def get_locale_entries(self) -> list[dict]:
+        """selected locale packages as flat {name, enabled} entries for config.packages"""
+        return [{"name": n, "enabled": cb.isChecked()} for n, cb in self._locale_checks.items()]
+
+    def set_locale(self, packages):
+        """restore locale checkboxes from a loaded config"""
+        enabled = {p.name: p.enabled for p in packages}
+        for name, cb in self._locale_checks.items():
+            if name in enabled:
+                cb.setChecked(enabled[name])
+
+    def _load_icon_sets(self, ks_version: str):
+        """load the icon sets available for a Kickstart version"""
+        self.icon_sets = []
+        try:
+            from emu68hatcher.data.data_manager import load_yaml_data
+
+            for r in load_yaml_data("icon_sets"):
+                if ks_version not in r.get("versions", []):
+                    continue
+                self.icon_sets.append(
+                    {
+                        "name": r.get("name", "Standard"),
+                        "description": r.get("description", ""),
+                        "default": r.get("default", False),
+                    }
+                )
+        except Exception:
+            pass
+
+        if not self.icon_sets:
+            self.icon_sets = [
+                {"name": "Standard", "description": "Standard Icon set", "default": True}
+            ]
+            if ks_version.startswith("3.2"):
+                self.icon_sets.append(
+                    {
+                        "name": "GlowIcons",
+                        "description": "Glow Icons for high color modes",
+                        "default": True,
+                    }
+                )
+                self.icon_sets[0]["default"] = False
+
+    def _populate_icon_set_combo(self):
+        """fill the icon set dropdown from self.icon_sets, picking the default"""
+        self.icon_set_combo.clear()
+        default_idx = 0
+        for i, icon_set in enumerate(self.icon_sets):
+            self.icon_set_combo.addItem(icon_set["name"], icon_set["name"])
+            if icon_set["default"]:
+                default_idx = i
+        self.icon_set_combo.setCurrentIndex(default_idx)
+
+    def get_icon_set(self) -> str:
+        """selected icon set name"""
+        return self.icon_set_combo.currentData() or "Standard"
+
+    def set_icon_set(self, icon_set_name: str):
+        """set the icon set dropdown to a specific value"""
+        select_combo_by_data(self.icon_set_combo, icon_set_name)
 
     def _fire_scans(self):
         """kick off ROM + ADF scans across the current directory list"""

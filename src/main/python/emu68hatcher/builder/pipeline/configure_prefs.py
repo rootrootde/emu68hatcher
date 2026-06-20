@@ -50,8 +50,79 @@ def _wpa_escape(value: str) -> str:
 
 
 def generate_wireless_prefs(ssid: str, password: str) -> str:
-    """generate wireless.prefs content in WirelessManager format"""
-    return f'network={{\n   ssid="{_wpa_escape(ssid)}"\n   psk="{_wpa_escape(password)}"\n}}\n'
+    """wireless.prefs in WirelessManager format; empty password means an open network"""
+    body = f'   ssid="{_wpa_escape(ssid)}"\n'
+    body += f'   psk="{_wpa_escape(password)}"\n' if password else "   key_mgmt=NONE\n"
+    body += "   scan_ssid=1\n"  # probe for hidden SSIDs (matches NetworkConfig.rexx)
+    return f"network={{\n{body}}}\n"
+
+
+# all three writers mirror NetworkConfig.rexx so build-time output matches the runtime tool
+_MANAGED_TAG = "# emu68hatcher: managed by Network Config"
+
+
+def _write_netinterface(path: Path, mode: str, address: str | None, netmask: str | None) -> None:
+    """rewrite a DEVS:NetInterfaces file's IP keys, keeping device=/unit=/tuning lines.
+    roadshow rejects gateway= on an interface - the default route lives in DEVS:Internet/routes."""
+    kept: list[str] = []
+    if path.exists():
+        for line in path.read_text(encoding="iso-8859-1").splitlines():
+            stripped = line.strip()
+            key = stripped.split("=", 1)[0].strip().lower() if stripped[:1] not in ("", "#") else ""
+            if key in ("configure", "address", "netmask", "gateway"):
+                continue
+            kept.append(line)
+    kept.append(_MANAGED_TAG)
+    if mode == "static" and address and netmask:
+        kept += [f"address={address}", f"netmask={netmask}"]
+    else:
+        kept.append("configure=dhcp")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(kept) + "\n", encoding="iso-8859-1")
+
+
+def _write_default_route(path: Path, gateway: str) -> None:
+    """set the default route in DEVS:Internet/routes, keeping other routes"""
+    kept: list[str] = []
+    if path.exists():
+        for line in path.read_text(encoding="iso-8859-1").splitlines():
+            stripped = line.strip()
+            if stripped[:1] not in ("", "#") and stripped.split()[0].lower() == "default":
+                continue
+            kept.append(line)
+    kept += [_MANAGED_TAG, f"default {gateway}"]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(kept) + "\n", encoding="iso-8859-1")
+
+
+def _write_name_resolution(path: Path, dns_servers: list[str]) -> None:
+    """write DEVS:Internet/name_resolution nameserver lines"""
+    lines = [_MANAGED_TAG] + [f"nameserver {ip}" for ip in dns_servers]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n", encoding="iso-8859-1")
+
+
+def _configure_network(workflow: BuildWorkflow, boot_staging: Path) -> None:
+    """write the Roadshow per-interface IP + global gateway/DNS files from config"""
+    net = workflow.config.network
+    devs = boot_staging / "Devs"
+    # the bundled NetInterfaces files carry the device= line; only rewrite ones that exist
+    # so a missing install never yields a device-less (broken) interface
+    for iface, ip in (("genet", net.ethernet), ("wifipi", net.wifi)):
+        path = devs / "NetInterfaces" / iface
+        if not path.exists():
+            workflow.logger.warning(f"NetInterfaces/{iface} not staged; skipping its IP config")
+            continue
+        _write_netinterface(path, ip.mode.value, ip.address, ip.netmask)
+    # gateway/dns are global; author them only when set, else DHCP/stock provides them
+    if net.gateway:
+        _write_default_route(devs / "Internet" / "routes", net.gateway)
+    if net.dns_servers:
+        _write_name_resolution(devs / "Internet" / "name_resolution", net.dns_servers)
+    workflow.logger.info(
+        f"Configured network: ethernet={net.ethernet.mode.value} wifi={net.wifi.mode.value} "
+        f"gateway={net.gateway or '-'} dns={net.dns_servers or '-'}"
+    )
 
 
 def stage_whdload_kickstarts(workflow: BuildWorkflow, boot_staging: Path) -> None:
@@ -108,7 +179,7 @@ def configure_preferences(
 
     workflow.logger.info("Configured Amiga preferences (wbpattern + env vars)")
 
-    # schema enforces password min_length=8, so wifi-set implies pw-set
+    # wifi set with an empty password is an open network (generate_wireless_prefs handles it)
     if workflow.config.wifi:
         workflow._update_state(progress=80.0)
         workflow._milestone("Configuring WiFi")
@@ -118,6 +189,9 @@ def configure_preferences(
             encoding="iso-8859-1",
         )
         workflow.logger.info("Generated wireless.prefs")
+
+    if workflow.config.network_stack is not None:
+        _configure_network(workflow, boot_staging)
 
     workflow._update_state(progress=85.0)
     workflow._milestone("Configuring Picasso96 monitor")

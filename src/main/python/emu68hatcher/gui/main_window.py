@@ -27,6 +27,7 @@ from emu68hatcher.gui.dialogs import BuildProgressDialog
 from emu68hatcher.gui.tabs import (
     Emu68Tab,
     KickstartTab,
+    NetworkTab,
     OutputTab,
     PackagesTab,
     PartitionsTab,
@@ -66,12 +67,12 @@ class MainWindow(QMainWindow):
         self.packages_tab = PackagesTab()
         self.tabs.addTab(self.packages_tab, "Software")
 
-        # connect version changes - packages tab now also owns the icon set selector
-        self.kickstart_tab.version_changed.connect(self.packages_tab.set_kickstart_version)
+        self.network_tab = NetworkTab()
+        self.tabs.addTab(self.network_tab, "Network")
 
-        # initialize packages tab with current kickstart version (default is 3.2.3)
-        initial_version = self.kickstart_tab.get_selected_version()
-        self.packages_tab.set_kickstart_version(initial_version)
+        # version drives the package tree; the Amiga Files tab refreshes its own icon-set list
+        self.kickstart_tab.version_changed.connect(self.packages_tab.set_kickstart_version)
+        self.packages_tab.set_kickstart_version(self.kickstart_tab.get_selected_version())
 
         self.output_tab = OutputTab()
         self.tabs.addTab(self.output_tab, "Output")
@@ -128,11 +129,14 @@ class MainWindow(QMainWindow):
                 self.emu68_tab.set_config(self.config.display)
                 self.emu68_tab.set_emu68_version(self.config.emu68_version)
                 self.packages_tab.set_kickstart_version(self.config.kickstart.version.value)
-                self.packages_tab.set_icon_set(self.config.icon_set)
-                self.packages_tab.set_network_stack(self.config.network_stack)
-                self.packages_tab.set_wifi_config(self.config.wifi)
-                self.packages_tab.set_roadshow_archive(self.config.roadshow_archive)
+                # set_config above already repopulated the icon list for the loaded version
+                self.kickstart_tab.set_icon_set(self.config.icon_set)
+                self.network_tab.set_network_stack(self.config.network_stack)
+                self.network_tab.set_wifi_config(self.config.wifi)
+                self.network_tab.set_roadshow_archive(self.config.roadshow_archive)
+                self.network_tab.set_network_settings(self.config.network)
                 self.packages_tab.set_config(self.config.packages)
+                self.kickstart_tab.set_locale(self.config.packages)
                 # output first: emits target_size_changed which rebuilds the partition
                 # layout for the picked SD card. apply the saved partitions AFTER that so the
                 # resize signal doesnt overwrite custom sizes / extra_content_directory paths.
@@ -213,14 +217,20 @@ class MainWindow(QMainWindow):
         # selected Emu68 release
         self.config.emu68_version = self.emu68_tab.get_emu68_version()
 
-        # icon set
-        self.config.icon_set = self.packages_tab.get_icon_set()
+        # icon set (now on the Amiga Files tab)
+        self.config.icon_set = self.kickstart_tab.get_icon_set()
 
-        pkgs = self.packages_tab.get_config()
+        # tree carries mui; network tab the roadshow entry; amiga files tab the locale disks
+        pkgs = (
+            self.packages_tab.get_config()
+            + self.network_tab.extra_package_entries()
+            + self.kickstart_tab.get_locale_entries()
+        )
         self.config.packages = [PackageConfig(name=p["name"], enabled=p["enabled"]) for p in pkgs]
-        self.config.network_stack = self.packages_tab.get_network_stack()
-        self.config.wifi = self.packages_tab.get_wifi_config()
-        self.config.roadshow_archive = self.packages_tab.get_roadshow_archive()
+        self.config.network_stack = self.network_tab.get_network_stack()
+        self.config.wifi = self.network_tab.get_wifi_config()
+        self.config.roadshow_archive = self.network_tab.get_roadshow_archive()
+        self.config.network = self.network_tab.get_network_settings()
 
         out = self.output_tab.get_config()
         if out.get("path"):
@@ -237,7 +247,21 @@ class MainWindow(QMainWindow):
         self.config.partitions = self.partitions_tab.get_config()
 
     def build_image(self):
-        self.collect_config()
+        try:
+            self.collect_config()
+        except Exception as e:
+            # config validation (e.g. a malformed static IP) raises here - surface it cleanly
+            QMessageBox.warning(self, "Invalid Configuration", str(e))
+            return
+
+        # a typed SSID that yields no wifi config means the password was too short to keep
+        if self.network_tab.wifi_ssid.text().strip() and self.config.wifi is None:
+            QMessageBox.warning(
+                self,
+                "WiFi Password",
+                "Enter a WiFi password of 8-63 characters, or leave it empty for an open network.",
+            )
+            return
 
         # validation
         if not self.config.asset_directories:
