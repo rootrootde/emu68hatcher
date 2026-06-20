@@ -33,3 +33,16 @@ IF $RpiType EQ "RPi3"
 		C:Delete Sys:Tools/HDToolBoxPi4.info QUIET
 	ENDIF
 ENDIF
+
+; DEVS:DOSDrivers/SD0 now exists - mount it so EMU68BOOT: works for the rest of
+; first boot (e.g. the cmdline.txt restore) instead of waiting for the next boot
+IF NOT $RpiType EQ ""
+	C:Assign >NIL: EXISTS SD0:
+	IF WARN
+		C:Mount >NIL: SD0:
+	ENDIF
+	C:Assign >NIL: EXISTS SD0:
+	IF NOT WARN
+		C:Assign >NIL: EMU68BOOT: SD0:
+	ENDIF
+ENDIF

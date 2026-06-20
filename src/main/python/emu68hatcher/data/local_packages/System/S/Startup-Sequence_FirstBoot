@@ -38,9 +38,13 @@ ENDIF
 ; can gate on a stable per-boot flag
 C:SetEnv HATCHERFIRSTBOOT $FIRSTTIMEBOOT
 
-; Assign EMU68BOOT: to SD0: (SD0 is mounted by the stock Startup-Sequence's
-; Mount DEVS:DOSDrivers/~(#?.info) line, or by BindDrivers on second+ boots)
+; Assign EMU68BOOT: to the FAT32 boot partition. the stock DOSDrivers auto-mount
+; runs later in the sequence than this point, so mount SD0: explicitly here first.
 IF NOT $SYSTEM EQ "UAE"
+   C:Assign >NIL: EXISTS SD0:
+   IF WARN
+      C:Mount >NIL: SD0:
+   ENDIF
    C:Assign >NIL: EXISTS SD0:
    IF NOT WARN
       C:Assign >NIL: EMU68BOOT: SD0:
