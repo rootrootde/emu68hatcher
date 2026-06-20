@@ -3,6 +3,7 @@
 import shutil
 import struct
 from collections.abc import Callable
+from fnmatch import fnmatch
 from pathlib import Path
 
 from emu68hatcher.builder.host.archive import ARCHIVE_EXTENSIONS, extract_archive
@@ -52,14 +53,18 @@ def _ci_resolve_path(base: Path, rel_path: str) -> Path | None:
     return current
 
 
-def _merge_tree(source: Path, dest: Path) -> int:
-    """recursively merge source into dest; same-name collisions overwrite (case-insensitive)"""
+def _merge_tree(source: Path, dest: Path, exclude: list[str] | None = None) -> int:
+    """recursively merge source into dest; same-name collisions overwrite (case-insensitive).
+    items whose name matches an exclude glob (case-insensitive) are skipped."""
     from emu68hatcher.builder.staging.files import resolve_staging_path
 
+    patterns = [e.lower() for e in (exclude or [])]
     count = 0
     dest.mkdir(parents=True, exist_ok=True)
     dest_root = dest.resolve()
     for item in source.iterdir():
+        if patterns and any(fnmatch(item.name.lower(), p) for p in patterns):
+            continue
         target = resolve_staging_path(dest, item.name)
         # double-check no symlink-out, even though extractors already filter
         if not target.resolve().parent.is_relative_to(dest_root) and target.resolve() != dest_root:
@@ -76,7 +81,7 @@ def _merge_tree(source: Path, dest: Path) -> int:
             shutil.copy2(item, target)
             count += 1
         elif item.is_dir():
-            count += _merge_tree(item, target)
+            count += _merge_tree(item, target, exclude)
     return count
 
 
@@ -266,8 +271,13 @@ class PackageInstaller:
             # use case-insensitive glob (Amiga is case-insensitive)
             ci_glob = _ci_glob_pattern(glob_part)
 
+            ex_patterns = [e.lower() for e in rule.exclude]
             if search_dir.exists():
                 for source_item in search_dir.glob(ci_glob):
+                    if ex_patterns and any(
+                        fnmatch(source_item.name.lower(), p) for p in ex_patterns
+                    ):
+                        continue
                     # strip navigation directories form the matched path
                     rel_parts = source_item.relative_to(search_dir).parts
                     if len(rel_parts) > glob_nav_levels:
@@ -287,7 +297,7 @@ class PackageInstaller:
                             _set_icon_stack(dest_path, rule.stack)
                         files_installed += 1
                     elif source_item.is_dir():
-                        files_installed += _merge_tree(source_item, dest_path)
+                        files_installed += _merge_tree(source_item, dest_path, rule.exclude)
         else:
             # specific file - resolve case-insensitively (Amiga is case-insensitive)
             source_file = _ci_resolve_path(source_dir, source_pattern)
@@ -303,7 +313,7 @@ class PackageInstaller:
                 dest_path.parent.mkdir(parents=True, exist_ok=True)
 
                 if source_file.is_dir() and rule.recursive:
-                    files_installed += _merge_tree(source_file, dest_path)
+                    files_installed += _merge_tree(source_file, dest_path, rule.exclude)
                 else:
                     shutil.copy2(source_file, dest_path)
                     if rule.stack:

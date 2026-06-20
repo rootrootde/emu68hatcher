@@ -47,6 +47,10 @@ install:
   to: Programs/IBrowse/Plugins/Plugins/
 - from: IBrowse*-OS3/mui/*
   to: Programs/MUI/Libs/MUI/
+  # keep IBrowse's bundled classes (Newstring/StringHistory/TextHistory .mcc - it needs
+  # them), but skip Newstring.mcp, the obsolete prefs file MUI 5 flags as deletable
+  exclude:
+  - Newstring.mcp
 - from: IBrowse*-OS3/spatch
   to: C/
 - from: IBrowse*-OS3/Cache
