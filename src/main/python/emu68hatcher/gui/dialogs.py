@@ -30,6 +30,7 @@ class BuildProgressDialog(QDialog):
         self.config = config
         self.worker: BuildWorker | None = None
         self._success: bool = False
+        self._overall: float = 0.0  # monotonic overall %, so the bar never jumps back
         self.setup_ui()
 
     @property
@@ -38,30 +39,64 @@ class BuildProgressDialog(QDialog):
 
     def setup_ui(self):
         self.setWindowTitle("Building Image...")
-        self.setMinimumSize(700, 400)
+        self.setMinimumWidth(520)
         self.setModal(True)
 
         layout = QVBoxLayout(self)
 
-        # stage label
-        self.stage_label = QLabel("Initializing...")
-        self.stage_label.setFont(QFont("", 12, QFont.Weight.Bold))
-        layout.addWidget(self.stage_label)
+        # stylesheets so the bar heights are honoured (native macOS ignores setFixedHeight)
+        overall_css = (
+            "QProgressBar { border: 1px solid palette(mid); border-radius: 4px;"
+            " background: palette(base); }"
+            "QProgressBar::chunk { background-color: palette(highlight); border-radius: 3px; }"
+        )
+        self._step_css = (
+            "QProgressBar { border: none; border-radius: 3px; background: palette(mid); }"
+            "QProgressBar::chunk { background-color: palette(highlight); border-radius: 3px; }"
+        )
 
-        # progress bar
+        # overall progress across the whole pipeline (prominent: bold label + chunky bar)
+        self.overall_label = QLabel("Overall  0%")
+        self.overall_label.setStyleSheet("font-weight: bold;")
+        layout.addWidget(self.overall_label)
+        self.overall_bar = QProgressBar()
+        self.overall_bar.setRange(0, 100)
+        self.overall_bar.setTextVisible(False)
+        self.overall_bar.setFixedHeight(18)
+        self.overall_bar.setStyleSheet(overall_css)
+        layout.addWidget(self.overall_bar)
+
+        layout.addSpacing(6)
+
+        # progress within the current step (subtle: gray label + thin bar)
+        self.stage_label = QLabel("Initializing")
+        self.stage_label.setStyleSheet("color: gray;")
+        layout.addWidget(self.stage_label)
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
-        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(False)
+        self.progress_bar.setFixedHeight(7)
+        self.progress_bar.setStyleSheet(self._step_css)
         layout.addWidget(self.progress_bar)
 
-        # status message
+        layout.addSpacing(6)
+
+        # current action
         self.status_label = QLabel("")
         layout.addWidget(self.status_label)
 
-        # log output
+        # collapsible log - hidden by default
+        self.log_toggle = QPushButton("▸ Show log")
+        self.log_toggle.setFlat(True)
+        self.log_toggle.setStyleSheet("text-align: left; color: palette(link); border: none;")
+        self.log_toggle.clicked.connect(self._toggle_log)
+        layout.addWidget(self.log_toggle, alignment=Qt.AlignmentFlag.AlignLeft)
+
         self.log_output = QTextEdit()
         self.log_output.setReadOnly(True)
         self.log_output.setFont(QFont("Courier", 10))
+        self.log_output.setMinimumHeight(220)
+        self.log_output.setVisible(False)
         layout.addWidget(self.log_output)
 
         # buttons
@@ -78,6 +113,13 @@ class BuildProgressDialog(QDialog):
         btn_layout.addWidget(self.close_btn)
 
         layout.addLayout(btn_layout)
+
+    def _toggle_log(self):
+        """show/hide the log and resize the dialog to fit"""
+        show = not self.log_output.isVisible()
+        self.log_output.setVisible(show)
+        self.log_toggle.setText("▾ Hide log" if show else "▸ Show log")
+        self.adjustSize()
 
     def start_build(self):
         """kick off the build worker"""
@@ -103,12 +145,46 @@ class BuildProgressDialog(QDialog):
         "failed": "Failed",
     }
 
+    # the stages that report progress, in pipeline order - drives the overall bar
+    _STAGE_ORDER = [
+        "validate",
+        "download",
+        "extract",
+        "create_image",
+        "install_workbench",
+        "install_packages",
+        "configure",
+        "install_extras",
+        "finalize",
+        "flash",
+    ]
+
     @Slot(str, float, str)
     def on_progress(self, stage: str, progress: float, message: str):
-        """transient status update - progress bar + status label"""
-        self.stage_label.setText(self._STAGE_NAMES.get(stage, stage.title()))
-        self.progress_bar.setValue(int(progress))
+        """transient status update - per-step bar + overall bar + status label"""
+        name = self._STAGE_NAMES.get(stage, stage.title())
+        # the flasher can't report byte progress (hst-imager write is silent when piped),
+        # so animate the step bar instead of a stuck 0% - it flips to a real % the moment
+        # any progress > 0 arrives, in case a future hst-imager starts reporting it
+        if stage == "flash" and progress <= 0.0:
+            # native bar (no stylesheet) animates the marquee reliably; styled ones don't on macOS
+            self.progress_bar.setStyleSheet("")
+            self.progress_bar.setRange(0, 0)  # indeterminate marquee
+            self.stage_label.setText(name)
+        else:
+            if not self.progress_bar.styleSheet():
+                self.progress_bar.setStyleSheet(self._step_css)
+            self.progress_bar.setRange(0, 100)
+            self.progress_bar.setValue(int(progress))
+            self.stage_label.setText(f"{name}  {int(progress)}%")
         self.status_label.setText(message)
+        # overall = how far through the whole pipeline; clamp monotonic so it never dips
+        if stage in self._STAGE_ORDER:
+            idx = self._STAGE_ORDER.index(stage)
+            overall = (idx + progress / 100.0) / len(self._STAGE_ORDER) * 100.0
+            self._overall = max(self._overall, overall)
+            self.overall_bar.setValue(round(self._overall))
+            self.overall_label.setText(f"Overall  {round(self._overall)}%")
 
     @Slot(str, str)
     def on_log_event(self, stage: str, message: str):
@@ -121,16 +197,29 @@ class BuildProgressDialog(QDialog):
         self._success = success
         self.cancel_btn.setEnabled(False)
         self.close_btn.setEnabled(True)
+        # stop any flash marquee and restore the styled look
+        if not self.progress_bar.styleSheet():
+            self.progress_bar.setStyleSheet(self._step_css)
+        self.progress_bar.setRange(0, 100)
 
         if success:
-            self.stage_label.setText("Build Complete!")
+            self.setWindowTitle("Build Complete")
+            self._overall = 100.0
+            self.overall_bar.setValue(100)
+            self.overall_label.setText("Overall  100%")
             self.progress_bar.setValue(100)
+            self.stage_label.setText("Done")
             self.status_label.setText(f"Output: {output_path}")
             self.log_output.append(f"\nBuild successful!\nOutput: {output_path}")
         else:
-            self.stage_label.setText("Build Failed")
+            self.setWindowTitle("Build Failed")
+            self.stage_label.setText("Failed")
             self.status_label.setText(error)
+            self.status_label.setStyleSheet("color: #c0392b;")
             self.log_output.append(f"\nBuild failed: {error}")
+            # surface the log automatically on failure so the error context is visible
+            if not self.log_output.isVisible():
+                self._toggle_log()
 
     def cancel_build(self):
         """ask the worker to cancel"""
