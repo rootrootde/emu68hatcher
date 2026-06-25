@@ -24,9 +24,3 @@ install:
 - from: MUI
   to: Programs/
   recursive: true
-  # legacy helper libs MUI 5's muimaster.library supersedes; it flags them as deletable
-  # and they're genuinely unused (confirmed on hardware), so skip them to avoid the nag
-  exclude:
-  - btree.library
-  - bzip2.library
-  - z.library
