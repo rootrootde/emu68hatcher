@@ -66,7 +66,6 @@ class InstallRule(BaseModel):
     recursive: bool = False
     rename: str | None = None  # rename file on install
     stack: int | None = None  # patch a .info icon's do_StackSize (workbench launch stack)
-    exclude: list[str] = Field(default_factory=list)  # globs to skip during a recursive/glob copy
 
     model_config = ConfigDict(populate_by_name=True)
 
