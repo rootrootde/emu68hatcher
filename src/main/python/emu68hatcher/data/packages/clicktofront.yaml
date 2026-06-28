@@ -1,0 +1,15 @@
+name: clicktofront
+friendly_name: ClickToFront
+group: Commodities
+description: 'click a window with a qualifier to bring it to front; moved to WBStartup to run at boot'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: false
+# ClickToFront ships in the stock Tools/Commodities drawer; move it (and its icon) to WBStartup
+relocate:
+- from: Tools/Commodities/ClickToFront
+  to: WBStartup/

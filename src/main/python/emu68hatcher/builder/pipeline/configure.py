@@ -11,6 +11,7 @@ from emu68hatcher.builder.pipeline.configure_prefs import (
     stage_whdload_kickstarts,
 )
 from emu68hatcher.builder.pipeline.configure_scripts import configure_scripts
+from emu68hatcher.builder.pipeline.relocate import apply_relocations
 from emu68hatcher.builder.workflow import BuildStage
 from emu68hatcher.config.defaults import DEFAULT_BOOT_DEVICE
 from emu68hatcher.utils.paths import ensure_dir
@@ -40,6 +41,11 @@ def stage_configure(workflow: BuildWorkflow) -> None:
 
     # phase 1: Script configuration (0-40%)
     configure_scripts(workflow, boot_staging, s_dir, all_packages)
+
+    # relocate stock OS files per enabled packages (e.g. commodity -> WBStartup)
+    moved = apply_relocations(workflow, boot_staging, all_packages)
+    if moved:
+        workflow.logger.info(f"Relocated {moved} staged file(s)")
 
     # phase 2: Boot partition setup (40-70%)
     configure_boot_partition(workflow)
