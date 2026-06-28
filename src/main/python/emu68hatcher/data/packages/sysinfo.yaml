@@ -19,3 +19,7 @@ install:
   to: Programs/
 - from: SysInfo/*
   to: Programs/SysInfo/
+menu_entry:
+  title: SysInfo
+  path: Programs/SysInfo/SysInfo
+  submenu: System

@@ -25,3 +25,7 @@ install:
 - from: AmigaAMP3
   to: Programs/
   recursive: true
+menu_entry:
+  title: AmigaAMP
+  path: Programs/AmigaAMP3/AmigaAMP
+  submenu: Audio

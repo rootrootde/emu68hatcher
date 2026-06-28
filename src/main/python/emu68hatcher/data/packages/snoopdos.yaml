@@ -17,3 +17,7 @@ download:
 install:
 - from: '*'
   to: Programs/SnoopDOS/
+menu_entry:
+  title: SnoopDOS
+  path: Programs/SnoopDOS/SnoopDos
+  submenu: System

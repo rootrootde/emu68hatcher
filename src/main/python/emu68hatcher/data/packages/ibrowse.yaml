@@ -67,3 +67,7 @@ install:
   to: Programs/IBrowse/
 - from: IBrowse*-OS3/ReadMe.txt.info
   to: Programs/IBrowse/
+menu_entry:
+  title: IBrowse
+  path: Programs/IBrowse/IBrowse
+  submenu: Internet

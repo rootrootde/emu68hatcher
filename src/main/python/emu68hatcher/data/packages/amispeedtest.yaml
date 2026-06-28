@@ -17,3 +17,7 @@ download:
 install:
 - from: AmiSpeedTest/*
   to: Programs/AmiSpeedTest/
+menu_entry:
+  title: AmiSpeedTest
+  path: Programs/AmiSpeedTest/AmiSpeedTest
+  submenu: System

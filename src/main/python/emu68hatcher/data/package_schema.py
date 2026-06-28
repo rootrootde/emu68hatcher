@@ -70,6 +70,23 @@ class InstallRule(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
+class RelocateRule(BaseModel):
+    """move a file already on SYS: (placed by the OS install) into another SYS: dir"""
+
+    source: str = Field(alias="from")  # SYS:-relative path, e.g. "Tools/Commodities/ClickToFront"
+    dest: str = Field(alias="to")  # SYS:-relative target dir, e.g. "WBStartup/"
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class MenuEntry(BaseModel):
+    """Tools-menu launcher for an installed app (WB 3.2.x only)"""
+
+    title: str  # label shown in the Workbench Tools menu
+    path: str  # executable path relative to SYS:, e.g. "Programs/IBrowse/IBrowse"
+    submenu: str | None = None  # group under a Tools submenu of this name (None = top level)
+
+
 class ScriptModification(BaseModel):
     """script modification to apply during installation"""
 
@@ -115,8 +132,14 @@ class Package(BaseModel):
     # installation rules
     install: list[InstallRule] = Field(default_factory=list)
 
+    # move already-staged OS files (e.g. drop a commodity into WBStartup)
+    relocate: list[RelocateRule] = Field(default_factory=list)
+
     # script modifications
     scripts: list[ScriptModification] = Field(default_factory=list)
+
+    # optional Workbench Tools-menu launcher (injected on WB 3.2.x only)
+    menu_entry: MenuEntry | None = None
 
     def matches_version(self, kickstart_version: str) -> bool:
         """check if package is compatible wiht a Kickstart version"""

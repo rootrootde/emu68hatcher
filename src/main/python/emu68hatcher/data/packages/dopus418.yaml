@@ -41,3 +41,6 @@ install:
   to: Programs/DOpus/
 - from: DOpus/DOpus416JRbin.readme.info
   to: Programs/DOpus/
+menu_entry:
+  title: Directory Opus
+  path: Programs/DOpus/DirectoryOpus
