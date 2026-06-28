@@ -1,6 +1,6 @@
 """GUI dialogs"""
 
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Qt, QThread, Signal, Slot
 from PySide6.QtGui import QBrush, QColor, QFont
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -18,8 +18,25 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from emu68hatcher.config.schema import BuildConfig
+from emu68hatcher.config.schema import BuildConfig, OutputType
 from emu68hatcher.gui.workers import BuildWorker
+from emu68hatcher.utils.platform import OperatingSystem, get_platform_info
+
+
+class _EjectWorker(QThread):
+    """run the (blocking) disk eject off the UI thread"""
+
+    done = Signal(bool, str)
+
+    def __init__(self, device: str, parent=None):
+        super().__init__(parent)
+        self._device = device
+
+    def run(self):
+        from emu68hatcher.builder.host.disk_enum import eject_disk
+
+        ok, msg = eject_disk(self._device)
+        self.done.emit(ok, msg)
 
 
 class BuildProgressDialog(QDialog):
@@ -106,6 +123,13 @@ class BuildProgressDialog(QDialog):
         self.cancel_btn = QPushButton("Cancel")
         self.cancel_btn.clicked.connect(self.cancel_build)
         btn_layout.addWidget(self.cancel_btn)
+
+        # shown only after a successful flash to a removable device (macos/linux)
+        self.eject_btn = QPushButton("Eject SD Card")
+        self.eject_btn.clicked.connect(self._on_eject)
+        self.eject_btn.setVisible(False)
+        btn_layout.addWidget(self.eject_btn)
+        self._eject_worker: _EjectWorker | None = None
 
         self.close_btn = QPushButton("Close")
         self.close_btn.clicked.connect(self.accept)
@@ -211,6 +235,9 @@ class BuildProgressDialog(QDialog):
             self.stage_label.setText("Done")
             self.status_label.setText(f"Output: {output_path}")
             self.log_output.append(f"\nBuild successful!\nOutput: {output_path}")
+            if self._flash_device() and self._eject_supported():
+                self.eject_btn.setVisible(True)
+                self.eject_btn.setEnabled(True)
         else:
             self.setWindowTitle("Build Failed")
             self.stage_label.setText("Failed")
@@ -220,6 +247,45 @@ class BuildProgressDialog(QDialog):
             # surface the log automatically on failure so the error context is visible
             if not self.log_output.isVisible():
                 self._toggle_log()
+
+    def _flash_device(self) -> str | None:
+        """the physical SD device this build wrote to, or None if it produced a plain image"""
+        out = self.config.output
+        if not out:
+            return None
+        if out.flash_target:
+            return str(out.flash_target)
+        if out.type == OutputType.DEVICE:
+            return str(out.path)
+        return None
+
+    @staticmethod
+    def _eject_supported() -> bool:
+        return get_platform_info().os in (OperatingSystem.MACOS, OperatingSystem.LINUX)
+
+    def _on_eject(self):
+        device = self._flash_device()
+        if not device:
+            return
+        self.eject_btn.setEnabled(False)
+        self.eject_btn.setText("Ejecting…")
+        self.status_label.setStyleSheet("")
+        self.status_label.setText(f"Ejecting {device}…")
+        self._eject_worker = _EjectWorker(device, self)
+        self._eject_worker.done.connect(self._on_eject_done)
+        self._eject_worker.start()
+
+    @Slot(bool, str)
+    def _on_eject_done(self, ok: bool, msg: str):
+        self.log_output.append(f"\n{msg}")
+        if ok:
+            self.eject_btn.setText("Ejected ✓")
+            self.status_label.setText(f"{msg} - safe to remove the card")
+        else:
+            self.eject_btn.setText("Eject SD Card")
+            self.eject_btn.setEnabled(True)
+            self.status_label.setStyleSheet("color: #c0392b;")
+            self.status_label.setText(f"Eject failed: {msg}")
 
     def cancel_build(self):
         """ask the worker to cancel"""
@@ -236,6 +302,12 @@ class BuildProgressDialog(QDialog):
                 self.status_label.setText(
                     "Build is still cancelling - please wait a moment and try again"
                 )
+                event.ignore()
+                return
+        # eject can't be cancelled; just wait it out so the QThread isn't torn down mid-run
+        if self._eject_worker and self._eject_worker.isRunning():
+            if not self._eject_worker.wait(10000):
+                self.status_label.setText("Still ejecting - please wait a moment and try again")
                 event.ignore()
                 return
         super().closeEvent(event)

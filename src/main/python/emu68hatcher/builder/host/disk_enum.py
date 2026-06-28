@@ -140,6 +140,46 @@ def unmount_disk(
         _set_windows_disk_offline(info, log, elevation, offline=True)
 
 
+def eject_disk(device: str, logger: logging.Logger | None = None) -> tuple[bool, str]:
+    """power-off / eject a removable disk so it's safe to pull; (ok, message)"""
+    import shutil
+    import subprocess
+
+    log = logger or globals()["logger"]
+    plat = get_platform_info().os
+    log.info(f"ejecting {device}")
+
+    if plat == OperatingSystem.MACOS:
+        # diskutil eject unmounts every slice first, then drops the device node
+        r = subprocess.run(
+            ["diskutil", "eject", device], capture_output=True, text=True, timeout=60
+        )
+        if r.returncode == 0:
+            return True, f"Ejected {device}"
+        return False, (r.stderr.strip() or r.stdout.strip() or f"eject failed (rc={r.returncode})")
+
+    if plat == OperatingSystem.LINUX:
+        # power-off is the real safe-remove (spins down + cuts USB power); eject is the fallback
+        if shutil.which("udisksctl"):
+            r = subprocess.run(
+                ["udisksctl", "power-off", "-b", device],
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            if r.returncode == 0:
+                return True, f"Powered off {device}"
+            log.info(f"udisksctl power-off {device} failed: {r.stderr.strip()}")
+        if shutil.which("eject"):
+            r = subprocess.run(["eject", device], capture_output=True, text=True, timeout=60)
+            if r.returncode == 0:
+                return True, f"Ejected {device}"
+            return False, (r.stderr.strip() or f"eject failed (rc={r.returncode})")
+        return False, "no udisksctl or eject command available"
+
+    return False, "eject not supported on this platform"
+
+
 def online_disk(
     info: DiskInfo,
     logger: logging.Logger | None = None,
