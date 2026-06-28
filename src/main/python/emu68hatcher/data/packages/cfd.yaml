@@ -1,0 +1,28 @@
+name: cfd
+friendly_name: CompactFlash.device
+group: Drivers
+description: 'compactflash PCMCIA driver'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: true
+download:
+  source: aminet
+  path: driver/media/cfd.v20260614.lha
+  hash: 794A78EE6CA0DA93E355708B656B9786
+  filename: cfd.v20260614.lha
+install:
+# small (no debug) / 68020+ tier; the device now needs ptable.library beside it
+- from: cfd/small/68020/devs/compactflash.device
+  to: Devs/
+- from: cfd/small/68020/libs/ptable.library
+  to: Libs/
+- from: cfd/c/*
+  to: C/
+- from: cfd/Storage/DOSDrivers/CF0
+  to: Storage/DOSDrivers/
+- from: cfd/Storage/DOSDrivers/CF0.info
+  to: Storage/DOSDrivers/

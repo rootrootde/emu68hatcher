@@ -11,9 +11,10 @@ versions:
 mandatory: true
 download:
   source: aminet
-  path: disk/misc/fat95.lha
-  hash: B9BBC735FC367F830250D26FAA879B39
-  filename: Fat95.lha
+  path: disk/misc/fat95.v20260614.lha
+  hash: 0F4475658DF27ED6AD05CBBD1F431457
+  filename: fat95.v20260614.lha
 install:
-- from: fat95/l/fat95
+# 68020+ cpu tier (Emu68 is 040-class); the handler is now split by cpu
+- from: fat95/l/68020/fat95
   to: L/
