@@ -220,9 +220,18 @@ class PartitionsTab(QWidget):
         from emu68hatcher.config.schema import create_default_partition_layout
 
         self._disk_size_bytes = disk_size_bytes
+        # carry user-picked extra-content dirs across the default rebuild (keyed by device)
+        extras = {
+            p.device: p.extra_content_directory
+            for p in self._amiga_partitions
+            if p.extra_content_directory
+        }
         # rebuild the Workbench+Work default sized for this exact disk
         layout = create_default_partition_layout(disk_size_bytes=disk_size_bytes)
         self._load_boot_and_amiga_from(layout)
+        for p in self._amiga_partitions:
+            if p.device in extras:
+                p.extra_content_directory = extras[p.device]
         self._refresh_table()
 
     def _on_disk_size_changed(self):
