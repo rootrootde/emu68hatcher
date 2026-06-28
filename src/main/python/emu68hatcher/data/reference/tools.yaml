@@ -84,29 +84,29 @@ hst-amiga:
   type: platform-url
   platforms:
     darwin-arm64:
-      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.5.215/hst-amiga_v0.5.215-2910b07_console_macos_arm64.zip"
-      hash: "e685a543c3db17b3aa047155842201f9"
+      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_macos_arm64.zip"
+      hash: "0b764782cf9c907314bc13fba776d516"
     darwin-x64:
-      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.5.215/hst-amiga_v0.5.215-2910b07_console_macos_x64.zip"
-      hash: "9d01e3ee85216c0fb0d5d7468c3e7525"
+      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_macos_x64.zip"
+      hash: "7f68413784c4a64005612518bdf90228"
     linux-x64:
-      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.5.215/hst-amiga_v0.5.215-2910b07_console_linux_x64.zip"
-      hash: "83a4d2c21fd260c03b8f4cca69d16df4"
+      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_linux_x64.zip"
+      hash: "3afa1ede55f68b3e5b610a214cd69660"
     linux-arm64:
-      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.5.215/hst-amiga_v0.5.215-2910b07_console_linux_arm64.zip"
-      hash: "20e93ad58e203761c0a317ff15d26ca4"
+      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_linux_arm64.zip"
+      hash: "5f559e876be3b16fff1f677f5a037e91"
     linux-arm:
-      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.5.215/hst-amiga_v0.5.215-2910b07_console_linux_arm.zip"
-      hash: "90794374d5897e3e8d3261daa5fd3b9a"
+      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_linux_arm.zip"
+      hash: "4198f06d9e059ba2bf5546fba6a0bc2f"
     windows-x64:
-      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.5.215/hst-amiga_v0.5.215-2910b07_console_windows_x64.zip"
-      hash: "d2b0f9837caca94b5e270ef45af16e91"
+      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_windows_x64.zip"
+      hash: "e20933f8eb59375da747272cc236aac4"
     windows-x86:
-      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.5.215/hst-amiga_v0.5.215-2910b07_console_windows_x86.zip"
-      hash: "b027740d204bb651fe1c1b9fe8fda23a"
+      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_windows_x86.zip"
+      hash: "4811348aa523be966ba56dcb57773f0c"
     windows-arm64:
-      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.5.215/hst-amiga_v0.5.215-2910b07_console_windows_arm64.zip"
-      hash: "a6a9d9fcc3d3661ddd31979fd62a357a"
+      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_windows_arm64.zip"
+      hash: "33ad558c0aa1bdd2415736ff665a41c0"
 
 pfs3aio:
   type: direct-url
