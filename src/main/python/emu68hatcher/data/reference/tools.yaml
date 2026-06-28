@@ -56,29 +56,29 @@ hst-imager:
   type: platform-url
   platforms:
     darwin-arm64:
-      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.589/hst-imager_v1.6.589-a444117_console_macos_arm64.zip"
-      hash: "b1957a637a38eadb9c36798a9b2d8b4f"
+      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.616/hst-imager_v1.6.616-a91fa4c_console_macos_arm64.zip"
+      hash: "12405c5106df1f3cb58b357c0c0ef801"
     darwin-x64:
-      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.589/hst-imager_v1.6.589-a444117_console_macos_x64.zip"
-      hash: "5d93dd4ef97c1d1482af991fc6f4b913"
+      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.616/hst-imager_v1.6.616-a91fa4c_console_macos_x64.zip"
+      hash: "07c401b8d331acfb017ba031524b9c99"
     linux-x64:
-      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.589/hst-imager_v1.6.589-a444117_console_linux_x64.zip"
-      hash: "f6e4e5455f1ed4aadcec25cec8c8643a"
+      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.616/hst-imager_v1.6.616-a91fa4c_console_linux_x64.zip"
+      hash: "c56f32b665a88f5263d58c1bcfb06c08"
     linux-arm64:
-      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.589/hst-imager_v1.6.589-a444117_console_linux_arm64.zip"
-      hash: "214c6bd4b230a438f24bca6d5e3cdc70"
+      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.616/hst-imager_v1.6.616-a91fa4c_console_linux_arm64.zip"
+      hash: "8b47cf0e41da7d6a2a8ab9a5c66edbc1"
     linux-arm:
-      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.589/hst-imager_v1.6.589-a444117_console_linux_arm.zip"
-      hash: "5142784af0818cff00d9b2c044a7bde7"
+      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.616/hst-imager_v1.6.616-a91fa4c_console_linux_arm.zip"
+      hash: "15bf18cc238a25eb814448fcabd5a25c"
     windows-x64:
-      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.589/hst-imager_v1.6.589-a444117_console_windows_x64.zip"
-      hash: "eadb4094a0e60dbd7c270ce7b301baab"
+      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.616/hst-imager_v1.6.616-a91fa4c_console_windows_x64.zip"
+      hash: "188151254eb3d9d070f044486d22703d"
     windows-x86:
-      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.589/hst-imager_v1.6.589-a444117_console_windows_x86.zip"
-      hash: "bbd09c92c9e53bf4ccdb5e675564ba38"
+      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.616/hst-imager_v1.6.616-a91fa4c_console_windows_x86.zip"
+      hash: "629dc4850f569b7b5080ea14c4c38b75"
     windows-arm64:
-      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.589/hst-imager_v1.6.589-a444117_console_windows_arm64.zip"
-      hash: "beee10fa9f430a2738b3b01d68954278"
+      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.616/hst-imager_v1.6.616-a91fa4c_console_windows_arm64.zip"
+      hash: "02598bbdc00dffa01b2e39248a475f8b"
 
 hst-amiga:
   type: platform-url
