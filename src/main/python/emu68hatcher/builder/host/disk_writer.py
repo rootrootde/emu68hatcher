@@ -64,7 +64,7 @@ def flash_image_to_disk(
     ):
         logger.info(f"flash: $ {shlex.join(args)}")
         if progress_callback:
-            progress_callback(0.0, f"Starting flash to {target_device}…")
+            progress_callback(0.0, f"Flashing to {target_device}, this can take a few minutes…")
         start = time.time()
         phase_seen: set[str] = set()
         recent: deque[str] = deque(maxlen=30)
@@ -118,7 +118,7 @@ def flash_image_to_disk(
 
     logger.info(f"flash: $ {shlex.join(cmd)}")
     if progress_callback:
-        progress_callback(0.0, f"Starting flash to {target_device}…")
+        progress_callback(0.0, f"Flashing to {target_device}, this can take a few minutes…")
 
     start = time.time()
     try:
