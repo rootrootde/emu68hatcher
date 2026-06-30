@@ -1,0 +1,19 @@
+name: magicmenu_prefs
+friendly_name: MagicMenu
+bundle: magicmenu
+group: Commodities
+description: 'default magicmenu prefs - gives it a saved config so it starts silently'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+download:
+  source: local
+  path: System/Prefs/Env-Archive/MagicMenu.prefs
+# without ENV:MagicMenu.prefs, MagicMenu opens its editor on first boot (PAL, too big to use).
+# this saved config (identical on 3.1 and 3.2) suppresses that. ENVARC: is copied to ENV: at boot.
+install:
+- from: System/Prefs/Env-Archive/MagicMenu.prefs
+  to: Prefs/Env-Archive/
