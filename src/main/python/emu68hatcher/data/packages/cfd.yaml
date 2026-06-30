@@ -22,7 +22,8 @@ install:
   to: Libs/
 - from: cfd/c/*
   to: C/
+# Devs/DOSDrivers auto-mounts at boot; Storage/DOSDrivers stays inactive
 - from: cfd/Storage/DOSDrivers/CF0
-  to: Storage/DOSDrivers/
+  to: Devs/DOSDrivers/
 - from: cfd/Storage/DOSDrivers/CF0.info
-  to: Storage/DOSDrivers/
+  to: Devs/DOSDrivers/
