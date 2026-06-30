@@ -2,8 +2,9 @@ name: amigaamp
 friendly_name: AmigaAMP
 group: Applications
 description: 'MP3 and audio player'
+# no 3.1: AmigaAMP-Prefs needs ReAction window.class V41+ (absent on 3.1) and the recursive
+# copy drags it in with no per-file exclude
 versions:
-- '3.1'
 - '3.2'
 - 3.2.2.1
 - 3.2.3
