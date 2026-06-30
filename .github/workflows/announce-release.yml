@@ -20,6 +20,8 @@ jobs:
             --arg url "$URL" \
             --arg desc "$BODY" \
             '{
+              content: "@everyone  \($title)",
+              allowed_mentions: { parse: ["everyone"] },
               embeds: [{
                 title: $title,
                 url: $url,
