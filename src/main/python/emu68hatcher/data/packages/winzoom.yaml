@@ -1,0 +1,31 @@
+name: winzoom
+friendly_name: WinZoom
+group: Commodities
+description: 'arrange windows via hotkeys; runs from WBStartup'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: false
+download:
+  source: aminet
+  path: util/cdity/WinZoom.lha
+  hash: 966B1A30E214B6C89AA84965D45ABFA8
+  filename: WinZoom.lha
+# shipped .info already carries DONOTWAIT, CX_POPUP=NO and the installer's default tooltypes
+# (RESTOREAFTERMAX=YES, CYCLEWBWINDOWS=YES), so a plain copy to WBStartup matches WinZoomInstall
+install:
+- from: WinZoom/WinZoom
+  to: WBStartup/
+- from: WinZoom/WinZoom.info
+  to: WBStartup/
+# locale catalogs go to LOCALE:Catalogs/<lang> per the installer; espaol extracts with a
+# corrupted dir name (latin1 -> utf8), so it is skipped
+- from: WinZoom/Catalogs/dansk/WinZoom.catalog
+  to: Locale/Catalogs/dansk/
+- from: WinZoom/Catalogs/deutsch/WinZoom.catalog
+  to: Locale/Catalogs/deutsch/
+- from: WinZoom/Catalogs/russian/WinZoom.catalog
+  to: Locale/Catalogs/russian/
