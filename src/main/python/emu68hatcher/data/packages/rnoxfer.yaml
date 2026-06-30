@@ -1,0 +1,48 @@
+name: rnoxfer
+friendly_name: RNOXfer
+group: Internet
+description: 'FTP/FTPS/SFTP client'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: false
+# MUI app; needs codesets + guigfx/render; AmiSSL is already mandatory. its icon wants a
+# 32768 stack, so the menu entry launches it via WBRun (workbench mode)
+requires:
+- mui
+- codesets
+- guigfx
+- render
+- wbrun
+download:
+  source: aminet
+  path: comm/tcp/RNOXfer_68k.lha
+  hash: CF4596EDFCB0CB2B6A65B02B87898396
+  filename: RNOXfer_68k.lha
+install:
+- from: RNOXfer_68k.info
+  to: Programs/
+  rename: RNOXfer.info
+- from: RNOXfer_68k/RNOXfer
+  to: Programs/RNOXfer/
+- from: RNOXfer_68k/RNOXfer.info
+  to: Programs/RNOXfer/
+# Hollywood plugins RNOXfer loads from its own dir: MUI Royale (gui) + hURL (ftp/ssl transfers)
+- from: RNOXfer_68k/muiroyale.hwp
+  to: Programs/RNOXfer/
+- from: RNOXfer_68k/hurl.hwp
+  to: Programs/RNOXfer/
+- from: RNOXfer_68k/advanced.conf
+  to: Programs/RNOXfer/
+- from: RNOXfer_68k/gfx/*
+  to: Programs/RNOXfer/gfx/
+- from: RNOXfer_68k/ReadMe.txt
+  to: Programs/RNOXfer/
+menu_entry:
+  title: RNOXfer
+  path: Programs/RNOXfer/RNOXfer
+  submenu: Network
+  wb_launch: true

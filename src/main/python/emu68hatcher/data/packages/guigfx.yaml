@@ -1,0 +1,20 @@
+name: guigfx
+friendly_name: guigfx.library
+group: System
+description: 'pixel graphics application layer (68040/fpu build)'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+download:
+  source: aminet
+  path: dev/misc/guigfxlib.lha
+  hash: AA83710882AC07BC10A7C4485372D549
+  filename: guigfxlib.lha
+# 68040 build (uses the FPU) - pistorm/emu68 emulates a 68040; rename to the plain name
+install:
+- from: libs/guigfx.library_68040
+  to: Libs/
+  rename: guigfx.library

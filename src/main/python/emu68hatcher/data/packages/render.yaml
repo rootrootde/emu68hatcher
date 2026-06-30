@@ -1,0 +1,19 @@
+name: render
+friendly_name: render.library
+group: System
+description: 'low-level pixel rendering library (guigfx backend)'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+download:
+  source: aminet
+  path: dev/misc/renderlib.lha
+  hash: 835201535B6B924FB4112BAD96AB157D
+  filename: renderlib.lha
+# only a single 68k build ships (no cpu/fpu variants); the .elf/.os4 ones are for OS4
+install:
+- from: renderlib/libs/render.library
+  to: Libs/
