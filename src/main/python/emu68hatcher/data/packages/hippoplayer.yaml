@@ -31,4 +31,4 @@ install:
 menu_entry:
   title: HippoPlayer
   path: Programs/HippoPlayer/HiP
-  submenu: Audio
+  submenu: Apps

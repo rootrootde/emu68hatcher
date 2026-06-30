@@ -44,3 +44,4 @@ install:
 menu_entry:
   title: Directory Opus
   path: Programs/DOpus/DirectoryOpus
+  submenu: Apps

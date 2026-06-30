@@ -57,6 +57,14 @@ _MENUTOOLS_ENTRIES: tuple[dict, ...] = (
         "cmd": _connect_cmd("Connect-Ethernet", "ETHERNET"),
         "network": True,
     },
+    {
+        # reboot is a mandatory package, so C:Reboot is always present
+        "name": "SysReboot",
+        "submenu": "System",
+        "title": "Reboot",
+        "cmd": "C:Reboot",
+        "rank": 2,  # sort after the app entries (rank 1) in the System submenu
+    },
 )
 
 
@@ -121,9 +129,9 @@ def _menu_add_line(name: str, menu_title: str, cmd: str) -> str:
     return f"MENU ADD NAME {name} TITLE '\"{menu_title}\"' CMD \"'address command ''{cmd}'''\""
 
 
-def _collect_app_entries(all_packages: set[str]) -> list[tuple[str, str, str]]:
-    """(name, menu_title, cmd) for installed packages with a menu_entry; submenu items first"""
-    entries: list[tuple[bool, str, str, str, str]] = []
+def _collect_app_entries(all_packages: set[str]) -> list[tuple[str, str, str, str]]:
+    """(submenu, title, name, cmd) for installed packages that declare a menu_entry"""
+    entries: list[tuple[str, str, str, str]] = []
     for name in all_packages:
         pkg = get_package_by_name(name)
         if pkg and pkg.menu_entry:
@@ -131,26 +139,26 @@ def _collect_app_entries(all_packages: set[str]) -> list[tuple[str, str, str]]:
             # WBRun starts the tool in workbench mode (icon stack + tooltypes) for apps that
             # need it (e.g. AmiSpeedTest); plain GUI apps just get a detached CLI run
             launch = "WBRun" if me.wb_launch else "run"
-            cmd = f"{launch} >NIL: SYS:{me.path}"
-            sub = me.submenu or ""
-            menu_title = _compose_menu_title(sub, me.title)
-            entries.append((sub == "", sub.lower(), me.title.lower(), name, menu_title, cmd))
-    # submenu items grouped+alphabetical first; top-level items sort to the bottom of the menu
-    entries.sort()
-    return [(name, menu_title, cmd) for *_key, name, menu_title, cmd in entries]
+            entries.append((me.submenu or "", me.title, name, f"{launch} >NIL: SYS:{me.path}"))
+    return entries
 
 
 def _build_menutools_entries(has_network: bool, all_packages: set[str]) -> list[str]:
-    """build the MENU ADD lines to inject into the WBStartup/MenuTools script"""
-    lines: list[str] = []
-    for entry in _MENUTOOLS_ENTRIES:
+    """build MENU ADD lines, keeping each submenu's items contiguous (top-level items last)"""
+    # sort key: (top-level last, submenu, rank, order) - rank 0 builtins, 1 apps, 2 late builtins.
+    # contiguity matters: non-adjacent same-submenu adds can spawn a duplicate submenu.
+    rows: list[tuple[tuple, str, str, str]] = []
+    for i, entry in enumerate(_MENUTOOLS_ENTRIES):
         if entry.get("network") and not has_network:
             continue
-        menu_title = _compose_menu_title(entry.get("submenu", ""), entry["title"])
-        lines.append(_menu_add_line(entry["name"], menu_title, entry["cmd"]))
-    for name, menu_title, cmd in _collect_app_entries(all_packages):
-        lines.append(_menu_add_line(name, menu_title, cmd))
-    return lines
+        sub = entry.get("submenu", "")
+        key = (sub == "", sub.lower(), entry.get("rank", 0), f"{i:03d}")
+        rows.append((key, entry["name"], _compose_menu_title(sub, entry["title"]), entry["cmd"]))
+    for sub, title, name, cmd in _collect_app_entries(all_packages):
+        key = (sub == "", sub.lower(), 1, title.lower())
+        rows.append((key, name, _compose_menu_title(sub, title), cmd))
+    rows.sort(key=lambda r: r[0])
+    return [_menu_add_line(name, menu_title, cmd) for _key, name, menu_title, cmd in rows]
 
 
 def _inject_menutools_entries(

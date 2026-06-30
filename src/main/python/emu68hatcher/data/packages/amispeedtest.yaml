@@ -23,5 +23,5 @@ install:
 menu_entry:
   title: AmiSpeedTest
   path: Programs/AmiSpeedTest/AmiSpeedTest
-  submenu: System
+  submenu: Network
   wb_launch: true
