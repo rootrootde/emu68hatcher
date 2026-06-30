@@ -1,0 +1,25 @@
+name: magicmenu
+friendly_name: MagicMenu
+bundle: magicmenu
+group: Commodities
+description: 'intuition menu enhancer - icons + gtlayout.library base'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+download:
+  source: aminet
+  path: util/wb/MagicMenu_II.lha
+  hash: 56B42F5CA46EF164CC91AF2723EC0762
+  filename: MagicMenu_II.lha
+# the 2.35 archive ships no icons; this commodity icon already carries
+# DONOTWAIT + STARTPRI=80 + CX_POPUP=NO, so it autostarts from WBStartup cleanly
+install:
+- from: MagicMenu/020/MagicMenu.info
+  to: WBStartup/
+- from: MagicMenu/020/MagicMenuPrefs.info
+  to: Prefs/
+- from: MagicMenu/libs/gtlayout.library
+  to: Libs/

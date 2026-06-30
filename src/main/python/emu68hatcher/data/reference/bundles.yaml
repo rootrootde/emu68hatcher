@@ -13,3 +13,9 @@ picasso96:
   group: RTG
   description: "picasso96 RTG driver (shareware) + amiga-blitter disable patch"
   default: true
+
+magicmenu:
+  display_name: MagicMenu
+  group: Commodities
+  description: "intuition menu enhancer (2.30 base + 2.35 final update)"
+  default: false

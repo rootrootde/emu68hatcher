@@ -1,0 +1,25 @@
+name: magicmenu235
+friendly_name: MagicMenu
+bundle: magicmenu
+group: Commodities
+description: 'magicmenu 2.35 update - 020+ binaries (final release)'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+download:
+  source: aminet
+  path: util/wb/MagicMenu_2.35.lha
+  hash: DFD301896589FD5DF0C1D7C84706CFF3
+  filename: MagicMenu_2.35.lha
+# 2.35 is a 020+/ppc fatbinary in a 68k hunk container - runs 68k when no powerpc.library
+# is present (per readme). overlays the 2.30 binaries from the magicmenu base package.
+install:
+- from: MagicMenu
+  to: WBStartup/
+- from: MagicMenuPrefs
+  to: Prefs/
+- from: locale/catalogs/deutsch/magicmenu.catalog
+  to: Locale/Catalogs/deutsch/
