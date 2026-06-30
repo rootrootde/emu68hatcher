@@ -85,6 +85,7 @@ class MenuEntry(BaseModel):
     title: str  # label shown in the Workbench Tools menu
     path: str  # executable path relative to SYS:, e.g. "Programs/IBrowse/IBrowse"
     submenu: str | None = None  # group under a Tools submenu of this name (None = top level)
+    wb_launch: bool = False  # launch via WBRun (workbench mode), not CLI run
 
 
 class ScriptModification(BaseModel):

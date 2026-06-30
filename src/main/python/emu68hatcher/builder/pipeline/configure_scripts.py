@@ -128,7 +128,10 @@ def _collect_app_entries(all_packages: set[str]) -> list[tuple[str, str, str]]:
         pkg = get_package_by_name(name)
         if pkg and pkg.menu_entry:
             me = pkg.menu_entry
-            cmd = f"run >NIL: SYS:{me.path}"
+            # WBRun starts the tool in workbench mode (icon stack + tooltypes) for apps that
+            # need it (e.g. AmiSpeedTest); plain GUI apps just get a detached CLI run
+            launch = "WBRun" if me.wb_launch else "run"
+            cmd = f"{launch} >NIL: SYS:{me.path}"
             sub = me.submenu or ""
             menu_title = _compose_menu_title(sub, me.title)
             entries.append((sub == "", sub.lower(), me.title.lower(), name, menu_title, cmd))

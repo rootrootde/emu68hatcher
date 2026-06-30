@@ -9,6 +9,9 @@ versions:
 - 3.2.3
 - '3.9'
 default: true
+# WB-launch tool: needs its icon stack + tooltypes, so the menu entry runs it via WBRun
+requires:
+- wbrun
 download:
   source: aminet
   path: comm/net/AmiSpeedTest.lha
@@ -21,3 +24,4 @@ menu_entry:
   title: AmiSpeedTest
   path: Programs/AmiSpeedTest/AmiSpeedTest
   submenu: System
+  wb_launch: true
