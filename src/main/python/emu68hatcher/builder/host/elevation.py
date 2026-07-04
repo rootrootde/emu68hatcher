@@ -116,21 +116,26 @@ def _wrap_sudo(cmd: list[str]) -> list[str]:
 _DEVICE_RE = re.compile(r"^(/dev/(?:r?disk|sd|mmcblk)\d+)")
 
 
+def _run_sudo_validate(askpass: Path) -> None:
+    """prime the sudo timestamp via the askpass helper (sudo -A -v)"""
+    env = os.environ.copy()
+    env["SUDO_ASKPASS"] = str(askpass)
+    subprocess.run(
+        ["sudo", "-A", "-v"],
+        check=True,
+        env=env,
+        timeout=300,
+        capture_output=True,
+        text=True,
+    )
+
+
 def _refresh_sudo_timestamp(token: ElevationToken) -> None:
     """prime sudo timestamp before each call; long ops blow past the 5-min macos cache window"""
     if token.method != "sudo" or token.askpass_path is None:
         return
-    env = os.environ.copy()
-    env["SUDO_ASKPASS"] = str(token.askpass_path)
     try:
-        subprocess.run(
-            ["sudo", "-A", "-v"],
-            check=True,
-            env=env,
-            timeout=300,
-            capture_output=True,
-            text=True,
-        )
+        _run_sudo_validate(token.askpass_path)
     except (subprocess.CalledProcessError, subprocess.SubprocessError, OSError) as e:
         # refresh failed -> let the wrapped sudo -n surface its own clearer error
         logger.warning(f"sudo timestamp refresh failed: {e}")
@@ -175,6 +180,19 @@ def run_elevated(
     return result
 
 
+def _write_askpass(script: str) -> Path:
+    """write an askpass helper script to a temp file (chmod 700); returns path"""
+    import tempfile
+
+    fd, path = tempfile.mkstemp(prefix="emu68hatcher-askpass-", suffix=".sh")
+    try:
+        os.write(fd, script.encode())
+    finally:
+        os.close(fd)
+    os.chmod(path, 0o700)
+    return Path(path)
+
+
 # ----------------------------------------------------------------------------
 # macOS
 # ----------------------------------------------------------------------------
@@ -192,19 +210,6 @@ _MACOS_ASKPASS_SCRIPT = (
 )
 
 
-def _write_macos_askpass() -> Path:
-    """askpass helper -> temp file (chmod 700); returns path"""
-    import tempfile
-
-    fd, path = tempfile.mkstemp(prefix="emu68hatcher-askpass-", suffix=".sh")
-    try:
-        os.write(fd, _MACOS_ASKPASS_SCRIPT.encode())
-    finally:
-        os.close(fd)
-    os.chmod(path, 0o700)
-    return Path(path)
-
-
 def _acquire_macos() -> ElevationToken:
     """tty: sudo+askpass; no-tty: osascript-spawned long-lived helper"""
     import sys
@@ -212,18 +217,9 @@ def _acquire_macos() -> ElevationToken:
     have_tty = sys.stdin.isatty() if hasattr(sys.stdin, "isatty") else False
 
     if have_tty:
-        askpass = _write_macos_askpass()
-        env = os.environ.copy()
-        env["SUDO_ASKPASS"] = str(askpass)
+        askpass = _write_askpass(_MACOS_ASKPASS_SCRIPT)
         try:
-            subprocess.run(
-                ["sudo", "-A", "-v"],
-                check=True,
-                env=env,
-                timeout=300,
-                capture_output=True,
-                text=True,
-            )
+            _run_sudo_validate(askpass)
         except subprocess.CalledProcessError as e:
             try:
                 askpass.unlink()
@@ -272,18 +268,6 @@ _LINUX_ASKPASS_SCRIPT = (
 )
 
 
-def _write_linux_askpass() -> Path:
-    import tempfile
-
-    fd, path = tempfile.mkstemp(prefix="emu68hatcher-askpass-", suffix=".sh")
-    try:
-        os.write(fd, _LINUX_ASKPASS_SCRIPT.encode())
-    finally:
-        os.close(fd)
-    os.chmod(path, 0o700)
-    return Path(path)
-
-
 def _acquire_linux() -> ElevationToken:
     import sys
 
@@ -293,18 +277,9 @@ def _acquire_linux() -> ElevationToken:
     # gui session: askpass helper drives sudo so the prompt is visible.
     # terminal-sudo only when no display - prompt would land on a hidden tty otherwise.
     if have_gui and shutil.which("sudo"):
-        askpass = _write_linux_askpass()
-        env = os.environ.copy()
-        env["SUDO_ASKPASS"] = str(askpass)
+        askpass = _write_askpass(_LINUX_ASKPASS_SCRIPT)
         try:
-            subprocess.run(
-                ["sudo", "-A", "-v"],
-                check=True,
-                env=env,
-                timeout=300,
-                capture_output=True,
-                text=True,
-            )
+            _run_sudo_validate(askpass)
             return ElevationToken(os=OperatingSystem.LINUX, method="sudo", askpass_path=askpass)
         except subprocess.CalledProcessError as e:
             logger.info(f"sudo -A rejected ({e.returncode}); trying pkexec")

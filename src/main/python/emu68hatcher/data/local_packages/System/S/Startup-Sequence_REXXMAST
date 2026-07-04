@@ -6,3 +6,4 @@ C:Wait 5
 IF EXISTS Sys:System/RexxMast
    SYS:System/RexxMast >NIL:
 EndIF
+failat 10

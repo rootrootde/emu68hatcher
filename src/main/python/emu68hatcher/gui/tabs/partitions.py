@@ -483,14 +483,19 @@ class PartitionsTab(QWidget):
         self._update_status()
         self._refresh_extras_panel()
 
-    def _update_bar(self):
-        """refresh the partition bar viz"""
-        id76 = calculate_id76_size(self._disk_size_bytes, self._boot_size)
+    def _space(self) -> tuple[int, int, int]:
+        """(usable, allocated, free) amiga space in bytes; free may be negative when over-allocated"""
         from emu68hatcher.config.partition_helpers import calculate_usable_amiga_space
 
+        id76 = calculate_id76_size(self._disk_size_bytes, self._boot_size)
         usable = calculate_usable_amiga_space(id76)
         allocated = sum(p.size for p in self._amiga_partitions)
-        free = max(0, usable - allocated)
+        return usable, allocated, usable - allocated
+
+    def _update_bar(self):
+        """refresh the partition bar viz"""
+        _usable, _allocated, free = self._space()
+        free = max(0, free)
         selected = self.part_table.currentRow()
         self.partition_bar.set_data(
             self._disk_size_bytes,
@@ -502,12 +507,7 @@ class PartitionsTab(QWidget):
 
     def _update_status(self):
         """refresh status + error labels"""
-        id76 = calculate_id76_size(self._disk_size_bytes, self._boot_size)
-        from emu68hatcher.config.partition_helpers import calculate_usable_amiga_space
-
-        usable = calculate_usable_amiga_space(id76)
-        allocated = sum(p.size for p in self._amiga_partitions)
-        free = usable - allocated
+        usable, allocated, free = self._space()
 
         used_gb = allocated / (1024**3)
         total_gb = usable / (1024**3)

@@ -152,7 +152,7 @@ class Emu68Tab(QWidget):
 
         layout.addStretch()
 
-    def on_hdmi_mode_changed(self, index):
+    def on_hdmi_mode_changed(self):
         """show/hide custom resolution controls based on selection"""
         mode_name = self.hdmi_mode_combo.currentData()
         self.custom_res_widget.setVisible(mode_name == "Custom")

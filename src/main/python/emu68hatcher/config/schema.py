@@ -107,16 +107,10 @@ class KickstartConfig(BaseModel):
 class InstallMediaConfig(BaseModel):
     """OS install media config"""
 
-    version: KickstartVersion = KickstartVersion.V3_1
     directory: Path | None = Field(
         default=None,
         description="Directory containing installation media (ADFs, ISOs, etc.). Files are auto-detected.",
     )
-
-    @field_validator("version")
-    @classmethod
-    def _check_supported(cls, v: KickstartVersion) -> KickstartVersion:
-        return _check_supported_version("Workbench", v)
 
     @field_validator("directory", mode="before")
     @classmethod
@@ -270,25 +264,18 @@ class PartitionConfig(BaseModel):
 
         return self
 
+    def _uses(self, fs: Filesystem) -> bool:
+        return any(p.filesystem == fs for p in self.iter_amiga_partitions())
+
     @property
     def uses_pfs3(self) -> bool:
         """any amiga partition on PFS3?"""
-        return any(
-            amiga_part.filesystem == Filesystem.PFS3
-            for mbr_part in self.layout
-            if mbr_part.amiga_partitions
-            for amiga_part in mbr_part.amiga_partitions
-        )
+        return self._uses(Filesystem.PFS3)
 
     @property
     def uses_ffs(self) -> bool:
         """any amiga partition on FFS?"""
-        return any(
-            amiga_part.filesystem == Filesystem.FFS
-            for mbr_part in self.layout
-            if mbr_part.amiga_partitions
-            for amiga_part in mbr_part.amiga_partitions
-        )
+        return self._uses(Filesystem.FFS)
 
 
 class OutputConfig(BaseModel):
@@ -495,7 +482,6 @@ class BuildConfig(BaseModel):
                     "rom_directory": "/path/to/roms/",
                 },
                 "install_media": {
-                    "version": "3.1",
                     "directory": "/path/to/workbench/",
                 },
                 "display": {
@@ -578,38 +564,30 @@ def create_default_partition_layout(
     # split into multiple Work partitions if total exceeds PFS3_MAX (101GB)
     num_work_partitions = max(1, (work_remaining + PFS3_MAX - 1) // PFS3_MAX)
 
+    boot_partition = AmigaPartition(
+        device=DEFAULT_BOOT_DEVICE,
+        volume="Workbench",
+        filesystem=Filesystem.PFS3,
+        size=workbench_size,
+        bootable=True,
+        priority=0,
+    )
+
     if num_work_partitions == 1:
-        work_size = round_to_cylinder(work_remaining)
         amiga_partitions = [
-            AmigaPartition(
-                device=DEFAULT_BOOT_DEVICE,
-                volume="Workbench",
-                filesystem=Filesystem.PFS3,
-                size=workbench_size,
-                bootable=True,
-                priority=0,
-            ),
+            boot_partition,
             AmigaPartition(
                 device=DEFAULT_WORK_DEVICE,
                 volume="Work",
                 filesystem=Filesystem.PFS3,
-                size=work_size,
+                size=round_to_cylinder(work_remaining),
                 bootable=False,
             ),
         ]
     else:
         # divide evenly, last partition gets remainder
         work_per_partition = round_to_cylinder(work_remaining // num_work_partitions)
-        amiga_partitions = [
-            AmigaPartition(
-                device=DEFAULT_BOOT_DEVICE,
-                volume="Workbench",
-                filesystem=Filesystem.PFS3,
-                size=workbench_size,
-                bootable=True,
-                priority=0,
-            ),
-        ]
+        amiga_partitions = [boot_partition]
 
         allocated = 0
         for i in range(num_work_partitions):

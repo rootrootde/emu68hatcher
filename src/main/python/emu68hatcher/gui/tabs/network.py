@@ -233,14 +233,14 @@ class NetworkTab(QWidget):
         )
 
     def set_network_settings(self, net: NetworkSettings):
-        self.eth_static.setChecked(net.ethernet.mode == IpMode.STATIC)
-        self.eth_dhcp.setChecked(net.ethernet.mode != IpMode.STATIC)
-        self.eth_addr.setText(net.ethernet.address or "")
-        self.eth_mask.setText(net.ethernet.netmask or "")
-        self.wifi_static.setChecked(net.wifi.mode == IpMode.STATIC)
-        self.wifi_dhcp.setChecked(net.wifi.mode != IpMode.STATIC)
-        self.wifi_addr.setText(net.wifi.address or "")
-        self.wifi_mask.setText(net.wifi.netmask or "")
+        def _apply(static_rb, dhcp_rb, addr, mask, iface):
+            static_rb.setChecked(iface.mode == IpMode.STATIC)
+            dhcp_rb.setChecked(iface.mode != IpMode.STATIC)
+            addr.setText(iface.address or "")
+            mask.setText(iface.netmask or "")
+
+        _apply(self.eth_static, self.eth_dhcp, self.eth_addr, self.eth_mask, net.ethernet)
+        _apply(self.wifi_static, self.wifi_dhcp, self.wifi_addr, self.wifi_mask, net.wifi)
         self.gw_edit.setText(net.gateway or "")
         self.dns_edit.setText(" ".join(net.dns_servers))
         self._update_static_enabled()

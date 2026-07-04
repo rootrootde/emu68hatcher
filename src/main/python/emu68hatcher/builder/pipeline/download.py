@@ -272,11 +272,25 @@ def stage_download(workflow: BuildWorkflow) -> None:
     workflow._milestone(f"Downloaded {len(workflow.state.downloaded_files)} items")
 
 
+def _extract_progress(workflow: BuildWorkflow, label: str):
+    """progress callback reporting 'Extracting <label>: <filename>' to the workflow"""
+
+    def cb(filename: str, current: int, total: int) -> None:
+        workflow._update_state(message=f"Extracting {label}: {filename}")
+
+    return cb
+
+
 def stage_extract(workflow: BuildWorkflow) -> None:
     """extract downloaded archives"""
     workflow._update_state(BuildStage.EXTRACT, 0.0)
     workflow._milestone("Extracting archives")
+    _extract_downloaded(workflow)
+    _extract_local_archives(workflow)
 
+
+def _extract_downloaded(workflow: BuildWorkflow) -> None:
+    """extract archives pulled by the download stage into extracted_dir"""
     import re
 
     from emu68hatcher.builder.host.archive import ARCHIVE_EXTENSIONS
@@ -288,82 +302,82 @@ def stage_extract(workflow: BuildWorkflow) -> None:
     if not workflow.state.downloaded_files:
         workflow._update_state(progress=100.0)
         workflow._milestone("No archives to extract")
-        # still check local packages below
-    else:
-        total = len(workflow.state.downloaded_files)
-        completed = 0
-        extracted_count = 0
+        return
 
-        for package_name, archive_path in workflow.state.downloaded_files.items():
-            workflow._check_cancelled()
-            if not _safe_pkg.match(package_name):
-                raise BuildError(f"refusing unsafe package name from YAML: {package_name!r}")
+    total = len(workflow.state.downloaded_files)
+    completed = 0
+    extracted_count = 0
 
-            # mirror download-manager extractions into extracted_dir (symlink, copy on windows w/o privilege)
-            if package_name in workflow.state.extracted_paths:
-                dm_path = workflow.state.extracted_paths[package_name]
-                std_path = workflow.state.extracted_dir / package_name
-                if dm_path.is_dir() and dm_path != std_path and not std_path.exists():
-                    std_path.parent.mkdir(parents=True, exist_ok=True)
-                    try:
-                        std_path.symlink_to(dm_path, target_is_directory=True)
-                    except (OSError, NotImplementedError):
-                        # WinError 1314 (no symlink privilege) or similar - fall back to copying
-                        shutil.copytree(dm_path, std_path)
-                workflow.logger.info(f"Already extracted: {package_name}")
-                extracted_count += 1
-                completed += 1
-                continue
+    for package_name, archive_path in workflow.state.downloaded_files.items():
+        workflow._check_cancelled()
+        if not _safe_pkg.match(package_name):
+            raise BuildError(f"refusing unsafe package name from YAML: {package_name!r}")
 
-            workflow._update_state(progress=(completed / total) * 80)
-            workflow._milestone(f"Extracting {package_name}")
-
-            output_dir = workflow.state.extracted_dir / package_name
-
-            if archive_path.suffix.lower() not in archive_extensions:
-                # raw binary, not an archive - just copy it through
-                output_dir.mkdir(parents=True, exist_ok=True)
-                dest_file = output_dir / archive_path.name
-                shutil.copy2(archive_path, dest_file)
-                workflow.state.extracted_paths[package_name] = output_dir
-                extracted_count += 1
-                workflow.logger.info(f"Copied raw file {package_name}: {archive_path.name}")
-                completed += 1
-                continue
-
-            def on_extract_file(
-                filename: str, current: int, total_files: int, _pkg=package_name
-            ) -> None:
-                workflow._update_state(message=f"Extracting {_pkg}: {filename}")
-
-            result = extract_archive(archive_path, output_dir, progress_callback=on_extract_file)
-
-            if result.success:
-                workflow.state.extracted_paths[package_name] = result.output_dir
-                extracted_count += 1
-                workflow.logger.info(
-                    f"Extracted {package_name}: {result.files_extracted} files to {result.output_dir}"
-                )
-            else:
-                workflow.logger.warning(f"Failed to extract {package_name}: {result.error}")
-
+        # mirror download-manager extractions into extracted_dir (symlink, copy on windows w/o privilege)
+        if package_name in workflow.state.extracted_paths:
+            dm_path = workflow.state.extracted_paths[package_name]
+            std_path = workflow.state.extracted_dir / package_name
+            if dm_path.is_dir() and dm_path != std_path and not std_path.exists():
+                std_path.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    std_path.symlink_to(dm_path, target_is_directory=True)
+                except (OSError, NotImplementedError):
+                    # WinError 1314 (no symlink privilege) or similar - fall back to copying
+                    shutil.copytree(dm_path, std_path)
+            workflow.logger.info(f"Already extracted: {package_name}")
+            extracted_count += 1
             completed += 1
+            continue
 
-        workflow._update_state(progress=80.0)
-        workflow._milestone(f"Extracted {extracted_count} of {total} downloaded packages")
+        workflow._update_state(progress=(completed / total) * 80)
+        workflow._milestone(f"Extracting {package_name}")
 
-    # extract bundled package archives
+        output_dir = workflow.state.extracted_dir / package_name
+
+        if archive_path.suffix.lower() not in archive_extensions:
+            # raw binary, not an archive - just copy it through
+            output_dir.mkdir(parents=True, exist_ok=True)
+            dest_file = output_dir / archive_path.name
+            shutil.copy2(archive_path, dest_file)
+            workflow.state.extracted_paths[package_name] = output_dir
+            extracted_count += 1
+            workflow.logger.info(f"Copied raw file {package_name}: {archive_path.name}")
+            completed += 1
+            continue
+
+        result = extract_archive(
+            archive_path, output_dir, progress_callback=_extract_progress(workflow, package_name)
+        )
+
+        if result.success:
+            workflow.state.extracted_paths[package_name] = result.output_dir
+            extracted_count += 1
+            workflow.logger.info(
+                f"Extracted {package_name}: {result.files_extracted} files to {result.output_dir}"
+            )
+        else:
+            workflow.logger.warning(f"Failed to extract {package_name}: {result.error}")
+
+        completed += 1
+
+    workflow._update_state(progress=80.0)
+    workflow._milestone(f"Extracted {extracted_count} of {total} downloaded packages")
+
+
+def _extract_local_archives(workflow: BuildWorkflow) -> None:
+    """extract bundled local-source package archives the download stage skipped"""
+    from emu68hatcher.builder.host.archive import ARCHIVE_EXTENSIONS
+    from emu68hatcher.builder.pipeline._selection import resolve_selection
     from emu68hatcher.data.package_loader import (
         get_local_packages_dir,
         get_package_by_name,
     )
     from emu68hatcher.data.package_schema import SourceType
 
+    archive_extensions = ARCHIVE_EXTENSIONS
     local_packages_dir = get_local_packages_dir()
 
     # full resolved set (same as stage_download) so requires-pulled local archives extract too
-    from emu68hatcher.builder.pipeline._selection import resolve_selection
-
     ks_version = workflow.config.kickstart.version.value
     emu68_version = workflow.config.emu68_version.value
     all_package_names = resolve_selection(workflow.config, ks_version, emu68_version).install_order
@@ -393,12 +407,9 @@ def stage_extract(workflow: BuildWorkflow) -> None:
         output_dir = workflow.state.extracted_dir / pkg_name
         workflow._milestone(f"Extracting {pkg_name} (local)")
 
-        def on_local_extract_file(
-            filename: str, current: int, total_files: int, _pkg=pkg_name
-        ) -> None:
-            workflow._update_state(message=f"Extracting {_pkg}: {filename}")
-
-        result = extract_archive(archive_path, output_dir, progress_callback=on_local_extract_file)
+        result = extract_archive(
+            archive_path, output_dir, progress_callback=_extract_progress(workflow, pkg_name)
+        )
         if result.success:
             workflow.state.extracted_paths[pkg_name] = output_dir
             local_extracted += 1
@@ -430,8 +441,7 @@ def _stage_user_roadshow(workflow: BuildWorkflow, output_dir: Path) -> bool:
         wrapped.mkdir(parents=True, exist_ok=True)
         return _mirror_tree(src, wrapped, workflow)
 
-    def on_extract(filename: str, current: int, total: int, _msg="Roadshow") -> None:
-        workflow._update_state(message=f"Extracting {_msg}: {filename}")
+    on_extract = _extract_progress(workflow, "Roadshow")
 
     if kind == "inner_full":
         result = extract_archive(src, output_dir, progress_callback=on_extract)

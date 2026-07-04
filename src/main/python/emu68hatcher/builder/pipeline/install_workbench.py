@@ -10,11 +10,24 @@ from typing import TYPE_CHECKING
 from emu68hatcher.builder.errors import BuildError
 from emu68hatcher.builder.staging.files import FileMapping, stage_files
 from emu68hatcher.builder.workflow import BuildStage
-from emu68hatcher.config.defaults import DEFAULT_BOOT_DEVICE
 from emu68hatcher.data.install_media import scan_install_media_by_hash
 
 if TYPE_CHECKING:
     from emu68hatcher.builder.workflow import BuildWorkflow
+
+
+def _filter_needed_media(media, ks_version):
+    """ADFs referenced by this KS version's rules, deduped by name -> (paths, friendly names)"""
+    from emu68hatcher.data.package_loader import get_adf_rules_for_version
+
+    needed = {r.adf for r in get_adf_rules_for_version(ks_version)}
+    seen: set[str] = set()
+    picked = []
+    for m in media:
+        if m.adf_name in needed and m.adf_name not in seen:
+            picked.append(m)
+            seen.add(m.adf_name)
+    return [m.path for m in picked], sorted({m.friendly_name for m in picked})
 
 
 def stage_install_workbench(workflow: BuildWorkflow) -> None:
@@ -30,20 +43,10 @@ def stage_install_workbench(workflow: BuildWorkflow) -> None:
 
     if workflow.state.resolved_install_media:
         # filter to only ADFs referenced by extraction rules for this KS version
-        from emu68hatcher.data.package_loader import get_adf_rules_for_version
-
         ks_version = workflow.config.kickstart.version.value
-        needed_adf_names = {r.adf for r in get_adf_rules_for_version(ks_version)}
-
-        needed_media = []
-        seen_names = set()
-        for m in workflow.state.resolved_install_media:
-            if m.adf_name in needed_adf_names and m.adf_name not in seen_names:
-                needed_media.append(m)
-                seen_names.add(m.adf_name)
-
-        adf_paths = [m.path for m in needed_media]
-        media_names = sorted({m.friendly_name for m in needed_media})
+        adf_paths, media_names = _filter_needed_media(
+            workflow.state.resolved_install_media, ks_version
+        )
         media_description = f"{len(adf_paths)} ADFs for KS {ks_version}"
         # not all of these will actually be extracted (e.g. locale ADFs for unenabled languages)
         workflow.logger.info(f"Identified {media_description}: {', '.join(media_names)}")
@@ -60,17 +63,9 @@ def stage_install_workbench(workflow: BuildWorkflow) -> None:
             )
             found_media, _ = scan_install_media_by_hash(scan_dirs)
             if found_media:
-                from emu68hatcher.data.package_loader import get_adf_rules_for_version as _get_rules
-
-                _needed = {r.adf for r in _get_rules(workflow.config.kickstart.version.value)}
-                _seen = set()
-                filtered = []
-                for m in found_media:
-                    if m.adf_name in _needed and m.adf_name not in _seen:
-                        filtered.append(m)
-                        _seen.add(m.adf_name)
-                adf_paths = [m.path for m in filtered]
-                media_names = sorted({m.friendly_name for m in filtered})
+                adf_paths, _ = _filter_needed_media(
+                    found_media, workflow.config.kickstart.version.value
+                )
                 media_description = f"{len(adf_paths)} ADFs"
                 workflow.logger.info(f"Direct scan found: {media_description}")
 
@@ -92,9 +87,9 @@ def stage_install_workbench(workflow: BuildWorkflow) -> None:
     workflow._milestone("Copying Workbench files to staging")
 
     # find the boot partition - first bootable Amiga partition wins
-    boot_device = DEFAULT_BOOT_DEVICE
-    if workflow.config.partitions:
-        boot_device = workflow.config.partitions.bootable_device or DEFAULT_BOOT_DEVICE
+    from emu68hatcher.builder.pipeline.configure import _resolve_boot_device
+
+    boot_device = _resolve_boot_device(workflow)
 
     # decompress .Z files for Workbench 3.2.x (uses Unix compress format)
     ks_version = workflow.config.kickstart.version.value

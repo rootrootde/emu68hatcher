@@ -184,8 +184,7 @@ class KickstartTab(QWidget):
         if not path:
             return
         # dedupe against existing entries
-        existing = {self.dir_list.item(i).text() for i in range(self.dir_list.count())}
-        if path in existing:
+        if path in {str(d) for d in self._list_dirs()}:
             return
         self.dir_list.addItem(QListWidgetItem(path))
         self._fire_scans()
@@ -303,9 +302,13 @@ class KickstartTab(QWidget):
         """set the icon set dropdown to a specific value"""
         select_combo_by_data(self.icon_set_combo, icon_set_name)
 
+    def _scan_dirs(self) -> list[Path]:
+        """existing directories from the list, ready to scan"""
+        return [d for d in self._list_dirs() if d.exists() and d.is_dir()]
+
     def _fire_scans(self):
         """kick off ROM + ADF scans across the current directory list"""
-        dirs = [d for d in self._list_dirs() if d.exists() and d.is_dir()]
+        dirs = self._scan_dirs()
         if not dirs:
             self.rom_status.setText("Add at least one directory above to scan for ROMs and ADFs")
             self.rom_status.setStyleSheet("color: gray;")
@@ -354,7 +357,7 @@ class KickstartTab(QWidget):
         from emu68hatcher.data.rom_detection import find_kickstart_for_version
 
         version = self.get_selected_version()
-        dirs = [d for d in self._list_dirs() if d.exists() and d.is_dir()]
+        dirs = self._scan_dirs()
         boot_path = find_kickstart_for_version(dirs, version) if found_roms else None
 
         self._rom_rows = self._build_rom_rows(found_roms, version, boot_path)

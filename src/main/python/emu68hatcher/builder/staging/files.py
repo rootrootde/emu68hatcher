@@ -56,11 +56,14 @@ def _parse_info_to_tooltypes(data: bytes) -> tuple[int, list[str], int]:
     if magic != 0xE310:
         raise ValueError(f"Not an Amiga .info file (magic=0x{magic:04X})")
 
-    has_first_image = struct.unpack(">I", data[22:26])[0] != 0
-    has_second_image = struct.unpack(">I", data[26:30])[0] != 0
-    has_default_tool = struct.unpack(">I", data[50:54])[0] != 0
-    has_tooltypes = struct.unpack(">I", data[54:58])[0] != 0
-    has_drawer_data = struct.unpack(">I", data[66:70])[0] != 0
+    def be_long(off: int) -> int:
+        return struct.unpack(">I", data[off : off + 4])[0]
+
+    has_first_image = be_long(22) != 0
+    has_second_image = be_long(26) != 0
+    has_default_tool = be_long(50) != 0
+    has_tooltypes = be_long(54) != 0
+    has_drawer_data = be_long(66) != 0
 
     offset = 78  # after DiskObject header
 

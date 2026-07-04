@@ -11,4 +11,3 @@ versions:
 mandatory: true
 download:
   source: local
-  path: Emu68Boot/config.txt

@@ -180,12 +180,6 @@ class MainWindow(QMainWindow):
         self.config.kickstart.version = KickstartVersion(ks["version"])
         # legacy single-dir fields go away in favour of asset_directories
         self.config.kickstart.rom_directory = None
-
-        # str-enum constructs from the raw version; fall back to 3.1 on unknown
-        try:
-            self.config.install_media.version = KickstartVersion(ks.get("wb_version", "3.1"))
-        except ValueError:
-            self.config.install_media.version = KickstartVersion.V3_1
         self.config.install_media.directory = None
 
         # asset_directories is the single source of truth - scanned for both ROMs and ADFs

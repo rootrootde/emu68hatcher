@@ -39,8 +39,6 @@ def _set_icon_stack(info_path: Path, size: int) -> None:
 
 def _ci_resolve_path(base: Path, rel_path: str) -> Path | None:
     """case-insensitive lookup of 'rel_path' under 'base', returning None on any miss (cf. 'resolve_staging_path')"""
-    from emu68hatcher.builder.staging.files import ci_match_child
-
     current = base
     for part in rel_path.split("/"):
         if not part:

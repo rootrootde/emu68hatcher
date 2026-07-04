@@ -6,7 +6,7 @@ from pathlib import Path
 import yaml
 from pydantic import ValidationError
 
-from emu68hatcher.data.package_schema import PACKAGE_GROUPS, ADFRule, Bundle, Package
+from emu68hatcher.data.package_schema import ADFRule, Bundle, Package
 
 logger = logging.getLogger(__name__)
 
@@ -106,14 +106,9 @@ def get_packages_for_version(
     ]
 
     # sort by group order, then by name
-    def sort_key(pkg: Package) -> tuple:
-        try:
-            group_idx = PACKAGE_GROUPS.index(pkg.group)
-        except ValueError:
-            group_idx = len(PACKAGE_GROUPS)  # unknown groups at end
-        return (group_idx, pkg.name)
+    from emu68hatcher.data.package_resolver import _group_rank
 
-    return sorted(compatible, key=sort_key)
+    return sorted(compatible, key=lambda p: (_group_rank(p), p.name))
 
 
 def get_mandatory_packages(
@@ -180,14 +175,12 @@ def get_bundles_for_version(kickstart_version: str) -> list[Bundle]:
         if p.bundle and not p.mandatory
     }
 
-    def sort_key(b: Bundle) -> tuple:
-        try:
-            group_idx = PACKAGE_GROUPS.index(b.group)
-        except ValueError:
-            group_idx = len(PACKAGE_GROUPS)
-        return (group_idx, b.display_name)
+    from emu68hatcher.data.package_resolver import _group_rank
 
-    return sorted((bundles[bid] for bid in compatible), key=sort_key)
+    return sorted(
+        (bundles[bid] for bid in compatible),
+        key=lambda b: (_group_rank(b), b.display_name),
+    )
 
 
 def get_bundle_members(bundle_id: str, kickstart_version: str) -> list[Package]:

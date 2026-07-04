@@ -175,6 +175,11 @@ def generate_rdb_init_command(
     )
 
 
+def _fs_info(fs: Filesystem) -> dict:
+    """filesystem handler descriptor, defaulting to PFS3 for unknown filesystems"""
+    return FILESYSTEM_HANDLERS.get(fs, FILESYSTEM_HANDLERS[Filesystem.PFS3])
+
+
 def generate_rdb_filesystem_command(
     image_path: Path,
     partition_number: int,
@@ -182,7 +187,7 @@ def generate_rdb_filesystem_command(
     handler_path: Path | None = None,
 ) -> HSTCommandLine:
     """add filesystem handler to RDB"""
-    fs_info = FILESYSTEM_HANDLERS.get(filesystem, FILESYSTEM_HANDLERS[Filesystem.PFS3])
+    fs_info = _fs_info(filesystem)
 
     rdb_path = hst_path(image_path, "mbr", partition_number)
 
@@ -211,7 +216,7 @@ def generate_rdb_partition_commands(
     rdb_path = hst_path(image_path, "mbr", mbr_partition_number)
 
     for i, part in enumerate(amiga_partitions):
-        fs_info = FILESYSTEM_HANDLERS.get(part.filesystem, FILESYSTEM_HANDLERS[Filesystem.PFS3])
+        fs_info = _fs_info(part.filesystem)
 
         # rdb part add "path/mbr/N" DEVICE DOSTYPE SIZE --buffers ... --bootable --boot-priority
         args = [

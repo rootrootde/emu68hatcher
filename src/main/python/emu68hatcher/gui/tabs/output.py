@@ -186,25 +186,18 @@ class OutputTab(QWidget):
 
     def get_config(self) -> dict:
         if self.mode_device.isChecked():
-            device = self.disk_combo.currentData()
             return {
                 "type": OutputType.DEVICE.value,
-                "path": device or "",
+                "path": self.disk_combo.currentData() or "",
                 "sparse": False,
                 "flash_target": None,
             }
-        if self.mode_img_flash.isChecked():
-            return {
-                "type": OutputType.IMG.value,
-                "path": self.output_path.text(),
-                "sparse": self.sparse_cb.isChecked(),
-                "flash_target": self.disk_combo.currentData(),
-            }
+        flash_target = self.disk_combo.currentData() if self.mode_img_flash.isChecked() else None
         return {
             "type": OutputType.IMG.value,
             "path": self.output_path.text(),
             "sparse": self.sparse_cb.isChecked(),
-            "flash_target": None,
+            "flash_target": flash_target,
         }
 
     def set_config(self, config: OutputConfig | None):

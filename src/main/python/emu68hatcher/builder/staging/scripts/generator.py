@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from emu68hatcher.builder.staging.scripts.templates import render_template
+from emu68hatcher.data.data_manager import load_yaml_data
 from emu68hatcher.utils.paths import ensure_dir
 
 
@@ -13,8 +14,6 @@ def generate_shell_startup() -> str:
 
 def get_screen_modes() -> list[dict]:
     """load screen modes form bundled YAML"""
-    from emu68hatcher.data.data_manager import load_yaml_data
-
     return load_yaml_data("screen_modes")
 
 

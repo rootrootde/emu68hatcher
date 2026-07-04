@@ -27,6 +27,41 @@ _PROGRESS_RE = re.compile(
 )
 
 
+def _handle_progress_line(
+    line: str,
+    phase_seen: set[str],
+    progress_callback: Callable[[float, str], None] | None,
+    recent: deque[str],
+) -> None:
+    """emit progress on a hst-imager progress line, else buffer it and debug-log"""
+    m = _PROGRESS_RE.search(line)
+    if not m:
+        recent.append(line)
+        logger.debug(f"hst-imager: {line}")
+        return
+    phase = m.group("phase").lower()
+    if phase not in phase_seen:
+        phase_seen.add(phase)
+        logger.info(f"flash: {phase} pass started")
+    if progress_callback:
+        total = _parse_int(m.group("total"))
+        if total > 0:
+            pct = max(0.0, min(100.0, 100.0 * _parse_int(m.group("done")) / total))
+            progress_callback(pct, f"{phase.capitalize()}: {pct:.1f}%")
+
+
+def _raise_flash_failure(rc: int, duration: float, recent: deque[str]) -> None:
+    """log the tail buffer and raise BuildError with the most likely cause line"""
+    for ln in recent:
+        logger.error(f"hst-imager: {ln}")
+    # first non-empty .NET-ish exception line is usually the human-readable cause
+    cause = next(
+        (ln for ln in recent if "Exception" in ln or "Error" in ln or "denied" in ln.lower()),
+        recent[-1] if recent else "",
+    )
+    raise BuildError(f"hst-imager write failed (rc={rc}) after {duration:.1f}s: {cause}")
+
+
 def flash_image_to_disk(
     image_path: Path,
     target_device: str,
@@ -73,21 +108,7 @@ def flash_image_to_disk(
             ln = line.rstrip()
             if not ln:
                 return
-            m = _PROGRESS_RE.search(ln)
-            if m:
-                phase = m.group("phase").lower()
-                if phase not in phase_seen:
-                    phase_seen.add(phase)
-                    logger.info(f"flash: {phase} pass started")
-                if progress_callback:
-                    done = _parse_int(m.group("done"))
-                    total = _parse_int(m.group("total"))
-                    if total > 0:
-                        pct = max(0.0, min(100.0, 100.0 * done / total))
-                        progress_callback(pct, f"{phase.capitalize()}: {pct:.1f}%")
-                return
-            recent.append(ln)
-            logger.debug(f"hst-imager {stream}: {ln}")
+            _handle_progress_line(ln, phase_seen, progress_callback, recent)
 
         result = elevation.helper.run(
             args, timeout=timeout, cancel_check=cancel_predicate, on_line=on_line
@@ -96,19 +117,7 @@ def flash_image_to_disk(
         if result.cancelled:
             raise BuildCancelledError("flash cancelled by user")
         if result.returncode != 0:
-            for ln in recent:
-                logger.error(f"hst-imager: {ln}")
-            cause = next(
-                (
-                    ln
-                    for ln in recent
-                    if "Exception" in ln or "Error" in ln or "denied" in ln.lower()
-                ),
-                recent[-1] if recent else "",
-            )
-            raise BuildError(
-                f"hst-imager write failed (rc={result.returncode}) after {duration:.1f}s: {cause}"
-            )
+            _raise_flash_failure(result.returncode, duration, recent)
         logger.info(f"flash: done in {duration:.1f}s")
         if progress_callback:
             progress_callback(100.0, "Flash complete")
@@ -158,21 +167,7 @@ def flash_image_to_disk(
                 proc.kill()
                 raise BuildError(f"flash timed out after {timeout}s")
 
-            m = _PROGRESS_RE.search(line)
-            if m:
-                phase = m.group("phase").lower()
-                if phase not in phase_seen:
-                    phase_seen.add(phase)
-                    logger.info(f"flash: {phase} pass started")
-                if progress_callback:
-                    done = _parse_int(m.group("done"))
-                    total = _parse_int(m.group("total"))
-                    if total > 0:
-                        pct = max(0.0, min(100.0, 100.0 * done / total))
-                        progress_callback(pct, f"{phase.capitalize()}: {pct:.1f}%")
-            else:
-                recent.append(line)
-                logger.debug(f"hst-imager: {line}")
+            _handle_progress_line(line, phase_seen, progress_callback, recent)
 
     finally:
         rc = proc.wait()
@@ -182,14 +177,7 @@ def flash_image_to_disk(
         raise BuildCancelledError("flash cancelled by user")
 
     if rc != 0:
-        for ln in recent:
-            logger.error(f"hst-imager: {ln}")
-        # first non-empty .NET-ish exception line is usually the human-readable cause
-        cause = next(
-            (ln for ln in recent if "Exception" in ln or "Error" in ln or "denied" in ln.lower()),
-            recent[-1] if recent else "",
-        )
-        raise BuildError(f"hst-imager write failed (rc={rc}) after {duration:.1f}s: {cause}")
+        _raise_flash_failure(rc, duration, recent)
 
     logger.info(f"flash: done in {duration:.1f}s")
     if progress_callback:

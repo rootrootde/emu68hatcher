@@ -40,3 +40,4 @@ ELSE
 		C:Rename Devs:Picasso96SettingsPiStorm Devs:Picasso96Settings QUIET
 	ENDIF
 ENDIF
+FailAt 10

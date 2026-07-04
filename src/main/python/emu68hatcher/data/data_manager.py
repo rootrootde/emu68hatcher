@@ -29,51 +29,22 @@ class InstallMediaInfo:
     friendly_name: str
 
 
-class InstallMediaHashDB:
-    """install media hash database loaded from YAML"""
-
-    def __init__(self):
-        self._by_hash: dict[str, InstallMediaInfo] = {}
-        self._loaded = False
-
-    def load(self) -> int:
-        """load install media hashes from YAML"""
-        entries = load_yaml_data("install_media_hashes")
-        self._by_hash.clear()
-
-        for entry in entries:
-            hash_val = (entry.get("hash") or "").lower()
-            adf_name = entry.get("adf_name") or ""
-
-            if not hash_val and not adf_name:
-                continue
-
-            info = InstallMediaInfo(
-                workbench_version=str(entry.get("version") or ""),
-                adf_name=adf_name,
-                friendly_name=entry.get("friendly_name") or "",
-            )
-
-            if hash_val:
-                self._by_hash[hash_val] = info
-
-        self._loaded = True
-        return len(self._by_hash)
-
-    def lookup(self, md5_hash: str) -> InstallMediaInfo | None:
-        """look up inatall media by hash"""
-        if not self._loaded:
-            self.load()
-        return self._by_hash.get(md5_hash.lower())
+@cache
+def _install_media_by_hash() -> dict[str, InstallMediaInfo]:
+    """lowercased md5 hash -> InstallMediaInfo, loaded from install_media_hashes.yaml"""
+    out: dict[str, InstallMediaInfo] = {}
+    for entry in load_yaml_data("install_media_hashes"):
+        hash_val = (entry.get("hash") or "").lower()
+        if not hash_val:
+            continue
+        out[hash_val] = InstallMediaInfo(
+            workbench_version=str(entry.get("version") or ""),
+            adf_name=entry.get("adf_name") or "",
+            friendly_name=entry.get("friendly_name") or "",
+        )
+    return out
 
 
-# global instance
-_media_db: InstallMediaHashDB | None = None
-
-
-def get_install_media_db() -> InstallMediaHashDB:
-    """get global install media database"""
-    global _media_db
-    if _media_db is None:
-        _media_db = InstallMediaHashDB()
-    return _media_db
+def lookup_install_media(md5_hash: str) -> InstallMediaInfo | None:
+    """look up install media by md5 hash"""
+    return _install_media_by_hash().get(md5_hash.lower())

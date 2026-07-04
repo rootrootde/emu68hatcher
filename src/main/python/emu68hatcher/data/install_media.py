@@ -35,7 +35,7 @@ def scan_install_media_by_hash(
     max_files: int = 5000,
 ) -> tuple[list["IdentifiedInstallMedia"], bool]:
     """scan one or more dirs for install media, MD5-identify via install_media_hashes.yaml"""
-    from emu68hatcher.data.data_manager import get_install_media_db
+    from emu68hatcher.data.data_manager import lookup_install_media
     from emu68hatcher.utils.hashing import HashAlgorithm, calculate_hash
 
     dirs = [directories] if isinstance(directories, Path) else list(directories)
@@ -71,7 +71,7 @@ def scan_install_media_by_hash(
     for path in candidates:
         try:
             md5 = calculate_hash(path, HashAlgorithm.MD5)
-            info = get_install_media_db().lookup(md5)
+            info = lookup_install_media(md5)
 
             if info:
                 identified.append(

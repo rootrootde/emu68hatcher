@@ -32,4 +32,4 @@ Both flashing modes prompt for admin access once at the start of the build. Afte
 
 ## Save / load configuration
 
-You can save the current configuration to a JSON file via **Save config** (bottom left) and load it later with **Load config**.
+You can save the current configuration to a JSON file via **Save Config...** (bottom left) and load it later with **Load Config...**.

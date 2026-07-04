@@ -10,7 +10,7 @@ from emu68hatcher.utils.paths import (
     get_dotnet_bundle_dir,
     get_tools_dir,
 )
-from emu68hatcher.utils.platform import OperatingSystem, detect_os, get_platform_info
+from emu68hatcher.utils.platform import OperatingSystem, detect_os
 
 _WINDOWS_EXE_EXTS = (".exe", ".cmd", ".bat", ".com")
 
@@ -45,55 +45,46 @@ def find_tool(name: str) -> Path | None:
     return None
 
 
-def find_hst_imager() -> Path | None:
-    """find the HST Imager binary"""
-    info = get_platform_info()
+_TOOL_NAMES: dict[str, tuple[list[str], list[str]]] = {
+    "hst-imager": (
+        ["hst-imager.exe", "hst.imager.exe", "Hst.Imager.Console.exe"],
+        ["hst-imager", "hst.imager", "Hst.Imager.Console"],
+    ),
+    "hst-amiga": (
+        ["hst-amiga.exe", "hst.amiga.exe", "Hst.Amiga.exe"],
+        ["hst-amiga", "hst.amiga", "Hst.Amiga"],
+    ),
+    "7z": (
+        ["7z.exe", "7za.exe"],
+        ["7z", "7za", "7zz"],
+    ),
+}
 
-    if info.os == OperatingSystem.WINDOWS:
-        names = ["hst-imager.exe", "hst.imager.exe", "Hst.Imager.Console.exe"]
-    else:
-        names = ["hst-imager", "hst.imager", "Hst.Imager.Console"]
 
+def _find_named(tool: str) -> Path | None:
+    """first resolvable binary from the tool's per-OS candidate names"""
+    windows_names, posix_names = _TOOL_NAMES[tool]
+    names = windows_names if detect_os() == OperatingSystem.WINDOWS else posix_names
     for name in names:
         path = find_tool(name)
         if path:
             return path
-
     return None
+
+
+def find_hst_imager() -> Path | None:
+    """find the HST Imager binary"""
+    return _find_named("hst-imager")
 
 
 def find_hst_amiga() -> Path | None:
     """find the HST Amiga binary"""
-    info = get_platform_info()
-
-    if info.os == OperatingSystem.WINDOWS:
-        names = ["hst-amiga.exe", "hst.amiga.exe", "Hst.Amiga.exe"]
-    else:
-        names = ["hst-amiga", "hst.amiga", "Hst.Amiga"]
-
-    for name in names:
-        path = find_tool(name)
-        if path:
-            return path
-
-    return None
+    return _find_named("hst-amiga")
 
 
 def find_7z() -> Path | None:
     """find 7-Zip binary"""
-    info = get_platform_info()
-
-    if info.os == OperatingSystem.WINDOWS:
-        names = ["7z.exe", "7za.exe"]
-    else:
-        names = ["7z", "7za", "7zz"]
-
-    for name in names:
-        path = find_tool(name)
-        if path:
-            return path
-
-    return None
+    return _find_named("7z")
 
 
 def check_dependencies() -> dict[str, bool]:
