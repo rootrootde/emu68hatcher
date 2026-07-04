@@ -244,6 +244,58 @@ TOOL_LABELS = {
 }
 
 
+# a sidecar .version file records which pinned download produced the installed
+# binary; an app upgrade that bumps tools.yaml then re-fetches the new version.
+def _tool_target_path(tool_name: str) -> Path | None:
+    """path our downloader installs 'tool_name' to inside the tools dir"""
+    suf = _exe_suffix()
+    names = {"hst-imager": f"hst-imager{suf}", "hst-amiga": f"hst-amiga{suf}"}
+    name = names.get(tool_name)
+    return get_tools_dir() / name if name else None
+
+
+def _stamp_path(target_path: Path) -> Path:
+    return target_path.with_name(target_path.name + ".version")
+
+
+def _read_stamp(target_path: Path) -> str | None:
+    try:
+        return _stamp_path(target_path).read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+
+
+def _write_stamp(target_path: Path, stamp: str | None) -> None:
+    if not stamp:
+        return
+    try:
+        _stamp_path(target_path).write_text(stamp, encoding="utf-8")
+    except OSError as e:
+        logger.warning(f"could not write version stamp for {target_path.name}: {e}")
+
+
+def tool_needs_download(tool_name: str) -> bool:
+    """True if a pinned tool is missing, or our installed copy is stale vs. tools.yaml"""
+    from emu68hatcher.utils.host_tools import find_7z, find_hst_amiga, find_hst_imager
+
+    finders = {"hst-imager": find_hst_imager, "hst-amiga": find_hst_amiga, "7z": find_7z}
+    finder = finders.get(tool_name)
+    if finder is None:
+        return False
+    resolved = finder()
+    if resolved is None:
+        return True  # not installed anywhere
+    # only the two pinned GitHub tools are version-managed; 7z is any-recent-version
+    target = _tool_target_path(tool_name)
+    if target is None or resolved != target:
+        return False  # 7z, or resolved from system PATH - not ours to version-manage
+    info = resolve_tool_download(tool_name)
+    expected = info.get("url") if info else None
+    if not expected:
+        return False  # can't determine the pinned version - don't churn
+    return _read_stamp(target) != expected
+
+
 def download_tool(
     tool_name: str,
     force: bool = False,
@@ -276,17 +328,17 @@ def download_tool(
         archive_names = [target_name] + archive_names
     target_path = tools_dir / target_name
 
-    if target_path.exists() and not force:
-        print(f"{label} already installed at {target_path}")
-        return target_path
-
-    print(f"Fetching download info for {label}...")
     info = resolve_tool_download(tool_name)
     if not info or not info.get("url"):
         print(f"Could not find download info for {label}")
         return None
-
     url = info["url"]
+
+    # skip only when the installed copy matches the pinned download (version stamp)
+    if target_path.exists() and not force and _read_stamp(target_path) == url:
+        print(f"{label} already installed at {target_path}")
+        return target_path
+
     filename = info.get("filename") or url.rsplit("/", 1)[-1]
     print(f"Downloading {filename}...")
 
@@ -331,5 +383,6 @@ def download_tool(
 
         shutil.copy2(binary_path, target_path)
         os.chmod(target_path, 0o755)
+        _write_stamp(target_path, url)
         print(f"Installed: {target_path}")
         return target_path

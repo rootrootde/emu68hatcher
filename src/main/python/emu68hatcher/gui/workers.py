@@ -82,19 +82,21 @@ class ToolDownloadWorker(QThread):
     download_finished = Signal(bool, list)  # overall success, failed tool names
 
     def run(self):
-        """download each missing tool, emit per-tool progress"""
-        from emu68hatcher.builder.host.tools import download_7zip, download_tool
-        from emu68hatcher.utils.host_tools import check_dependencies
+        """download each missing or stale tool, emit per-tool progress"""
+        from emu68hatcher.builder.host.tools import (
+            download_7zip,
+            download_tool,
+            tool_needs_download,
+        )
 
-        status = check_dependencies()
-        missing = [t for t, ok in status.items() if not ok]
+        pending = [t for t in ("hst-imager", "hst-amiga", "7z") if tool_needs_download(t)]
 
-        if not missing:
+        if not pending:
             self.download_finished.emit(True, [])
             return
 
         failed: list[str] = []
-        for tool_name in missing:
+        for tool_name in pending:
             self.tool_started.emit(tool_name)
 
             # close over tool_name so the start tab can label the bar
@@ -105,7 +107,7 @@ class ToolDownloadWorker(QThread):
                 if tool_name == "7z":
                     result = download_7zip(progress_callback=_cb)
                 else:
-                    result = download_tool(tool_name, progress_callback=_cb)
+                    result = download_tool(tool_name, force=True, progress_callback=_cb)
             except Exception as exc:
                 print(f"Error downloading {tool_name}: {exc}")
                 result = None

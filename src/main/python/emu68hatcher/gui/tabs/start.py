@@ -194,6 +194,7 @@ class StartTab(QWidget):
     @Slot()
     def refresh_status(self):
         """re-query tool install state and repaint the rows"""
+        from emu68hatcher.builder.host.tools import tool_needs_download
         from emu68hatcher.utils.host_tools import find_7z, find_hst_amiga, find_hst_imager
 
         finders = {
@@ -202,22 +203,30 @@ class StartTab(QWidget):
             "7z": find_7z,
         }
         any_missing = False
+        any_stale = False
 
         for name, _ in _TOOL_ROWS:
             path = finders[name]()
             status_label, path_label = self._row_widgets[name]
-            if path:
-                status_label.setText("✅")
-                path_label.setText(str(path))
-            else:
+            if not path:
                 status_label.setText("❌")
                 path_label.setText("not installed")
                 any_missing = True
+            elif tool_needs_download(name):
+                status_label.setText("⚠️")
+                path_label.setText(f"{path} (update available)")
+                any_stale = True
+            else:
+                status_label.setText("✅")
+                path_label.setText(str(path))
 
-        self.download_btn.setEnabled(any_missing)
-        self.download_btn.setText(
-            "Download Missing Tools…" if any_missing else "All Tools Installed"
-        )
+        self.download_btn.setEnabled(any_missing or any_stale)
+        if any_missing:
+            self.download_btn.setText("Download Missing Tools…")
+        elif any_stale:
+            self.download_btn.setText("Update Tools…")
+        else:
+            self.download_btn.setText("All Tools Installed")
 
     # --- download flow ---
     @Slot()
