@@ -584,8 +584,8 @@ class KickstartTab(QWidget):
         asset_directories: list[Path] | None = None,
     ):
         """populate the tab from config objects"""
-        # install_media drives the Workbench dropdown; 3.9 maps to 3.1 (same ROM, hidden in UI)
-        version_to_set = media_config.version.value
+        # kickstart.version drives the Workbench dropdown; 3.9 maps to 3.1 (same ROM, hidden in UI)
+        version_to_set = ks_config.version.value
         if version_to_set not in _SELECTABLE_VERSIONS:
             version_to_set = KickstartVersion.V3_1.value
         idx = _SELECTABLE_VERSIONS.index(version_to_set)
