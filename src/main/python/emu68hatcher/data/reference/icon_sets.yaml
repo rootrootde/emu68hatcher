@@ -28,4 +28,4 @@
   versions: ["3.9"]
   new_folder_icon:
     source: AmigaOS3_9
-    file: OS-Version3.9/Workbench3.5/Storage/Monitors.info
+    file: OS-Version3.9/Workbench3.9/Prefs/Env-Archive/Sys/def_drawer.info
