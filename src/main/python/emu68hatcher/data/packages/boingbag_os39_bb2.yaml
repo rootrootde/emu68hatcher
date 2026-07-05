@@ -1,7 +1,7 @@
-name: boingbag_os39
+name: boingbag_os39_bb2
 friendly_name: AmigaOS 3.9 BoingBag 2
 group: System
-description: 'os 3.9 boingbag 2 - carries the soft rom update'
+description: 'os 3.9 boingbag 2 - soft rom update + fixes'
 versions:
 - '3.9'
 mandatory: true
