@@ -81,6 +81,9 @@ IF $HATCHERFIRSTBOOT EQ "TRUE"
    C:Ask "Press RETURN to continue..."
    IF $KickstartVersion EQ 3.9
       C:AddDataTypes REFRESH QUIET
+      ; the 3.9 cd is an iso and can't carry amiga protection bits, so the arexx
+      ; handler scripts lose their script bit; restore it so datatypes can run them
+      C:Protect S:#?.rexx +s QUIET
    ENDIF
    SYS:Prefs/Locale
    SYS:Prefs/Input
