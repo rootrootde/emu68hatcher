@@ -240,6 +240,16 @@ STARTUP_SEQUENCE_INJECTIONS = [
         end_pattern=r"EndIf",
         name="Original RexxMast (moved to after BindDrivers)",
     ),
+    # the 3.9 CD Startup-Sequence starts RexxMast with a bare line (no If EXISTS
+    # wrapper); remove that too, else our post-BindDrivers RexxMast double-starts it
+    # and the second start fails rc20
+    ScriptInjection(
+        target_script="S/Startup-Sequence",
+        action=InjectionAction.REMOVE,
+        start_pattern=r"^SYS:System/RexxMast",
+        end_pattern=r"^SYS:System/RexxMast",
+        name="Original RexxMast bare line (moved to after BindDrivers)",
+    ),
     # UAEGFX persistent monitor swap (runs 4th, furthest from anchor)
     ScriptInjection(
         target_script="S/Startup-Sequence",
