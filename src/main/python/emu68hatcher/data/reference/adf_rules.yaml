@@ -1279,3 +1279,18 @@
   recursive: true
   sequence: 2
   package: os_install
+# active keymaps live on the Emergency-Boot tree (Workbench3.5/Devs/Keymaps is
+# empty); without these Devs/Keymaps only the built-in american keymap shows
+- adf: AmigaOS3_9
+  from: Emergency-Boot/Devs/Keymaps/*
+  to: Devs/Keymaps/
+  recursive: true
+  sequence: 3
+  package: os_install
+# the separate Locale tree carries Countries/Languages/Flags for the setup wizard
+- adf: AmigaOS3_9
+  from: OS-Version3.9/Locale/*
+  to: Locale/
+  recursive: true
+  sequence: 3
+  package: os_install
