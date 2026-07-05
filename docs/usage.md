@@ -6,7 +6,7 @@
 
 2. **Start tab - install missing tools.** If required tools are shown as missing, click **Download Missing Tools** and wait for green checkmarks.
 
-3. **Amiga Files tab - pick the Workbench version, icon set, and languages.** Add one or more directories that contain your Kickstart ROMs and Workbench ADFs. Click **Add...** to point at a folder; the list re-scans after each add/remove. Files are identified by hash, so filenames don't matter. Pick the **icon set** (GlowIcons on 3.2+, or Standard) next to the Workbench version, and tick any **language** disks you want installed. **Show details...** opens a tabbed view of what was detected: the boot ROM picked, the WHDLoad ROM inventory that gets staged to **DEVS:Kickstarts/**, and the per-ADF breakdown.
+3. **Amiga Files tab - pick the Workbench version, icon set, and languages.** Add one or more directories that contain your Kickstart ROMs and Workbench ADFs. Click **Add...** to point at a folder; the list re-scans after each add/remove. Files are identified by hash, so filenames don't matter. Pick the **icon set** (GlowIcons on 3.2+, or Standard) next to the Workbench version, and tick any **language** disks you want installed. **Show details...** opens a tabbed view of what was detected: the boot ROM picked, the WHDLoad ROM inventory that gets staged to **DEVS:Kickstarts/**, and the per-ADF breakdown. For **AmigaOS 3.9**, add your OS 3.9 CD image (**.iso**, do not mount it) and a Kickstart 3.1 ROM instead of ADFs - the BoingBag updates download automatically.
 
 4. **Emu68 tab - pick the HDMI output mode** for your monitor and the Emu68 release to bundle (1.0.7 stable for pistorm32-lite / classic, or 1.1.0-alpha.1 for PiStorm16 support).
 

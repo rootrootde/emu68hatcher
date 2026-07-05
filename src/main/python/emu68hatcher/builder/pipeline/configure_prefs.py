@@ -320,7 +320,14 @@ def _install_icon_set(workflow: BuildWorkflow, boot_staging: Path) -> None:
                 break
 
         if not icon_set_config:
-            workflow.logger.warning(f"Icon set '{icon_set_name}' not found for KS {ks_version}")
+            # the config default "Default" (or a set from another version) has no entry
+            # here; fall back to this version's default set instead of doing nothing
+            for row in rows:
+                if row.get("default") and ks_version in row.get("versions", []):
+                    icon_set_config = row
+                    break
+        if not icon_set_config:
+            workflow.logger.info(f"No icon set for KS {ks_version}; keeping generic drawer icons")
             return
 
         new_folder = icon_set_config.get("new_folder_icon", {})

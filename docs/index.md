@@ -8,6 +8,7 @@ Runs on macOS, Linux and Windows.
 
 - Bootable Emu68 install for pistorm32-lite, pistorm, pistorm16
 - Workbench install from stock ADFs (3.1 / 3.2 / 3.2.2.1 / 3.2.3) - scanned across as many ROM/ADF directories as you want, identified by hash
+- AmigaOS 3.9 install from the original CD image (**.iso**) - BoingBag 1+2 (including the soft ROM update) download automatically; boots on a Kickstart 3.1 ROM
 - Customizable package set: MUI, WHDLoad+WHDLoadWrapper, IBrowse, HippoPlayer, ...
 - RTG via Picasso96 (shareware driver)
 - Network support: Roadshow TCP/IP stack (demo bundled; point at your own **Roadshow.lha** to install the full commercial version), wifipi (wifi) + genet (ethernet) drivers, **Network Config** tool (WiFi/ethernet connect, DHCP or static IP, DNS, default gateway)
@@ -19,7 +20,6 @@ Runs on macOS, Linux and Windows.
 
 **Still in an early stage** - Only actively tested on my A1200 + pistorm32-lite + CM4 / on macOS. If you run it on different hardware or OS, let me know on the [Discord](https://discord.com/invite/ApTbasXJPE) or open a [GitHub issue](https://github.com/rootrootde/emu68hatcher/issues) - even just "it worked" is useful.
 
-- **Workbench 3.9 not supported yet**
 - **No framethrower / unicam configuration yet**
 - **mostly tested on 3.2(.3)** - expect more potential issues with 3.1
 

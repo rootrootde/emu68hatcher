@@ -471,20 +471,23 @@ class KickstartTab(QWidget):
         self._adf_rows = []
         self._refresh_details_button()
 
+        wb_version = self.get_selected_version()
+
         if not found_media:
             if truncated:
                 self.adf_status.setText(
-                    "No ADFs found (scan stopped - too many files, narrow the directories)"
+                    "No media found (scan stopped - too many files, narrow the directories)"
                 )
                 self.adf_status.setStyleSheet("color: red;")
+            elif wb_version == "3.9":
+                self.adf_status.setText("Add your AmigaOS 3.9 CD image (.iso) - do not mount it")
+                self.adf_status.setStyleSheet("color: orange;")
             else:
                 self.adf_status.setText(
                     "No recognized Workbench ADFs found in the configured directories"
                 )
                 self.adf_status.setStyleSheet("color: orange;")
             return
-
-        wb_version = self.get_selected_version()
 
         # expected set: every adf referenced by any rule for this ks version
         expected: set[str] = {r.adf for r in get_adf_rules_for_version(wb_version)}
@@ -522,6 +525,17 @@ class KickstartTab(QWidget):
         self._refresh_details_button()
 
         # summary line
+        if wb_version == "3.9":
+            if req_missing:
+                self.adf_status.setText("Add your AmigaOS 3.9 CD image (.iso) - do not mount it")
+                self.adf_status.setStyleSheet("color: orange;")
+            else:
+                self.adf_status.setText(
+                    "AmigaOS 3.9 CD detected (BoingBags download automatically)"
+                )
+                self.adf_status.setStyleSheet("color: green;")
+            return
+
         summary = (
             f"Workbench {wb_version} - {len(req_found)}/{len(required)} required, "
             f"{len(opt_found)}/{len(optional)} optional found"
