@@ -138,7 +138,10 @@ def get_required_install_media(workbench_version: str) -> list[str]:
             "Classes3_2_3",
             "DiskDoctor3_2_3",
         ],
-        # 3.9 omitted - no adf_rules.yaml section; schema rejects 3.9 via SUPPORTED_KICKSTARTS
+        "3.9": [
+            # 3.9 installs from a single CD volume, not floppies
+            "AmigaOS3_9",
+        ],
     }
     if workbench_version not in requirements:
         # better to fail loud than silently substitute 3.1 disks

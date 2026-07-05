@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 
 class KickstartVersion(str, Enum):
-    """kickstart versions the schema knows; 3.9 listed for forward-compat, not in SUPPORTED_KICKSTARTS"""
+    """kickstart / workbench versions the schema knows"""
 
     V3_1 = "3.1"
     V3_2 = "3.2"
@@ -64,6 +64,7 @@ SUPPORTED_KICKSTARTS: tuple[KickstartVersion, ...] = (
     KickstartVersion.V3_2,
     KickstartVersion.V3_2_2_1,
     KickstartVersion.V3_2_3,
+    KickstartVersion.V3_9,
 )
 
 

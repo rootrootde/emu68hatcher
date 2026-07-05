@@ -326,10 +326,15 @@ def find_whdload_kickstarts(directory: Path) -> dict[str, Path]:
     return matched
 
 
+# 3.9 has no dedicated ROM - it runs on the 3.1 40.068 ROM plus a soft ROM update
+ROM_VERSION_ALIAS = {"3.9": "3.1"}
+
+
 def find_kickstart_for_version(
     directories: Path | list[Path] | tuple[Path, ...], version: str
 ) -> Path | None:
     """find a Kickstart ROM matching the specified version (across one or more dirs), preferring A1200 variants"""
+    version = ROM_VERSION_ALIAS.get(version, version)
     roms, _ = scan_for_kickstart_roms(directories)
 
     matching = [r for r in roms if r["version"] == version and not r.get("excluded")]
