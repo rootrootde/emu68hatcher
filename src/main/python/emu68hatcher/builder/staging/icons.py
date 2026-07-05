@@ -137,6 +137,18 @@ def apply_icon_set_drawer(
         if not extract_icon_from_adf(adf_path, file_in_adf, iconset_drawer, hst_imager):
             return 0
 
+        # only swap in a real drawer icon (do_Type 2 + drawer data); a tool/project
+        # icon here would make every folder un-openable ("Unable to open your tool")
+        icon_bytes = iconset_drawer.read_bytes()
+        do_type = icon_bytes[48] if len(icon_bytes) > 48 else 0
+        has_drawer_data = len(icon_bytes) >= 70 and icon_bytes[66:70] != b"\x00\x00\x00\x00"
+        if do_type != 2 or not has_drawer_data:
+            logger.warning(
+                f"iconset drawer {file_in_adf} is not a valid WBDRAWER icon "
+                f"(do_Type={do_type}); keeping the generic drawer icons"
+            )
+            return 0
+
         template_bytes = template.read_bytes()
         replaced = 0
         for d in _iter_drawer_dirs(boot_staging):
