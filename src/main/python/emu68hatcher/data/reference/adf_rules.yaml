@@ -1264,3 +1264,18 @@
 - *id064
 - *id065
 - *id066
+'3.9':
+# 3.9 installs from the CD as one volume: Workbench3.5 is the base tree,
+# Workbench3.9 overlays the 3.9 update on top (higher sequence wins).
+- adf: AmigaOS3_9
+  from: OS-Version3.9/Workbench3.5/*
+  to: /
+  recursive: true
+  sequence: 1
+  package: os_install
+- adf: AmigaOS3_9
+  from: OS-Version3.9/Workbench3.9/*
+  to: /
+  recursive: true
+  sequence: 2
+  package: os_install
