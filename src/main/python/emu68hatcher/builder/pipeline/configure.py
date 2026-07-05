@@ -50,6 +50,9 @@ def stage_configure(workflow: BuildWorkflow) -> None:
     # phase 2: Boot partition setup (40-70%)
     configure_boot_partition(workflow)
 
+    if workflow.config.kickstart.version.value == "3.9":
+        _install_os39_rom_update(workflow, boot_staging)
+
     if "whdload" in all_packages:
         stage_whdload_kickstarts(workflow, boot_staging)
 
@@ -65,6 +68,19 @@ def _resolve_boot_device(workflow: BuildWorkflow) -> str:
     if not workflow.config.partitions:
         return DEFAULT_BOOT_DEVICE
     return workflow.config.partitions.bootable_device or DEFAULT_BOOT_DEVICE
+
+
+def _install_os39_rom_update(workflow: BuildWorkflow, boot_staging) -> None:
+    """place the 3.9 soft ROM update from the downloaded BoingBag 2"""
+    from emu68hatcher.builder.staging.boingbag import install_rom_update
+
+    bb_dir = workflow.state.extracted_paths.get("boingbag_os39")
+    if not bb_dir:
+        raise BuildError(
+            "BoingBag 2 was not downloaded - the AmigaOS 3.9 soft ROM update could not be installed"
+        )
+    if not install_rom_update(bb_dir, boot_staging):
+        raise BuildError("failed to install the AmigaOS 3.9 soft ROM update from BoingBag 2")
 
 
 def _collect_enabled_packages(workflow: BuildWorkflow) -> set[str]:
