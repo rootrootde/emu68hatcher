@@ -60,4 +60,30 @@ def _relocate_one(workflow: BuildWorkflow, boot_staging: Path, source: str, dest
         shutil.move(str(item), str(target))
         workflow.logger.info(f"relocate: moved {rel} -> {dest}")
         count += 1
+
+    if count and "wbstartup" in dest.lower():
+        _ensure_wbstartup_autorun(workflow, dest_dir, Path(source).name)
     return count
+
+
+def _ensure_wbstartup_autorun(workflow: BuildWorkflow, dest_dir: Path, exe_name: str) -> None:
+    """WBStartup commodities only auto-launch with a TOOL icon carrying DONOTWAIT; ensure one"""
+    from emu68hatcher.builder.staging.files import read_info_tooltypes, write_info_tooltypes
+    from emu68hatcher.data.package_loader import get_local_packages_dir
+
+    info = resolve_staging_path(dest_dir, exe_name + ".info")
+    if not info.exists():
+        # os 3.9 ships commodities without icons, so nothing got moved; give it the
+        # bundled tool icon (already WBTOOL + DONOTWAIT)
+        template = get_local_packages_dir() / "System" / "_tool.info"
+        if not template.exists():
+            workflow.logger.warning(f"no WBStartup icon for {exe_name} and no _tool.info template")
+            return
+        shutil.copy2(template, info)
+        workflow.logger.info(f"relocate: gave {exe_name} a WBStartup icon (DONOTWAIT)")
+        return
+    # an icon came across (3.1/3.2): make sure DONOTWAIT is set so WB backgrounds it
+    tooltypes = read_info_tooltypes(info)
+    if not any(t.upper().startswith("DONOTWAIT") for t in tooltypes):
+        write_info_tooltypes(info, [*tooltypes, "DONOTWAIT"])
+        workflow.logger.info(f"relocate: added DONOTWAIT to {exe_name}.info")
