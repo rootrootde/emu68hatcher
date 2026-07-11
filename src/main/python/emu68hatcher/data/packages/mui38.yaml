@@ -9,6 +9,8 @@ versions:
 - 3.2.3
 - '3.9'
 default: true
+requires:
+- wbrun
 provides:
 - mui
 conflicts:

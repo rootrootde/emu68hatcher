@@ -10,6 +10,8 @@ versions:
 - 3.2.3
 - '3.9'
 default: true
+requires:
+- wbrun
 download:
   source: aminet
   path: driver/video/Picasso96.lha

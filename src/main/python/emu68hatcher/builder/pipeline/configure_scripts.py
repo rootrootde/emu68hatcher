@@ -68,6 +68,47 @@ _MENUTOOLS_ENTRIES: tuple[dict, ...] = (
 )
 
 
+# System->Prefs submenu launchers (WB 3.2 nests 3 deep via menuclass; 3.1/3.9 have no MenuTools yet).
+# requires: package name(s) that must be installed for the editor to exist; empty = stock editor.
+# p96_modern: editor exists only in the user-supplied modern Picasso96 archive, not the aminet one.
+# wb_launch: launch via WBRun so the editor gets its icon stack + tooltypes - the MUI/GUI editors
+# warn or fail on the default 4096-byte CLI stack; stock OS editors are fine on plain run.
+_PREFS_SUBMENU = "System\\Prefs"
+_PREFS_ENTRIES: tuple[dict, ...] = (
+    {"title": "AHI", "exe": "Prefs/AHI", "requires": ("ahi",), "wb_launch": True},
+    {"title": "DefaultIcons", "exe": "Prefs/DefaultIcons"},
+    {"title": "Font", "exe": "Prefs/Font"},
+    {"title": "IControl", "exe": "Prefs/IControl"},
+    {"title": "Input", "exe": "Prefs/Input"},
+    {"title": "Locale", "exe": "Prefs/Locale"},
+    {
+        "title": "MagicMenu",
+        "exe": "Prefs/MagicMenuPrefs",
+        "requires": ("magicmenu", "magicmenu235"),
+        "wb_launch": True,
+    },
+    {"title": "MUI", "exe": "Programs/MUI/MUI", "requires": ("mui38", "mui5"), "wb_launch": True},
+    {"title": "Overscan", "exe": "Prefs/Overscan"},
+    {
+        "title": "P96Prefs",
+        "exe": "Prefs/P96Prefs",
+        "requires": ("picasso96",),
+        "p96_modern": True,
+        "wb_launch": True,
+    },
+    {"title": "Palette", "exe": "Prefs/Palette"},
+    {
+        "title": "Picasso96Mode",
+        "exe": "Prefs/Picasso96Mode",
+        "requires": ("picasso96",),
+        "wb_launch": True,
+    },
+    {"title": "ScreenMode", "exe": "Prefs/ScreenMode"},
+    {"title": "WBPattern", "exe": "Prefs/WBPattern"},
+    {"title": "Workbench", "exe": "Prefs/Workbench"},
+)
+
+
 def configure_scripts(
     workflow: BuildWorkflow,
     boot_staging: Path,
@@ -143,7 +184,9 @@ def _collect_app_entries(all_packages: set[str]) -> list[tuple[str, str, str, st
     return entries
 
 
-def _build_menutools_entries(has_network: bool, all_packages: set[str]) -> list[str]:
+def _build_menutools_entries(
+    has_network: bool, all_packages: set[str], p96_modern: bool = False
+) -> list[str]:
     """build MENU ADD lines, keeping each submenu's items contiguous (top-level items last)"""
     # sort key: (top-level last, submenu, rank, order) - rank 0 builtins, 1 apps, 2 late builtins.
     # contiguity matters: non-adjacent same-submenu adds can spawn a duplicate submenu.
@@ -157,6 +200,17 @@ def _build_menutools_entries(has_network: bool, all_packages: set[str]) -> list[
     for sub, title, name, cmd in _collect_app_entries(all_packages):
         key = (sub == "", sub.lower(), 1, title.lower())
         rows.append((key, name, _compose_menu_title(sub, title), cmd))
+    for entry in _PREFS_ENTRIES:
+        requires = entry.get("requires")
+        if requires and not (all_packages & set(requires)):
+            continue
+        if entry.get("p96_modern") and not p96_modern:
+            continue
+        title = entry["title"]
+        key = (False, _PREFS_SUBMENU.lower(), 1, title.lower())
+        launch = "WBRun" if entry.get("wb_launch") else "run"
+        cmd = f"{launch} >NIL: SYS:{entry['exe']}"
+        rows.append((key, f"Prefs{title}", _compose_menu_title(_PREFS_SUBMENU, title), cmd))
     rows.sort(key=lambda r: r[0])
     return [_menu_add_line(name, menu_title, cmd) for _key, name, menu_title, cmd in rows]
 
@@ -171,7 +225,9 @@ def _inject_menutools_entries(
         return
 
     has_network = workflow.config.network_stack is not None
-    lines = _build_menutools_entries(has_network, all_packages)
+    # P96Prefs ships only in the modern user-supplied Picasso96 archive
+    p96_modern = workflow.config.display.picasso96_archive is not None
+    lines = _build_menutools_entries(has_network, all_packages, p96_modern)
     if not lines:
         workflow.logger.debug("No menu entries to inject")
         return
