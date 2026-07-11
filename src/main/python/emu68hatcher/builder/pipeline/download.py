@@ -189,6 +189,12 @@ def stage_download(workflow: BuildWorkflow) -> None:
     emu68_version = workflow.config.emu68_version.value
     all_package_names = resolve_selection(workflow.config, ks_version, emu68_version).install_order
 
+    # a user-supplied Picasso96 archive replaces the aminet download; drop it from the fetch
+    # list so the aminet .lha is neither downloaded nor extracted over the staged user archive
+    download_names = all_package_names
+    if workflow.state.picasso96_archive_path is not None:
+        download_names = [n for n in all_package_names if n != "picasso96"]
+
     # only genuinely-mandatory packages are fatal on download failure; a requires-pulled
     # dep of an optional app fails as a warning (the app just won't be usable).
     mandatory_names = get_mandatory_packages(ks_version, emu68_version)
@@ -196,7 +202,7 @@ def stage_download(workflow: BuildWorkflow) -> None:
     workflow.logger.info(f"Total packages to process: {len(all_package_names)}")
 
     if all_package_names:
-        download_items = get_package_downloads(all_package_names)
+        download_items = get_package_downloads(download_names)
 
         if download_items:
             count = len(download_items)
@@ -383,6 +389,19 @@ def _extract_local_archives(workflow: BuildWorkflow) -> None:
     all_package_names = resolve_selection(workflow.config, ks_version, emu68_version).install_order
 
     local_extracted = 0
+
+    # picasso96 uses a user-supplied archive when configured, overriding the aminet download
+    if (
+        workflow.state.picasso96_archive_path is not None
+        and "picasso96" in all_package_names
+        and "picasso96" not in workflow.state.extracted_paths
+    ):
+        p96_out = workflow.state.extracted_dir / "picasso96"
+        workflow._milestone("Extracting Picasso96 (user archive)")
+        if _stage_user_picasso96(workflow, p96_out):
+            workflow.state.extracted_paths["picasso96"] = p96_out
+            local_extracted += 1
+
     for pkg_name in all_package_names:
         if pkg_name in workflow.state.extracted_paths:
             continue  # already extracted from download
@@ -423,6 +442,22 @@ def _extract_local_archives(workflow: BuildWorkflow) -> None:
     workflow._milestone(
         "Extraction complete" + (f" ({local_extracted} local)" if local_extracted else "")
     )
+
+
+def _stage_user_picasso96(workflow: BuildWorkflow, output_dir: Path) -> bool:
+    """extract the user's Picasso96 .lha into output_dir; returns True on success"""
+    src = workflow.state.picasso96_archive_path
+    if src is None:
+        return False
+    output_dir.mkdir(parents=True, exist_ok=True)
+    result = extract_archive(
+        src, output_dir, progress_callback=_extract_progress(workflow, "Picasso96")
+    )
+    if not result.success:
+        workflow.logger.error(f"Failed to extract Picasso96 archive: {result.error}")
+        return False
+    workflow.logger.info(f"Extracted user Picasso96 archive: {result.files_extracted} files")
+    return True
 
 
 def _stage_user_roadshow(workflow: BuildWorkflow, output_dir: Path) -> bool:

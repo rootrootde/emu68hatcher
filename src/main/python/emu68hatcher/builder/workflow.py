@@ -71,6 +71,9 @@ class BuildState:
     roadshow_archive_path: Path | None = None
     roadshow_archive_kind: str | None = None  # outer | inner_full | dir_full | dir_inner
 
+    # user-supplied Picasso96 archive (set by validate, consumed by extract)
+    picasso96_archive_path: Path | None = None
+
 
 BuildProgressCallback = Callable[[BuildState], None]
 BuildLogCallback = Callable[[str, str], None]  # (stage_name, message)

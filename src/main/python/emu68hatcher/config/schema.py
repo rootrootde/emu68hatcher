@@ -147,6 +147,14 @@ class DisplayConfig(BaseModel):
     hdmi_mode: str = "1280*720-50"
     custom: CustomScreenMode | None = None
 
+    # optional path to a user-owned Picasso96 archive; when set, replaces the default Aminet version
+    picasso96_archive: Path | None = None
+
+    @field_validator("picasso96_archive", mode="before")
+    @classmethod
+    def _convert_picasso96_archive(cls, v):
+        return _coerce_optional_path(v)
+
     @model_validator(mode="after")
     def validate_custom_mode(self):
         # catches hand-edited JSON that picks "Custom" without supplying fields

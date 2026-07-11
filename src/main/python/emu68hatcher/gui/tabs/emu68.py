@@ -1,4 +1,6 @@
-"""Emu68 tab - boot config: Emu68 release version + HDMI output mode"""
+"""Emu68 tab - boot config: Emu68 release + HDMI output mode + Picasso96 RTG archive"""
+
+from pathlib import Path
 
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -6,6 +8,8 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
+    QPushButton,
     QRadioButton,
     QSpinBox,
     QVBoxLayout,
@@ -17,6 +21,32 @@ from emu68hatcher.config.schema import (
     Emu68Version,
 )
 from emu68hatcher.gui.widgets import select_combo_by_data
+
+
+def _read_picasso96_version(archive: Path) -> str | None:
+    """best-effort read of Picasso96Install/Version from inside the .lha"""
+    import subprocess
+
+    from emu68hatcher.utils.host_tools import find_7z
+
+    sevenz = find_7z()
+    if sevenz is None:
+        return None
+    try:
+        result = subprocess.run(
+            [str(sevenz), "e", "-so", str(archive), "Picasso96Install/Version"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=15,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    lines = result.stdout.strip().splitlines()
+    return lines[0].strip() if lines else None
 
 
 class Emu68Tab(QWidget):
@@ -150,6 +180,28 @@ class Emu68Tab(QWidget):
 
         layout.addWidget(hdmi_group)
 
+        # Picasso96 RTG - optional user-supplied full version (default: free Aminet version)
+        p96_group = QGroupBox("Picasso96 RTG")
+        p96_layout = QVBoxLayout(p96_group)
+        p96_row = QHBoxLayout()
+        p96_row.addWidget(QLabel("Full version archive:"))
+        self.picasso96_archive_edit = QLineEdit()
+        self.picasso96_archive_edit.setPlaceholderText(
+            "Picasso96.lha (leave empty for the default version)"
+        )
+        self.picasso96_archive_edit.setReadOnly(True)
+        p96_row.addWidget(self.picasso96_archive_edit, 1)
+        p96_browse = QPushButton("Browse...")
+        p96_browse.clicked.connect(self._browse_picasso96_archive)
+        p96_row.addWidget(p96_browse)
+        p96_clear = QPushButton("Clear")
+        p96_clear.clicked.connect(self._clear_picasso96_archive)
+        p96_row.addWidget(p96_clear)
+        p96_layout.addLayout(p96_row)
+        self._picasso96_status_label = QLabel("(Default version)")
+        p96_layout.addWidget(self._picasso96_status_label)
+        layout.addWidget(p96_group)
+
         layout.addStretch()
 
     def on_hdmi_mode_changed(self):
@@ -169,6 +221,44 @@ class Emu68Tab(QWidget):
             self.release_radio_alpha.setChecked(True)
         else:
             self.release_radio_stable.setChecked(True)
+
+    def _browse_picasso96_archive(self):
+        from PySide6.QtWidgets import QFileDialog
+
+        start = self.picasso96_archive_edit.text() or str(Path.home())
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select Picasso96 archive",
+            start,
+            "Picasso96 archive (*.lha *.LHA);;All files (*.*)",
+        )
+        if path:
+            self.picasso96_archive_edit.setText(path)
+            self._refresh_picasso96_status()
+
+    def _clear_picasso96_archive(self):
+        self.picasso96_archive_edit.clear()
+        self._refresh_picasso96_status()
+
+    def _refresh_picasso96_status(self):
+        path = self.picasso96_archive_edit.text().strip()
+        if not path:
+            self._picasso96_status_label.setText("(Default version)")
+            return
+        name = Path(path).name
+        version = _read_picasso96_version(Path(path))
+        if version:
+            self._picasso96_status_label.setText(f"(Full version {version}: {name})")
+        else:
+            self._picasso96_status_label.setText(f"(Full version: {name})")
+
+    def get_picasso96_archive(self) -> Path | None:
+        text = self.picasso96_archive_edit.text().strip()
+        return Path(text) if text else None
+
+    def set_picasso96_archive(self, archive):
+        self.picasso96_archive_edit.setText(str(archive) if archive else "")
+        self._refresh_picasso96_status()
 
     def get_config(self) -> dict:
         """display config (HDMI mode + custom resolution)"""

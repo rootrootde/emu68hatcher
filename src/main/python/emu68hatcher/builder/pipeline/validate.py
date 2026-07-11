@@ -96,6 +96,7 @@ def stage_validate(workflow: BuildWorkflow) -> None:
 
     _check_output_target(workflow)
     _check_roadshow_archive(workflow)
+    _check_picasso96_archive(workflow)
 
     workflow._update_state(progress=100.0)
     workflow._milestone("Configuration validated")
@@ -221,6 +222,65 @@ def _check_roadshow_archive(workflow: BuildWorkflow) -> None:
     workflow.state.roadshow_archive_path = archive
     workflow.state.roadshow_archive_kind = kind
     workflow.logger.info(f"Roadshow archive accepted ({kind}): {archive}")
+
+
+def _check_picasso96_archive(workflow: BuildWorkflow) -> None:
+    """probe the user's Picasso96 archive; require a .lha containing Picasso96Install/"""
+    archive = workflow.config.display.picasso96_archive
+    if archive is None:
+        return
+
+    archive = Path(archive).expanduser()
+    if not archive.exists():
+        raise BuildError(f"Picasso96 archive not found: {archive}")
+    if not archive.is_file():
+        raise BuildError(f"Picasso96 archive must be a .lha file: {archive}")
+
+    if not _archive_has_picasso96install(archive):
+        raise BuildError(
+            f"{archive.name} does not look like a Picasso96 archive "
+            "(no Picasso96Install/ directory inside)"
+        )
+
+    workflow.state.picasso96_archive_path = archive
+    workflow.logger.info(f"Picasso96 archive accepted: {archive}")
+
+
+def _archive_has_picasso96install(path: Path) -> bool:
+    """true if the archive lists any entry under Picasso96Install/"""
+    import os.path
+    import subprocess
+
+    from emu68hatcher.utils.host_tools import find_7z
+
+    sevenz = find_7z()
+    if sevenz is None:
+        raise BuildError("7-Zip not found; cannot probe Picasso96 archive")
+    try:
+        result = subprocess.run(
+            [str(sevenz), "l", "-slt", str(path)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError) as e:
+        raise BuildError(f"could not list Picasso96 archive {path.name}: {e}") from e
+    if result.returncode != 0:
+        raise BuildError(
+            f"7-Zip rejected Picasso96 archive {path.name}: "
+            f"{result.stderr.strip() or result.stdout.strip()}"
+        )
+    for line in result.stdout.splitlines():
+        if not line.startswith("Path = "):
+            continue
+        value = line[7:]
+        if os.path.isabs(value):
+            continue
+        if value == "Picasso96Install" or value.startswith("Picasso96Install/"):
+            return True
+    return False
 
 
 # names inside the full commercial Roadshow.lha (outer envelope ships these three)

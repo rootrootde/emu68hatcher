@@ -48,3 +48,7 @@ install:
   to: Programs/Picasso96/
 - from: Picasso96Install/Picasso96.info
   to: Programs/
+- from: Picasso96Install/prefs/P96Prefs
+  to: Prefs/
+- from: Picasso96Install/prefs/P96Prefs.info
+  to: Prefs/

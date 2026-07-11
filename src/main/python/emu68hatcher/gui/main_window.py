@@ -127,6 +127,7 @@ class MainWindow(QMainWindow):
                     asset_directories=list(self.config.asset_directories),
                 )
                 self.emu68_tab.set_config(self.config.display)
+                self.emu68_tab.set_picasso96_archive(self.config.display.picasso96_archive)
                 self.emu68_tab.set_emu68_version(self.config.emu68_version)
                 self.packages_tab.set_kickstart_version(self.config.kickstart.version.value)
                 # set_config above already repopulated the icon list for the loaded version
@@ -210,6 +211,9 @@ class MainWindow(QMainWindow):
 
         # selected Emu68 release
         self.config.emu68_version = self.emu68_tab.get_emu68_version()
+
+        # user-supplied Picasso96 full version (empty -> default free version)
+        self.config.display.picasso96_archive = self.emu68_tab.get_picasso96_archive()
 
         # icon set (now on the Amiga Files tab)
         self.config.icon_set = self.kickstart_tab.get_icon_set()
