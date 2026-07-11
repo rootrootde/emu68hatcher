@@ -35,6 +35,9 @@ Amiga_WB/
 /Roadshow.lha
 /Roadshow-*.info
 
+# user-supplied Picasso96 archive (dropped here during development; do not commit)
+/Picasso96.lha
+
 # disk images
 *.img
 *.IMG
