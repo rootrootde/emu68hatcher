@@ -28,7 +28,25 @@ def stage_create_image(workflow: BuildWorkflow) -> None:
         raise BuildError("Work directory not set - setup stage may have failed")
 
     output_type = workflow.config.output.type
-    workflow.state.image_path = Path(workflow.config.output.path)
+    target_path = Path(workflow.config.output.path)
+    # macOS: an elevated (root) helper cannot touch a .img inside a TCC-protected user folder
+    # (~/Downloads, ~/Documents, ~/Desktop). when a flash target forces elevation, build the .img
+    # in the non-protected work dir instead and move it to the user's path after flashing (done in
+    # workflow._finalize_output_move). non-protected + external targets stay direct - they work as
+    # is, and this avoids a cross-volume copy.
+    if (
+        output_type == OutputType.IMG
+        and workflow.state.elevation is not None
+        and workflow.state.work_dir is not None
+        and _is_tcc_protected(target_path)
+    ):
+        workflow.state.final_output_path = target_path
+        workflow.state.image_path = workflow.state.work_dir / target_path.name
+        workflow.logger.info(
+            f"building image in work dir (macOS TCC), will move to {target_path} after flashing"
+        )
+    else:
+        workflow.state.image_path = target_path
 
     if output_type == OutputType.DEVICE:
         workflow._milestone(f"Initialising SD card on {workflow.state.image_path}")
@@ -131,3 +149,16 @@ def _prepare_device_target(workflow: BuildWorkflow) -> None:
         from emu68hatcher.builder.host.disk_enum import unmount_disk
 
         unmount_disk(info, workflow.logger, elevation=workflow.state.elevation)
+
+
+def _is_tcc_protected(path: Path) -> bool:
+    """true if path is under a macOS TCC-protected user folder, denied even to a root helper"""
+    from emu68hatcher.utils.platform import OperatingSystem, get_platform_info
+
+    if get_platform_info().os != OperatingSystem.MACOS:
+        return False
+    try:
+        rel = path.expanduser().resolve().relative_to(Path.home())
+    except (ValueError, OSError, RuntimeError):
+        return False
+    return bool(rel.parts) and rel.parts[0] in ("Downloads", "Documents", "Desktop")

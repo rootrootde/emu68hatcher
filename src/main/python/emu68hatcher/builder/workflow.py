@@ -45,6 +45,8 @@ class BuildState:
     # paths
     work_dir: Path | None = None
     image_path: Path | None = None  # .img file path OR /dev/diskN for DEVICE mode
+    # when set, the .img was built in the (non-TCC) work dir and is moved here after flashing
+    final_output_path: Path | None = None
     staging_dir: Path | None = None
     downloads_dir: Path | None = None
     extracted_dir: Path | None = None
@@ -257,6 +259,22 @@ class BuildWorkflow:
             log("platform: output: not configured")
         log("platform: === end build environment ===")
 
+    def _finalize_output_move(self) -> None:
+        """move a .img built in the work dir (macOS TCC case) to the user's chosen output path"""
+        final = self.state.final_output_path
+        src = self.state.image_path
+        if final is None or src is None or src == final:
+            return
+        import shutil
+
+        self._milestone(f"Moving image to {final}")
+        final.parent.mkdir(parents=True, exist_ok=True)
+        if final.exists():
+            final.unlink()
+        shutil.move(str(src), str(final))
+        self.state.image_path = final
+        self.logger.info(f"Moved built image to {final}")
+
     def build(self) -> BuildResult:
         """run the full pipeline synchronously"""
         from emu68hatcher.builder.pipeline import (
@@ -299,6 +317,7 @@ class BuildWorkflow:
                 stage_func(self)
                 self._check_cancelled()
 
+            self._finalize_output_move()
             self._update_state(BuildStage.COMPLETE, 100.0)
             self._milestone("Build successful!")
             if buildlog_path:
