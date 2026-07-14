@@ -9,7 +9,10 @@ versions:
 - 3.2.2.1
 - 3.2.3
 - '3.9'
-default: true
+# mandatory (not a Software-tab choice): the RTG driver is core to the Pi-HDMI display and
+# picasso96settings is already mandatory. the version (free aminet vs full) is chosen on the
+# Emu68 tab via the archive picker.
+mandatory: true
 requires:
 - wbrun
 download:
