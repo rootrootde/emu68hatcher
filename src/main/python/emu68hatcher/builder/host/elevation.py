@@ -71,21 +71,18 @@ def wrap_for_elevation(cmd: list[str], token: ElevationToken | None) -> list[str
         return _wrap_sudo(cmd)
     if token.method == "runas":
         ps_args = ", ".join(_ps_quote(a) for a in cmd[1:]) if len(cmd) > 1 else ""
-        # RunAs cant pipe child stdout/stderr - dump to temp files and replay
-        # $env: assignment propagates to Start-Process children (incl. -Verb RunAs)
+        # -Verb RunAs cannot be combined with -RedirectStandardOutput/-RedirectStandardError
+        # (ShellExecute can't redirect a child's streams). doing so makes Start-Process fail at
+        # parameter binding, leaving $p null, and `exit $p.ExitCode` then exits 0 - a silent no-op
+        # that falsely reports success (e.g. a flash that never wrote). so run WITHOUT redirection
+        # and exit non-zero whenever the launch failed or was denied. ($env: reaches the child.)
         dotnet_path = _ps_quote(str(get_dotnet_bundle_dir()))
         ps = (
             f"$env:{DOTNET_BUNDLE_ENV_VAR} = {dotnet_path}; "
-            "$o = [System.IO.Path]::GetTempFileName(); "
-            "$e = [System.IO.Path]::GetTempFileName(); "
             f"$p = Start-Process -FilePath {_ps_quote(cmd[0])} "
             + (f"-ArgumentList @({ps_args}) " if ps_args else "")
-            + "-Verb RunAs -Wait -PassThru "
-            "-RedirectStandardOutput $o -RedirectStandardError $e; "
-            "if (Test-Path $o) { Get-Content $o }; "
-            "if (Test-Path $e) { Get-Content $e | Write-Host }; "
-            "Remove-Item $o,$e -ErrorAction SilentlyContinue; "
-            "exit $p.ExitCode"
+            + "-Verb RunAs -Wait -PassThru -WindowStyle Hidden; "
+            "if ($null -ne $p -and $null -ne $p.ExitCode) { exit $p.ExitCode } else { exit 1 }"
         )
         return ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps]
     return cmd

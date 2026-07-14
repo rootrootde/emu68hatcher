@@ -62,7 +62,27 @@ def _restore_subprocess_ld_library_path():
         os.environ.pop("LD_LIBRARY_PATH", None)
 
 
+def _is_elevated_worker_launch() -> bool:
+    """frozen exe re-launched by the elevated helper as `<exe> emu68hatcher-worker-*.py <ipc_dir>`"""
+    return (
+        getattr(sys, "frozen", False)
+        and len(sys.argv) >= 3
+        and sys.argv[1].lower().endswith(".py")
+        and "emu68hatcher-worker" in os.path.basename(sys.argv[1]).lower()
+    )
+
+
 def main():
+    # frozen builds have no separate python, so the elevated helper re-launches THIS exe as the
+    # worker's interpreter. run the worker headless instead of booting a second GUI window (which
+    # never signals ready -> 30s timeout -> broken per-call fallback).
+    if _is_elevated_worker_launch():
+        import runpy
+
+        sys.argv = sys.argv[1:]  # worker reads ipc_dir from sys.argv[1]
+        runpy.run_path(sys.argv[0], run_name="__main__")
+        return
+
     _augment_path_for_gui_launch()
     _point_ssl_at_certifi()
     _hide_windows_subprocess_consoles()
