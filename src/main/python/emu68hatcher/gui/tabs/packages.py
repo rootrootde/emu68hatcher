@@ -105,8 +105,8 @@ class PackagesTab(QWidget):
         # bundles
         for b in get_bundles_for_version(self.kickstart_version):
             members = get_bundle_members(b.id, self.kickstart_version)
-            if not members:
-                continue
+            if not members or all(m.mandatory for m in members):
+                continue  # no members, or all mandatory (installed unconditionally) - not a choice
             # bundle id may clash with a package name; prefix on collision
             key = b.id if b.id not in self._key_to_packages else f"bundle:{b.id}"
             self._selectables.append((key, b))
