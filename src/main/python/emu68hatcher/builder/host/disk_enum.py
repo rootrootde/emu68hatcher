@@ -68,7 +68,8 @@ def find_disk(device: str) -> DiskInfo | None:
 
 
 def _normalise_device(s: str) -> str:
-    return str(s).strip().lower().replace("/dev/r", "/dev/")
+    # trailing separators appear when a device path went through pathlib on windows 3.10/3.11
+    return str(s).strip().rstrip("\\/").lower().replace("/dev/r", "/dev/")
 
 
 def unmount_disk(

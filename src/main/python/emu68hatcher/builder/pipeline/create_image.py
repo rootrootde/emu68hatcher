@@ -28,7 +28,10 @@ def stage_create_image(workflow: BuildWorkflow) -> None:
         raise BuildError("Work directory not set - setup stage may have failed")
 
     output_type = workflow.config.output.type
-    target_path = Path(workflow.config.output.path)
+    raw_target = workflow.config.output.path
+    # device targets are strings on purpose (see OutputConfig.path); re-wrapping in Path
+    # would corrupt \\.\PhysicalDriveN on windows 3.10/3.11
+    target_path = raw_target if isinstance(raw_target, str) else Path(raw_target)
     # macOS: an elevated (root) helper cannot touch a .img inside a TCC-protected user folder
     # (~/Downloads, ~/Documents, ~/Desktop). when a flash target forces elevation, build the .img
     # in the non-protected work dir instead and move it to the user's path after flashing (done in

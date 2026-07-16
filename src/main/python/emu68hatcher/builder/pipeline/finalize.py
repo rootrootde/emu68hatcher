@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import shutil
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from emu68hatcher.builder.errors import BuildError
@@ -87,10 +88,9 @@ def _copy_staged_files_to_image(workflow: BuildWorkflow) -> None:
         return
 
     # log raw + posix form - buildlog needs to show what hst-imager actually got (forward slashes)
-    workflow.logger.info(
-        f"finalize: image path: raw={workflow.state.image_path!s} "
-        f"posix={workflow.state.image_path.as_posix()!s}"
-    )
+    image_path = workflow.state.image_path
+    posix = image_path.as_posix() if isinstance(image_path, Path) else image_path
+    workflow.logger.info(f"finalize: image path: raw={image_path!s} posix={posix}")
 
     # device -> 1-based MBR partition number
     device_to_mbr: dict[str, int] = {}

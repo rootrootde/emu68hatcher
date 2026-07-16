@@ -78,13 +78,13 @@ FILESYSTEM_HANDLERS = {
 ######################
 
 
-def hst_path(image_path: Path, *parts: str | int) -> str:
+def hst_path(image_path: Path | str, *parts: str | int) -> str:
     """hst-imager target path; windows physical drives need backslashes (mixing breaks fs copy)"""
     s = str(image_path)
     if s.startswith("\\\\.\\"):
         sep, base = "\\", s
     else:
-        sep, base = "/", image_path.as_posix()
+        sep, base = "/", s if isinstance(image_path, str) else image_path.as_posix()
     if not parts:
         return base
     return base + sep + sep.join(str(p) for p in parts)

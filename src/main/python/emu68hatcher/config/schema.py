@@ -291,7 +291,9 @@ class OutputConfig(BaseModel):
     """output config for the built image"""
 
     type: OutputType = OutputType.IMG
-    path: Path = Field(description="Output path: .img file or /dev/diskN device")
+    # device targets stay plain strings: pathlib on windows 3.10/3.11 appends a trailing
+    # backslash to \\.\PhysicalDriveN on str(), corrupting disk lookups and hst-imager argv
+    path: Path | str = Field(description="Output path: .img file or /dev/diskN device")
     sparse: bool = Field(
         default=True,
         description="Allocate the .img as a sparse file (IMG mode only); huge disk-space win",
@@ -304,6 +306,9 @@ class OutputConfig(BaseModel):
     @field_validator("path", mode="before")
     @classmethod
     def convert_path(cls, v):
+        if v is not None and _is_device_path(v):
+            # rstrip also heals values a previous pathlib round-trip already corrupted
+            return str(v).rstrip("\\/")
         return Path(v) if isinstance(v, str) else v
 
     @model_validator(mode="after")

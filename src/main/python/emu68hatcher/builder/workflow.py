@@ -44,7 +44,7 @@ class BuildState:
 
     # paths
     work_dir: Path | None = None
-    image_path: Path | None = None  # .img file path OR /dev/diskN for DEVICE mode
+    image_path: Path | str | None = None  # .img file Path OR device string for DEVICE mode
     # when set, the .img was built in the (non-TCC) work dir and is moved here after flashing
     final_output_path: Path | None = None
     staging_dir: Path | None = None
@@ -104,7 +104,7 @@ class BuildResult:
     """final build result"""
 
     success: bool
-    output_path: Path | None = None
+    output_path: Path | str | None = None
     error: str | None = None
 
 
@@ -257,11 +257,9 @@ class BuildWorkflow:
                 log(f"platform: hst-imager --version: unavailable ({e})")
 
         if self.config.output:
-            out_path = Path(self.config.output.path)
-            log(
-                f"platform: output: type={self.config.output.type.value} "
-                f"raw={out_path!s} posix={out_path.as_posix()!s}"
-            )
+            out_path = self.config.output.path
+            posix = f" posix={out_path.as_posix()!s}" if isinstance(out_path, Path) else ""
+            log(f"platform: output: type={self.config.output.type.value} raw={out_path!s}{posix}")
         else:
             log("platform: output: not configured")
         log("platform: === end build environment ===")
@@ -337,7 +335,7 @@ class BuildWorkflow:
 
             return BuildResult(
                 success=True,
-                output_path=Path(self.config.output.path) if self.config.output else None,
+                output_path=self.config.output.path if self.config.output else None,
             )
 
         except BuildCancelledError:
