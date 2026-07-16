@@ -158,9 +158,16 @@ class BuildWorkflow:
 
     def _buildlog_path(self) -> Path:
         """buildlog path - alongside the output image if set, else cache_dir"""
+        from emu68hatcher.config.schema import OutputType
         from emu68hatcher.utils.paths import get_cache_dir
 
-        if self.config.output and self.config.output.path:
+        # DEVICE output: path is \\.\PhysicalDriveN / /dev/diskN - statting it opens the raw
+        # device (untimed CreateFileW, can block or raise on a wedged stack); never probe it
+        if (
+            self.config.output
+            and self.config.output.path
+            and self.config.output.type != OutputType.DEVICE
+        ):
             out = Path(self.config.output.path)
             parent = out.parent if out.suffix else out
             if parent.exists() and parent.is_dir():
@@ -305,14 +312,19 @@ class BuildWorkflow:
             stage_flash,
         ]
 
-        buildlog_handler, buildlog_path = self._attach_build_log()
+        # GUI handler first: the buildlog probe below touches the output location, and its
+        # breadcrumbs must reach the dialog if that goes wrong (console is invisible when frozen)
         gui_log_handler = BuildLogHandler(self)
         self.logger.logger.addHandler(gui_log_handler)
-        if buildlog_path:
-            self.logger.info(f"Build log: {buildlog_path}")
-        self._log_platform_info()
+        buildlog_handler = None
+        buildlog_path = None
 
         try:
+            buildlog_handler, buildlog_path = self._attach_build_log()
+            if buildlog_path:
+                self.logger.info(f"Build log: {buildlog_path}")
+            self._log_platform_info()
+
             for stage_func in pipeline:
                 stage_func(self)
                 self._check_cancelled()

@@ -294,6 +294,13 @@ class BuildProgressDialog(QDialog):
             self.status_label.setText("Cancelling...")
             self.log_output.append("Cancellation requested...")
 
+    def reject(self):
+        """Esc lands here directly, skipping closeEvent - keep the same running-worker guard"""
+        if self.worker and self.worker.isRunning():
+            self.cancel_build()
+            return
+        super().reject()
+
     def closeEvent(self, event):
         """block close while the worker runs - Qt crashes if the dialog tears down mid-thread"""
         if self.worker and self.worker.isRunning():

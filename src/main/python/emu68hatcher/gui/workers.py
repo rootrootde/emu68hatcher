@@ -25,7 +25,14 @@ class BuildWorker(QThread):
 
     def run(self):
         """drive the workflow, forward callbacks as Qt signals"""
+        # uncaught exceptions die silently in a QThread; without this guard the
+        # dialog never receives build_finished and freezes at "Initializing"
+        try:
+            self._run()
+        except Exception as e:
+            self.build_finished.emit(False, "", f"{type(e).__name__}: {e}")
 
+    def _run(self):
         def progress_callback(state: BuildState):
             self.progress_updated.emit(
                 state.stage.value,
