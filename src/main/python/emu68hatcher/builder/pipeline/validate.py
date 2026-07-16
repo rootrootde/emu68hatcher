@@ -278,6 +278,7 @@ def _archive_has_picasso96install(path: Path) -> bool:
         value = line[7:]
         if os.path.isabs(value):
             continue
+        value = value.replace("\\", "/")  # windows 7z lists entries with backslashes
         if value == "Picasso96Install" or value.startswith("Picasso96Install/"):
             return True
     return False
@@ -325,7 +326,7 @@ def _classify_roadshow_file(path: Path) -> str:
         value = line[7:]
         if os.path.isabs(value):
             continue
-        entry_paths.append(value)
+        entry_paths.append(value.replace("\\", "/"))  # windows 7z lists entries with backslashes
 
     has_full_tree = any(p.startswith("Roadshow-1.15/Workbench") for p in entry_paths)
     has_inner_entry = any(p in _ROADSHOW_INNER_FULL_NAMES for p in entry_paths)
