@@ -50,6 +50,7 @@ def _grant_user_read(path):
              "/grant", "*S-1-5-11:(R)",
              "/setintegritylevel", "Medium"],
             capture_output=True, timeout=5,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
     except (OSError, subprocess.SubprocessError):
         pass

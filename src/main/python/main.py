@@ -79,6 +79,7 @@ def main():
     if _is_elevated_worker_launch():
         import runpy
 
+        _hide_windows_subprocess_consoles()  # the worker spawns icacls + hst-imager
         sys.argv = sys.argv[1:]  # worker reads ipc_dir from sys.argv[1]
         runpy.run_path(sys.argv[0], run_name="__main__")
         return
