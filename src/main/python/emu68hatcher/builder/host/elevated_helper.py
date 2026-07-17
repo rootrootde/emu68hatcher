@@ -298,12 +298,19 @@ class ElevatedHelper:
             "if ($p) { exit 0 } else { exit 1 }"
         )
         try:
+            # Start-Process blocks while the UAC prompt is open; windows auto-denies an
+            # unanswered prompt after ~2 min, so 300s lets it resolve instead of killing
+            # powershell mid-prompt
             r = subprocess.run(
                 ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps],
                 capture_output=True,
                 text=True,
-                timeout=120,
+                timeout=300,
             )
+        except subprocess.TimeoutExpired:
+            logger.warning("elevated helper UAC prompt was not answered")
+            self._cleanup_files()
+            return False
         except (OSError, subprocess.SubprocessError) as e:
             logger.warning(f"elevated helper Start-Process failed: {e}")
             self._cleanup_files()

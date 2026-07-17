@@ -324,10 +324,15 @@ def _acquire_windows() -> ElevationToken:
         raise ElevationDenied("powershell not found on PATH")
     from emu68hatcher.builder.host.elevated_helper import ElevatedHelper
 
-    helper = ElevatedHelper()
-    if helper.spawn():
-        return ElevationToken(os=OperatingSystem.WINDOWS, method="runas-helper", helper=helper)
-    # helper spawn failed (UAC denied, missing python, etc.) - fall back to per-call
-    # Start-Process; UAC prompts every elevated subprocess
-    logger.warning("elevated helper unavailable; falling back to per-call UAC prompts")
-    return ElevationToken(os=OperatingSystem.WINDOWS, method="runas")
+    # two attempts - the first UAC prompt is easy to miss on an unfocused desktop/VM
+    for attempt in (1, 2):
+        helper = ElevatedHelper()
+        if helper.spawn():
+            return ElevationToken(os=OperatingSystem.WINDOWS, method="runas-helper", helper=helper)
+        logger.warning(f"elevated helper spawn attempt {attempt} failed")
+    # no per-call runas fallback: it would UAC-prompt every elevated call and a single
+    # missed or declined prompt fails the build partway through
+    raise ElevationDenied(
+        "Windows administrator approval was not granted. Click Yes on the "
+        "User Account Control prompt when it appears, then start the build again."
+    )
