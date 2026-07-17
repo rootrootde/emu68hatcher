@@ -89,12 +89,14 @@ def generate_boot_partition_files(
         rom_filename=rom_filename,
         emu68_version=emu68_version,
     )
-    (boot_dir / "config.txt").write_text(config_txt)
+    (boot_dir / "config.txt").write_text(config_txt, newline="\n")
 
     # 1.1+ hangs on buptest cmdline params; only 1.0.x runs the burn-in test
     base_cmdline = "sd.low_speed emmc.low_speed sd.unit0=rw emmc.unit0=rw"
     if emu68_version.startswith("1.1"):
-        (boot_dir / "cmdline.txt").write_text(base_cmdline + "\n")
+        (boot_dir / "cmdline.txt").write_text(base_cmdline + "\n", newline="\n")
     else:
-        (boot_dir / "cmdline.txt").write_text(f"buptest=512 bupiter=1 {base_cmdline}\n")
-        (boot_dir / "cmdlineBAK.txt").write_text(base_cmdline + "\n")
+        (boot_dir / "cmdline.txt").write_text(
+            f"buptest=512 bupiter=1 {base_cmdline}\n", newline="\n"
+        )
+        (boot_dir / "cmdlineBAK.txt").write_text(base_cmdline + "\n", newline="\n")

@@ -347,7 +347,7 @@ class PackageInstaller:
                         content = content.replace(mod.marker, mod.content + "\n" + mod.marker)
                         count += 1
 
-            full_path.write_text(content, encoding="iso-8859-1")
+            full_path.write_text(content, encoding="iso-8859-1", newline="\n")
             self.logger.info(f"Modified script: {script_path}")
 
         return count

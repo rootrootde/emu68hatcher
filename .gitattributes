@@ -1,0 +1,4 @@
+# never convert line endings on checkout - bundled amiga-bound text assets
+# (local_packages scripts, mountlists, prefs) must stay byte-exact LF; windows
+# CI runners default to core.autocrlf=true and would ship CRLF scripts
+* -text

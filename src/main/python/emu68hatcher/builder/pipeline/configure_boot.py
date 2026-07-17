@@ -158,4 +158,6 @@ def _write_hatcher_marker(emu68_boot_staging: Path) -> None:
         f"built at:             {datetime.now(timezone.utc).isoformat(timespec='seconds')}\n"
         "homepage:             https://rootrootde.github.io/emu68hatcher/\n"
     )
-    (emu68_boot_staging / "BUILT-WITH-EMU68HATCHER.txt").write_text(text, encoding="utf-8")
+    (emu68_boot_staging / "BUILT-WITH-EMU68HATCHER.txt").write_text(
+        text, encoding="utf-8", newline="\n"
+    )

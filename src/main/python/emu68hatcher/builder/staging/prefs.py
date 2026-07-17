@@ -41,7 +41,7 @@ def write_env_var(env_archive_dir: Path, name: str, value: str) -> None:
     """write an environment variable to Env-Archive"""
     var_path = env_archive_dir / name
     var_path.parent.mkdir(parents=True, exist_ok=True)
-    var_path.write_text(value, encoding="iso-8859-1")
+    var_path.write_text(value, encoding="iso-8859-1", newline="\n")
 
 
 def generate_default_env_vars(env_archive_dir: Path) -> None:

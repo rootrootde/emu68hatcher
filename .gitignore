@@ -1,6 +1,7 @@
 # dotfiles/dirs (ide, venv, caches, etc)
 .*
 !.gitignore
+!.gitattributes
 !.githooks/
 !.github/
 

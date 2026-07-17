@@ -78,7 +78,7 @@ def _write_netinterface(path: Path, mode: str, address: str | None, netmask: str
     else:
         kept.append("configure=dhcp")
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(kept) + "\n", encoding="iso-8859-1")
+    path.write_text("\n".join(kept) + "\n", encoding="iso-8859-1", newline="\n")
 
 
 def _write_default_route(path: Path, gateway: str) -> None:
@@ -92,14 +92,14 @@ def _write_default_route(path: Path, gateway: str) -> None:
             kept.append(line)
     kept += [_MANAGED_TAG, f"default {gateway}"]
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(kept) + "\n", encoding="iso-8859-1")
+    path.write_text("\n".join(kept) + "\n", encoding="iso-8859-1", newline="\n")
 
 
 def _write_name_resolution(path: Path, dns_servers: list[str]) -> None:
     """write DEVS:Internet/name_resolution nameserver lines"""
     lines = [_MANAGED_TAG] + [f"nameserver {ip}" for ip in dns_servers]
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="iso-8859-1")
+    path.write_text("\n".join(lines) + "\n", encoding="iso-8859-1", newline="\n")
 
 
 def _configure_network(workflow: BuildWorkflow, boot_staging: Path) -> None:
@@ -187,6 +187,7 @@ def configure_preferences(
         (sys_dir / "wireless.prefs").write_text(
             generate_wireless_prefs(workflow.config.wifi.ssid, workflow.config.wifi.password),
             encoding="iso-8859-1",
+            newline="\n",
         )
         workflow.logger.info("Generated wireless.prefs")
 
