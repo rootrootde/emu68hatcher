@@ -1,6 +1,7 @@
 """path utils - runtime data dir resolved via $HATCHER_HOME, OS data dir (frozen), or repo-local hatcher_data/"""
 
 import os
+import shutil
 import sys
 import tempfile
 from functools import cache
@@ -92,3 +93,33 @@ def get_tools_dir() -> Path:
 def ensure_dir(path: Path) -> Path:
     """mkdir -p (helper for tmp dirs)"""
     return _ensure(path)
+
+
+def reset_runtime_data() -> list[Path]:
+    """delete cache and downloaded tools plus stray temp files; returns paths that resisted removal"""
+    failures: list[Path] = []
+    home = _get_home()
+    for target in (home / "cache", home / "tools"):
+        if target.exists():
+            shutil.rmtree(target, ignore_errors=True)
+            if target.exists():
+                failures.append(target)
+    # elevation worker scripts, ipc dirs and askpass helpers land in the OS temp dir
+    for stray in Path(tempfile.gettempdir()).glob("emu68hatcher-*"):
+        try:
+            if stray.is_dir():
+                shutil.rmtree(stray, ignore_errors=True)
+            else:
+                stray.unlink(missing_ok=True)
+        except OSError:
+            pass
+    # the cached path getters ran _ensure on first call; restore what they promise exists
+    for d in (
+        get_cache_dir(),
+        get_downloads_dir(),
+        get_extracted_dir(),
+        get_dotnet_bundle_dir(),
+        get_tools_dir(),
+    ):
+        d.mkdir(parents=True, exist_ok=True)
+    return failures

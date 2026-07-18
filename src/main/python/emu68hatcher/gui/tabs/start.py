@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt, Slot
 from PySide6.QtGui import QIcon, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
+    QApplication,
     QFrame,
     QGroupBox,
     QHBoxLayout,
@@ -157,6 +158,11 @@ class StartTab(QWidget):
 
         # buttons
         btn_row = QHBoxLayout()
+
+        self.reset_btn = QPushButton("Reset App Data…")
+        self.reset_btn.clicked.connect(self.reset_app_data)
+        btn_row.addWidget(self.reset_btn)
+
         btn_row.addStretch()
 
         self.refresh_btn = QPushButton("Refresh")
@@ -227,6 +233,44 @@ class StartTab(QWidget):
             self.download_btn.setText("Update Tools…")
         else:
             self.download_btn.setText("All Tools Installed")
+
+    # --- reset ---
+    @Slot()
+    def reset_app_data(self):
+        """wipe cache, temp files and downloaded tools after confirmation"""
+        if self._worker and self._worker.isRunning():
+            return
+
+        box = QMessageBox(self)
+        box.setWindowTitle("Reset App Data")
+        box.setIcon(QMessageBox.Icon.Warning)
+        box.setText("Delete all cached downloads, temporary files and downloaded tools?")
+        box.setInformativeText(
+            "This resets the app to its fresh-install state. Tools and packages are "
+            "re-downloaded when needed. Saved build configs are not touched."
+        )
+        delete_btn = box.addButton("Delete", QMessageBox.ButtonRole.DestructiveRole)
+        box.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
+        box.exec()
+        if box.clickedButton() is not delete_btn:
+            return
+
+        from emu68hatcher.utils.paths import reset_runtime_data
+
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            failures = reset_runtime_data()
+        finally:
+            QApplication.restoreOverrideCursor()
+
+        self.progress_group.setVisible(False)
+        self.refresh_status()
+        if failures:
+            QMessageBox.warning(
+                self,
+                "Reset App Data",
+                "Could not remove:\n" + "\n".join(str(p) for p in failures),
+            )
 
     # --- download flow ---
     @Slot()
