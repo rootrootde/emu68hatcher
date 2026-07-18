@@ -1,5 +1,7 @@
 """host tool resolution - locates hst-imager / hst-amiga / 7z and builds their subprocess env"""
 
+import hashlib
+import logging
 import os
 import shutil
 import subprocess
@@ -11,6 +13,8 @@ from emu68hatcher.utils.paths import (
     get_tools_dir,
 )
 from emu68hatcher.utils.platform import OperatingSystem, detect_os
+
+logger = logging.getLogger(__name__)
 
 _WINDOWS_EXE_EXTS = (".exe", ".cmd", ".bat", ".com")
 
@@ -101,6 +105,28 @@ def get_hst_imager_env() -> dict[str, str]:
     env = os.environ.copy()
     env[DOTNET_BUNDLE_ENV_VAR] = str(get_dotnet_bundle_dir())
     return env
+
+
+def localize_for_hst(path: Path, local_dir: Path) -> Path:
+    """return path, or a local copy when UNC-hosted - hst-imager resolves forward-slash UNC paths as 'Path not found'"""
+    if not path.drive.startswith("\\\\"):
+        return path
+    return _copy_to_local(path, local_dir)
+
+
+def _copy_to_local(path: Path, local_dir: Path) -> Path:
+    """copy path into local_dir once, keyed by full source path; returns the copy"""
+    # hash prefix keeps same-named files from different source dirs apart (ADFs all share one size)
+    tag = hashlib.sha1(str(path).encode("utf-8")).hexdigest()[:8]
+    dest = local_dir / f"{tag}-{path.name}"
+    if not dest.exists():
+        local_dir.mkdir(parents=True, exist_ok=True)
+        # copy via .part so an interrupted copy is never mistaken for a finished one
+        part = dest.with_name(dest.name + ".part")
+        shutil.copy2(path, part)
+        part.replace(dest)
+        logger.info(f"Copied {path.name} to local storage for hst-imager (network path)")
+    return dest
 
 
 def run_hst_extract(

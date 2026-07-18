@@ -83,6 +83,12 @@ def stage_install_workbench(workflow: BuildWorkflow) -> None:
     if errors:
         workflow.logger.warning(f"Some ADF extractions failed: {'; '.join(errors[:5])}")
 
+    if total_files == 0:
+        raise BuildError(
+            "ADF extraction produced no files - hst-imager could not read the "
+            "Workbench ADFs. Check the build log for extraction errors."
+        )
+
     workflow._update_state(progress=50.0)
     workflow._milestone("Copying Workbench files to staging")
 
@@ -216,7 +222,7 @@ def _run_extraction_rules(
     hst_imager: Path,
 ) -> tuple[int, list[str]]:
     """run each ADF rule through hst-imager; return (file_count, errors)"""
-    from emu68hatcher.utils.host_tools import run_hst_extract
+    from emu68hatcher.utils.host_tools import localize_for_hst, run_hst_extract
 
     errors: list[str] = []
     processed_rules = 0
@@ -250,6 +256,12 @@ def _run_extraction_rules(
                 workflow.logger.warning(
                     f"Missing ADF for mandatory rule: {source_location} (need {files_to_install})"
                 )
+            continue
+
+        try:
+            adf_path = localize_for_hst(adf_path, workflow.state.extracted_dir / "network_media")
+        except OSError as e:
+            errors.append(f"{source_location}: copy from network path failed: {e}")
             continue
 
         dest_dir = (
@@ -290,6 +302,12 @@ def _run_extraction_rules(
                 ):
                     errors.append(
                         f"{source_location}/{files_to_install}: {result.stderr or result.stdout}"
+                    )
+                elif rule.mandatory:
+                    # "Path not found" also covers an unreadable ADF, so a mandatory
+                    # rule failing this way must not disappear into the pattern-no-match case
+                    workflow.logger.warning(
+                        f"Extraction failed for mandatory rule {source_location}/{files_to_install}"
                     )
         except subprocess.TimeoutExpired:
             errors.append(f"{source_location}/{files_to_install}: Timeout")

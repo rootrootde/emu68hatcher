@@ -367,6 +367,15 @@ def _apply_icon_set_new_folder(
         return
 
     from emu68hatcher.builder.staging.icons import apply_icon_set_drawer
+    from emu68hatcher.utils.host_tools import localize_for_hst
+
+    try:
+        adf_path = localize_for_hst(adf_path, workflow.state.extracted_dir / "network_media")
+    except OSError:
+        workflow.logger.warning(
+            f"Could not copy icon set ADF '{source}' from network path; keeping bundled drawer"
+        )
+        return
 
     count = apply_icon_set_drawer(boot_staging, adf_path, file_in_adf)
     if count:

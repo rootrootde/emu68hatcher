@@ -76,7 +76,7 @@ def _extract_ffs_handler_if_needed(workflow: BuildWorkflow) -> None:
     if not workflow.config.partitions or not workflow.config.partitions.uses_ffs:
         return
 
-    from emu68hatcher.utils.host_tools import find_hst_imager, run_hst_extract
+    from emu68hatcher.utils.host_tools import find_hst_imager, localize_for_hst, run_hst_extract
 
     # match KS and WB on parsed version tuples (string startswith would treat "3.1" as a prefix of "3.10")
     ks_version = workflow.config.kickstart.version.value
@@ -118,6 +118,11 @@ def _extract_ffs_handler_if_needed(workflow: BuildWorkflow) -> None:
     hst_imager = find_hst_imager()
     if not hst_imager:
         raise BuildError("hst-imager not available; cannot extract FFS handler")
+
+    try:
+        install_adf = localize_for_hst(install_adf, workflow.state.extracted_dir / "network_media")
+    except OSError as e:
+        raise BuildError(f"Cannot copy {install_adf.name} from network path: {e}") from e
 
     scratch = ensure_dir(workflow.state.extracted_dir / "ffs_handler")
     workflow._update_state(progress=3.0)
