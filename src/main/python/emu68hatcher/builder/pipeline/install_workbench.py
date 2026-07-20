@@ -90,17 +90,19 @@ def stage_install_workbench(workflow: BuildWorkflow) -> None:
         )
 
     workflow._update_state(progress=50.0)
+
+    # decompress .Z files for Workbench 3.2.x (uses Unix compress format)
+    ks_version = workflow.config.kickstart.version.value
+    if ks_version.startswith("3.2"):
+        _decompress_z_files(workflow, workflow.state.workbench_dir)
+
+    workflow._update_state(progress=70.0)
     workflow._milestone("Copying Workbench files to staging")
 
     # find the boot partition - first bootable Amiga partition wins
     from emu68hatcher.builder.pipeline.configure import _resolve_boot_device
 
     boot_device = _resolve_boot_device(workflow)
-
-    # decompress .Z files for Workbench 3.2.x (uses Unix compress format)
-    ks_version = workflow.config.kickstart.version.value
-    if ks_version.startswith("3.2"):
-        _decompress_z_files(workflow, workflow.state.workbench_dir)
 
     file_mapping = FileMapping()
     file_mapping.add_directory(
@@ -363,21 +365,47 @@ def _decompress_z_files(workflow: BuildWorkflow, directory: Path) -> None:
         workflow.logger.warning(f"7-Zip not found, cannot decompress {len(z_files)} .Z files")
         return
 
-    workflow.logger.info(f"Decompressing {len(z_files)} .Z files...")
+    workflow._milestone(f"Decompressing {len(z_files)} .Z files")
 
+    # one 7z run per directory ("*.Z" = every archive in it) instead of one process per file
+    by_dir: dict[Path, list[Path]] = {}
     for z_file in z_files:
+        by_dir.setdefault(z_file.parent, []).append(z_file)
+
+    done = 0
+    failed = 0
+    for parent, files in sorted(by_dir.items()):
+        workflow._check_cancelled()
         try:
             result = subprocess.run(
-                [str(sevenz), "e", str(z_file), f"-o{z_file.parent}", "-y"],
+                [str(sevenz), "e", "*.Z", "-y"],
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
                 errors="replace",
-                cwd=z_file.parent,
+                cwd=parent,
+                timeout=120,
             )
-            if result.returncode == 0:
+        except (OSError, subprocess.SubprocessError) as e:
+            workflow.logger.warning(f"7-Zip failed in {parent.name}: {e}")
+            failed += len(files)
+            done += len(files)
+            continue
+        if result.returncode != 0:
+            output = (result.stderr or result.stdout or "").strip()
+            workflow.logger.warning(f"7-Zip reported errors in {parent.name}: {output[:200]}")
+        # remove a .Z only once its decompressed counterpart exists (partial batches keep sources)
+        for z_file in files:
+            if z_file.with_suffix("").exists():
                 z_file.unlink()
             else:
-                workflow.logger.warning(f"Failed to decompress {z_file.name}: {result.stderr}")
-        except (OSError, subprocess.SubprocessError):
-            workflow.logger.exception(f"Error decompressing {z_file.name}")
+                failed += 1
+        done += len(files)
+        workflow._update_state(
+            progress=50.0 + 20.0 * done / len(z_files),
+            message=f"Decompressing .Z files ({done}/{len(z_files)})",
+        )
+
+    if failed:
+        workflow.logger.warning(f"{failed} .Z files could not be decompressed")
+    workflow.logger.info(f"Decompressed {len(z_files) - failed} .Z files")
