@@ -27,7 +27,7 @@ def _ci_resolve(base: Path, rel: str) -> Path | None:
     return current
 
 
-def apply_relocations(workflow: BuildWorkflow, boot_staging: Path, all_packages: set[str]) -> int:
+def apply_relocations(workflow: BuildWorkflow, boot_staging: Path, all_packages: list[str]) -> int:
     """move staged files per enabled packages' relocate rules; returns files moved"""
     moved = 0
     for name in sorted(all_packages):

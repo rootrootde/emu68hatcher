@@ -77,11 +77,5 @@ def stage_install_packages(workflow: BuildWorkflow) -> None:
 
         completed += 1
 
-    workflow._update_state(progress=95.0)
-    workflow._milestone("Applying script modifications")
-    script_mods = installer.apply_script_modifications()
-    if script_mods > 0:
-        workflow.logger.info(f"Applied {script_mods} script modifications")
-
     workflow._update_state(progress=100.0)
     workflow._milestone(f"Installed {total} packages ({files_installed} files)")

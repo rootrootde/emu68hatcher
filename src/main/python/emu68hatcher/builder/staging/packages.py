@@ -1,4 +1,4 @@
-"""package installer driven by YAML defs - extract (incl nested), copy locals, edit scripts"""
+"""package installer driven by YAML defs - extract (incl nested), copy locals"""
 
 import shutil
 import struct
@@ -7,12 +7,12 @@ from pathlib import Path
 
 from emu68hatcher.builder.host.archive import ARCHIVE_EXTENSIONS, extract_archive
 from emu68hatcher.builder.staging.files import ci_match_child
-from emu68hatcher.config.defaults import DEFAULT_BOOT_DEVICE, DEFAULT_WORK_DEVICE
+from emu68hatcher.config.defaults import DEFAULT_BOOT_DEVICE
 from emu68hatcher.data.package_loader import (
     get_package_by_name,
     get_packages_for_version,
 )
-from emu68hatcher.data.package_schema import InstallRule, Package, ScriptAction, ScriptModification
+from emu68hatcher.data.package_schema import InstallRule, Package
 from emu68hatcher.utils.logging import get_logger
 from emu68hatcher.utils.paths import ensure_dir
 
@@ -79,7 +79,7 @@ def _merge_tree(source: Path, dest: Path) -> int:
 
 
 class PackageInstaller:
-    """installs packages per YAML defs - extract, copy locals, apply script modifications"""
+    """installs packages per YAML defs - extract, copy locals"""
 
     def __init__(
         self,
@@ -97,15 +97,6 @@ class PackageInstaller:
         self.logger = get_logger()
 
         self.packages = get_packages_for_version(kickstart_version, emu68_version)
-
-        self.pending_scripts: list[tuple[Package, ScriptModification]] = []
-
-        # System: -> SDH0
-        self.drive_map = {
-            "System": DEFAULT_BOOT_DEVICE,
-            "Work": DEFAULT_WORK_DEVICE,
-            "Emu68Boot": "EMU68BOOT",
-        }
 
     def install_package(
         self,
@@ -129,9 +120,6 @@ class PackageInstaller:
         for rule in pkg.install:
             count = self._apply_install_rule(pkg, rule, source_dir)
             files_installed += count
-
-        for script_mod in pkg.scripts:
-            self.pending_scripts.append((pkg, script_mod))
 
         return files_installed
 
@@ -309,45 +297,3 @@ class PackageInstaller:
                     files_installed = 1
 
         return files_installed
-
-    def apply_script_modifications(self) -> int:
-        """apply all pending script modifications, returns count"""
-        by_script: dict[str, list[tuple[Package, ScriptModification]]] = {}
-
-        for pkg, mod in self.pending_scripts:
-            target = mod.target
-            if target not in by_script:
-                by_script[target] = []
-            by_script[target].append((pkg, mod))
-
-        count = 0
-
-        for script_path, mods in by_script.items():
-            # scripts are in System drive
-            full_path = self.staging_dir / DEFAULT_BOOT_DEVICE / script_path
-
-            if not full_path.exists():
-                self.logger.warning(f"Script not found: {full_path}")
-                continue
-
-            # AmigaDOS scripts are ISO-8859-1 (windows default would corrupt high bytes)
-            content = full_path.read_text(encoding="iso-8859-1")
-
-            for _pkg, mod in mods:
-                if mod.action == ScriptAction.APPEND:
-                    content = content.rstrip() + "\n\n" + mod.content + "\n"
-                    count += 1
-
-                elif mod.action == ScriptAction.PREPEND:
-                    content = mod.content + "\n\n" + content
-                    count += 1
-
-                elif mod.action == ScriptAction.INJECT:
-                    if mod.marker and mod.marker in content:
-                        content = content.replace(mod.marker, mod.content + "\n" + mod.marker)
-                        count += 1
-
-            full_path.write_text(content, encoding="iso-8859-1", newline="\n")
-            self.logger.info(f"Modified script: {script_path}")
-
-        return count

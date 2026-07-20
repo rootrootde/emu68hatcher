@@ -14,14 +14,6 @@ class SourceType(str, Enum):
     LOCAL = "local"
 
 
-class ScriptAction(str, Enum):
-    """script modification actions"""
-
-    APPEND = "append"
-    PREPEND = "prepend"
-    INJECT = "inject"  # inject at specific marker
-
-
 class DownloadInfo(BaseModel):
     """download configuration for a package"""
 
@@ -89,12 +81,13 @@ class MenuEntry(BaseModel):
 
 
 class ScriptModification(BaseModel):
-    """script modification to apply during installation"""
+    """script block appended (marker-wrapped) to an amiga script when the package is installed"""
 
-    target: str  # script path like "S/User-Startup"
-    action: ScriptAction = ScriptAction.APPEND
-    content: str  # content to add to script
-    marker: str | None = None  # for inject action, marker to find
+    target: str = "S/User-Startup"  # script path relative to SYS:
+    name: str  # marker label on the injected block
+    content: str  # lines to append
+    # None = always; True/False = only when the package's user-supplied archive is (not) configured
+    when_user_archive: bool | None = None
 
 
 class Package(BaseModel):

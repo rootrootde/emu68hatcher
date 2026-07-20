@@ -19,3 +19,6 @@ install:
   to: C/
 - from: SetDST-*/SetDST
   to: C/
+scripts:
+- name: SetDST
+  content: 'C:SetDST NOASK NOREQ QUIET >NIL:'

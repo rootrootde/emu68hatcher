@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from emu68hatcher.builder.errors import BuildError
 from emu68hatcher.builder.staging.scripts.generator import generate_shell_startup
 from emu68hatcher.builder.staging.scripts.injector import (
+    apply_package_scripts,
     apply_standard_injections,
     write_amiga_script,
 )
@@ -113,7 +114,7 @@ def configure_scripts(
     workflow: BuildWorkflow,
     boot_staging: Path,
     s_dir: Path,
-    all_packages: set[str],
+    all_packages: list[str],
 ) -> None:
     """inject into or generate Startup-Sequence, User-Startup, Shell-Startup, FirstBoot"""
     workflow._update_state(progress=10.0)
@@ -127,8 +128,6 @@ def configure_scripts(
         injection_count = apply_standard_injections(
             staging_dir=boot_staging,
             content_base_path=content_base,
-            enabled_packages=all_packages,
-            roadshow_full=workflow.config.roadshow_archive is not None,
         )
         workflow.logger.info(f"Applied {injection_count} script injections to Startup-Sequence")
 
@@ -148,7 +147,17 @@ def configure_scripts(
     user_startup_path = s_dir / "User-Startup"
     if not user_startup_path.exists():
         write_amiga_script(user_startup_path, ["; User-Startup", "; Emu68 Hatcher"])
-    workflow.logger.info("User-Startup ready for package injections")
+
+    # user-supplied archives switch when_user_archive-gated script variants (e.g. the full
+    # Roadshow auto-runs Network-Startup; the demo timer starts when bsdsocket.library opens)
+    user_archives = set()
+    if workflow.config.roadshow_archive is not None:
+        user_archives.add("roadshow")
+    if workflow.config.display.picasso96_archive is not None:
+        user_archives.add("picasso96")
+
+    script_count = apply_package_scripts(boot_staging, all_packages, user_archives)
+    workflow.logger.info(f"Applied {script_count} package script blocks to User-Startup")
 
     workflow._update_state(progress=30.0)
     workflow._milestone("Generating Shell-Startup")
@@ -170,7 +179,7 @@ def _menu_add_line(name: str, menu_title: str, cmd: str) -> str:
     return f"MENU ADD NAME {name} TITLE '\"{menu_title}\"' CMD \"'address command ''{cmd}'''\""
 
 
-def _collect_app_entries(all_packages: set[str]) -> list[tuple[str, str, str, str]]:
+def _collect_app_entries(all_packages: list[str]) -> list[tuple[str, str, str, str]]:
     """(submenu, title, name, cmd) for installed packages that declare a menu_entry"""
     entries: list[tuple[str, str, str, str]] = []
     for name in all_packages:
@@ -185,7 +194,7 @@ def _collect_app_entries(all_packages: set[str]) -> list[tuple[str, str, str, st
 
 
 def _build_menutools_entries(
-    has_network: bool, all_packages: set[str], p96_modern: bool = False
+    has_network: bool, all_packages: list[str], p96_modern: bool = False
 ) -> list[str]:
     """build MENU ADD lines, keeping each submenu's items contiguous (top-level items last)"""
     # sort key: (top-level last, submenu, rank, order) - rank 0 builtins, 1 apps, 2 late builtins.
@@ -202,7 +211,7 @@ def _build_menutools_entries(
         rows.append((key, name, _compose_menu_title(sub, title), cmd))
     for entry in _PREFS_ENTRIES:
         requires = entry.get("requires")
-        if requires and not (all_packages & set(requires)):
+        if requires and not (set(all_packages) & set(requires)):
             continue
         if entry.get("p96_modern") and not p96_modern:
             continue
@@ -216,7 +225,7 @@ def _build_menutools_entries(
 
 
 def _inject_menutools_entries(
-    workflow: BuildWorkflow, boot_staging: Path, all_packages: set[str]
+    workflow: BuildWorkflow, boot_staging: Path, all_packages: list[str]
 ) -> None:
     """add Hatcher entries to WB 3.2.x WBStartup/MenuTools (before EXIT)"""
     menutools_path = boot_staging / "WBStartup" / "MenuTools"

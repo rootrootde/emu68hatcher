@@ -59,3 +59,22 @@ install:
   to: Devs/Networks/
 - from: Roadshow-1.15/Workbench/Devs/Networks/020/ppp-serial.device
   to: Devs/Networks/
+scripts:
+# the demo timer starts when bsdsocket.library opens, so the demo build must not auto-connect
+- name: Roadshow TCP/IP
+  when_user_archive: false
+  content: |
+    ;BEGIN Roadshow
+    ; Network-Startup not auto-executed - Roadshow demo timer starts when
+    ; bsdsocket.library opens. Use "Go Online" from Tools menu instead.
+    ;END Roadshow
+- name: Roadshow TCP/IP
+  when_user_archive: true
+  content: |
+    ;BEGIN Roadshow
+    If NOT EXISTS S:Network-disabled
+      If EXISTS S:Network-Startup
+        Execute S:Network-Startup
+      EndIf
+    EndIf
+    ;END Roadshow

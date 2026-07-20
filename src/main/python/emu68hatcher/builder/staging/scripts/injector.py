@@ -29,7 +29,6 @@ class ScriptInjection:
     start_pattern: str | None = None  # regex for injection point
     end_pattern: str | None = None  # for Remove action
     name: str = ""  # comment marker name
-    is_arexx: bool = False  # use AREXX comment style
 
 
 def read_amiga_script(path: Path) -> list[str]:
@@ -73,7 +72,7 @@ def inject_script(
         content_lines = []
 
     # build the injection block with markers
-    injection_block = _build_injection_block(content_lines, injection.name, injection.is_arexx)
+    injection_block = _build_injection_block(content_lines, injection.name)
 
     # apply the injection
     if injection.action == InjectionAction.ADD:
@@ -100,30 +99,20 @@ def inject_script(
     return True
 
 
-def _build_injection_block(content_lines: list[str], name: str, is_arexx: bool) -> list[str]:
+def _build_injection_block(content_lines: list[str], name: str) -> list[str]:
     """build injection block wiht comment markers"""
     block = []
 
     if name:
         block.append("")
-        if is_arexx:
-            block.append("/*")
-            block.append(f"{name} - Added by Emu68 Hatcher - BEGIN")
-            block.append("*/")
-        else:
-            block.append(f";{name} - Added by Emu68 Hatcher - BEGIN")
+        block.append(f";{name} - Added by Emu68 Hatcher - BEGIN")
         block.append("")
 
     block.extend(content_lines)
 
     if name:
         block.append("")
-        if is_arexx:
-            block.append("/*")
-            block.append(f"{name} - Added by Emu68 Hatcher - END")
-            block.append("*/")
-        else:
-            block.append(f";{name} - Added by Emu68 Hatcher - END")
+        block.append(f";{name} - Added by Emu68 Hatcher - END")
         block.append("")
 
     return block
@@ -299,78 +288,44 @@ STARTUP_SEQUENCE_INJECTIONS = [
     ),
 ]
 
-USER_STARTUP_INJECTIONS = [
-    ScriptInjection(
-        target_script="S/User-Startup",
-        action=InjectionAction.ADD,
-        content_file="S/User-Startup_SetDST",
-        name="SetDST",
-    ),
-    ScriptInjection(
-        target_script="S/User-Startup",
-        action=InjectionAction.ADD,
-        content_file="S/User-Startup_MUI38",
-        name="MUI 3.8",
-    ),
-    ScriptInjection(
-        target_script="S/User-Startup",
-        action=InjectionAction.ADD,
-        content_file="S/User-Startup_AmiSSL",
-        name="AmiSSL",
-    ),
-    ScriptInjection(
-        target_script="S/User-Startup",
-        action=InjectionAction.ADD,
-        content_file="S/User-Startup_Roadshow",
-        name="Roadshow TCP/IP",
-    ),
-    ScriptInjection(
-        target_script="S/User-Startup",
-        action=InjectionAction.ADD,
-        content_file="S/User-Startup_Picasso96",
-        name="Picasso96 RTG",
-    ),
-]
-
 
 def apply_standard_injections(
     staging_dir: Path,
     content_base_path: Path,
-    enabled_packages: set[str] | None = None,
-    roadshow_full: bool = False,
 ) -> int:
-    """apply standard script injections to staged files"""
-    from dataclasses import replace
-
+    """apply the Startup-Sequence surgery injections to staged files"""
     count = 0
-
-    # always apply Startup-Sequence injections
     for injection in STARTUP_SEQUENCE_INJECTIONS:
         target = staging_dir / injection.target_script
         if inject_script(target, injection, content_base_path):
             count += 1
+    return count
 
-    # apply User-Startup injections based on enabled packages. the MUI snippet only
-    # assigns MUI: + adds its libs, so either mui provider satisfies it.
-    injection_to_packages = {
-        "S/User-Startup_MUI38": {"mui38", "mui5"},
-        "S/User-Startup_AmiSSL": {"amissl"},
-        "S/User-Startup_Roadshow": {"roadshow"},
-        "S/User-Startup_Picasso96": {"picasso96"},
-    }
 
-    for injection in USER_STARTUP_INJECTIONS:
-        gate = injection_to_packages.get(injection.content_file)
+def apply_package_scripts(
+    staging_dir: Path,
+    package_names: list[str],
+    user_archives: set[str],
+) -> int:
+    """append installed packages' schema 'scripts:' blocks to their target scripts"""
+    from emu68hatcher.data.package_loader import get_package_by_name
 
-        if enabled_packages and gate and not (gate & enabled_packages):
+    count = 0
+    for pkg_name in package_names:
+        pkg = get_package_by_name(pkg_name)
+        if not pkg or not pkg.scripts:
             continue
-
-        # full Roadshow auto-runs Network-Startup; the demo snippet leaves it off
-        if gate == {"roadshow"} and roadshow_full:
-            injection = replace(injection, content_file="S/User-Startup_Roadshow_Full")
-
-        target = staging_dir / injection.target_script
-        if inject_script(target, injection, content_base_path):
-            count += 1
-
+        for mod in pkg.scripts:
+            if mod.when_user_archive is not None and mod.when_user_archive != (
+                pkg_name in user_archives
+            ):
+                continue
+            injection = ScriptInjection(
+                target_script=mod.target,
+                action=InjectionAction.ADD,
+                content=mod.content,
+                name=mod.name,
+            )
+            if inject_script(staging_dir / mod.target, injection):
+                count += 1
     return count

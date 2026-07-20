@@ -1,4 +1,0 @@
-;BEGIN Roadshow
-; Network-Startup not auto-executed - Roadshow demo timer starts when
-; bsdsocket.library opens. Use "Go Online" from Tools menu instead.
-;END Roadshow

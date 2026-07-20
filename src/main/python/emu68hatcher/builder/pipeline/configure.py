@@ -77,10 +77,10 @@ def _apply_os39_boingbags(workflow: BuildWorkflow, boot_staging) -> None:
     apply_boingbags(workflow.state.extracted_paths, boot_staging)
 
 
-def _collect_enabled_packages(workflow: BuildWorkflow) -> set[str]:
-    """all package names to install (user-selected + mandatory + resolved deps)"""
+def _collect_enabled_packages(workflow: BuildWorkflow) -> list[str]:
+    """all package names to install, in install order (user-selected + mandatory + resolved deps)"""
     from emu68hatcher.builder.pipeline._selection import resolve_selection
 
     ks_version = workflow.config.kickstart.version.value
     emu68_version = workflow.config.emu68_version.value
-    return resolve_selection(workflow.config, ks_version, emu68_version).selected
+    return resolve_selection(workflow.config, ks_version, emu68_version).install_order

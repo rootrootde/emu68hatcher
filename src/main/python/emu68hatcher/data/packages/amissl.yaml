@@ -31,3 +31,15 @@ install:
   to: Programs/AmiSSL/
 - from: AmiSSL/C/AmigaOS3/OpenSSL
   to: Programs/AmiSSL/
+scripts:
+- name: AmiSSL
+  content: |
+    ;BEGIN AmiSSL
+    If Exists SYS:Programs/AmiSSL
+      C:Assign AmiSSL: SYS:Programs/AmiSSL
+      If Exists AmiSSL:Libs
+        C:Assign LIBS: AmiSSL:Libs ADD
+      EndIf
+      C:Path AmiSSL: ADD
+    EndIf
+    ;END AmiSSL
