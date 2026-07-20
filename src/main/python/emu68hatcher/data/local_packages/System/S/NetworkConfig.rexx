@@ -34,12 +34,11 @@ address command
 
 /* non-interactive entry: 'rx NetworkConfig.rexx ONLINE WIFI|ETHERNET'.
    used by the Connect WiFi / Connect Ethernet launcher icons - bring up
-   the named interface and exit so the launcher window auto-closes. on
+   the named interface and exit so the launcher window auto-closes.
+   missing wifi credentials offer the credentials requester first; on
    failure a requester carries the reason before exiting. */
 parse arg hCmd hIface .
-hAuto = 0
 if upper(strip(hCmd)) = "ONLINE" then do
-    hAuto = 1
     hIface = upper(strip(hIface))
     hConnResult = 0
     select
@@ -48,10 +47,12 @@ if upper(strip(hCmd)) = "ONLINE" then do
         when hIface = "GENET" then call HatcherOnlineGenet
         otherwise say "Unknown interface: " || hIface
     end
-    if hConnResult ~= 1 then do
+    if hConnResult = 0 then do
         call rtezrequest("Could not connect via " || hIface || ".", "OK", "Hatcher Network")
         exit 10
     end
+    /* -1 = user declined or aborted credential entry - already informed */
+    if hConnResult ~= 1 then exit 0
     "C:Wait 2"
     exit 0
 end
@@ -123,20 +124,20 @@ HatcherOnlineWifi:
 
     call ReadSsid
     if hSsid = "" then do
-        if hAuto then do
-            say "No WiFi credentials configured."
-            return
-        end
         "RequestChoice >"hChoiceFile ,
             "TITLE ""Hatcher Network""" ,
             "BODY ""No WiFi config.*nOpen WiFi credentials?""" ,
             "GADGETS ""Yes|No"""
-        if ReadChoice() ~= "1" then return
+        if ReadChoice() ~= "1" then do
+            hConnResult = -1
+            return
+        end
         call WifiCredsScreen
         call ReadSsid
         if hSsid = "" then do
             say "WiFi configuration incomplete."
             "C:Wait 2"
+            hConnResult = -1
             return
         end
     end
