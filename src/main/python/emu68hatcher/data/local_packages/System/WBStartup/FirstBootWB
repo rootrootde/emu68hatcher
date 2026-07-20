@@ -13,11 +13,9 @@ ECHO ""
 ECHO "After saving, setup is complete! No more reboots."
 ECHO ""
 C:Ask "Press RETURN to continue..."
-SYS:Prefs/ScreenMode
-ECHO ""
-ECHO "Setup complete. Enjoy your Amiga!"
-ECHO ""
-C:Wait 3
+; detached, so this console is gone before Save - the new mode can only
+; apply once no window is left open on the workbench screen
+C:Run <NIL: >NIL: SYS:Prefs/ScreenMode
 
 C:Delete >NIL: SYS:WBStartup/FirstBootWB.info FORCE
 C:Delete >NIL: SYS:WBStartup/FirstBootWB FORCE
