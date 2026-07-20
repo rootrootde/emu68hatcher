@@ -15,10 +15,6 @@
       url: "https://github.com/ip7z/7zip/releases/download/26.00/7z2600-x64.exe"
       hash: "8225b98c5f9f30859e0e9dd09a2b6860"
       extract_method: self-installer-win
-    windows-x86:
-      url: "https://github.com/ip7z/7zip/releases/download/26.00/7z2600.exe"
-      hash: "e6e0de6cc848d8ded8e52a293b0d2bcb"
-      extract_method: self-installer-win
     windows-arm64:
       url: "https://github.com/ip7z/7zip/releases/download/26.00/7z2600-arm64.exe"
       hash: "3a9011892e1037d54e1649a278ae9f07"
@@ -30,10 +26,6 @@
     linux-arm64:
       url: "https://github.com/ip7z/7zip/releases/download/26.00/7z2600-linux-arm64.tar.xz"
       hash: "e88de5ff52b3b74582f958abd3d4adec"
-      extract_method: tar-xz
-    linux-arm:
-      url: "https://github.com/ip7z/7zip/releases/download/26.00/7z2600-linux-arm.tar.xz"
-      hash: "d373539bb5e2b38669d3966ef3301db8"
       extract_method: tar-xz
     darwin-arm64:
       url: "https://github.com/ip7z/7zip/releases/download/26.00/7z2600-mac.tar.xz"
@@ -67,15 +59,9 @@ hst-imager:
     linux-arm64:
       url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.616/hst-imager_v1.6.616-a91fa4c_console_linux_arm64.zip"
       hash: "8b47cf0e41da7d6a2a8ab9a5c66edbc1"
-    linux-arm:
-      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.616/hst-imager_v1.6.616-a91fa4c_console_linux_arm.zip"
-      hash: "15bf18cc238a25eb814448fcabd5a25c"
     windows-x64:
       url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.616/hst-imager_v1.6.616-a91fa4c_console_windows_x64.zip"
       hash: "188151254eb3d9d070f044486d22703d"
-    windows-x86:
-      url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.616/hst-imager_v1.6.616-a91fa4c_console_windows_x86.zip"
-      hash: "629dc4850f569b7b5080ea14c4c38b75"
     windows-arm64:
       url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.616/hst-imager_v1.6.616-a91fa4c_console_windows_arm64.zip"
       hash: "02598bbdc00dffa01b2e39248a475f8b"
@@ -95,15 +81,9 @@ hst-amiga:
     linux-arm64:
       url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_linux_arm64.zip"
       hash: "5f559e876be3b16fff1f677f5a037e91"
-    linux-arm:
-      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_linux_arm.zip"
-      hash: "4198f06d9e059ba2bf5546fba6a0bc2f"
     windows-x64:
       url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_windows_x64.zip"
       hash: "e20933f8eb59375da747272cc236aac4"
-    windows-x86:
-      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_windows_x86.zip"
-      hash: "4811348aa523be966ba56dcb57773f0c"
     windows-arm64:
       url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_windows_arm64.zip"
       hash: "33ad558c0aa1bdd2415736ff665a41c0"

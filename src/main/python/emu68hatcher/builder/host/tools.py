@@ -23,7 +23,7 @@ logger = logging.getLogger("emu68hatcher.tools")
 
 
 def resolve_tool_download(name: str) -> dict | None:
-    """tools.yaml entry -> dict with at least 'url' (+optional filename, hash, binary, extract_method). None if unresolvable"""
+    """tools.yaml entry -> dict with at least 'url' (+optional filename, hash, extract_method). None if unresolvable"""
     try:
         tools = load_yaml_data("tools")
     except Exception as e:

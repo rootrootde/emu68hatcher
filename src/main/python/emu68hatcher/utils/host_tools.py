@@ -91,15 +91,6 @@ def find_7z() -> Path | None:
     return _find_named("7z")
 
 
-def check_dependencies() -> dict[str, bool]:
-    """check if all required external dependencies are available"""
-    return {
-        "hst-imager": find_hst_imager() is not None,
-        "hst-amiga": find_hst_amiga() is not None,
-        "7z": find_7z() is not None,
-    }
-
-
 def get_hst_imager_env() -> dict[str, str]:
     """parent env + DOTNET_BUNDLE_EXTRACT_BASE_DIR; pass to subprocess.run(env=...) for direct hst-imager calls"""
     env = os.environ.copy()

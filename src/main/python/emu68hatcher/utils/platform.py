@@ -89,17 +89,3 @@ def get_platform_info() -> PlatformInfo:
         os_version=platform.version(),
         is_root=is_root(),
     )
-
-
-if __name__ == "__main__":
-    from emu68hatcher.utils.host_tools import check_dependencies
-    from emu68hatcher.utils.paths import get_tools_dir
-
-    info = get_platform_info()
-    print(f"Platform: {info}")
-    print(f"Platform string: {info.platform_string}")
-    print(f"Tools dir: {get_tools_dir()}")
-    print("\nDependencies:")
-    for name, available in check_dependencies().items():
-        status = "OK" if available else "MISSING"
-        print(f"  {name}: {status}")

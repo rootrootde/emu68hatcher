@@ -1,7 +1,6 @@
 """JSON config file load/save"""
 
 import json
-from datetime import datetime
 from pathlib import Path
 
 from emu68hatcher.config.schema import BuildConfig
@@ -38,13 +37,9 @@ def load_config(path: str | Path) -> BuildConfig:
 def save_config(
     config: BuildConfig,
     path: str | Path,
-    update_modified: bool = True,
 ) -> None:
     """save a build configuration to a JSON file"""
     path = Path(path)
-
-    if update_modified:
-        config.metadata.modified = datetime.now()
 
     try:
         # ensure parent directory exists

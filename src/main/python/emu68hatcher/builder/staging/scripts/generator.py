@@ -33,7 +33,6 @@ EMU68_KERNELS: dict[str, dict[str, str]] = {
 
 
 def generate_config_txt(
-    kickstart_version: str = "3.1",
     screen_mode: str = "1080*50",
     custom_cvt: str = "",
     rom_filename: str = "kick.rom",
@@ -58,7 +57,6 @@ def generate_config_txt(
 
     return render_template(
         "config_txt.j2",
-        kickstart_version=kickstart_version,
         screen_mode=screen_mode_normalized,
         custom_cvt=custom_cvt,
         rom_filename=rom_filename,
@@ -72,7 +70,6 @@ def generate_config_txt(
 
 def generate_boot_partition_files(
     staging_dir: Path,
-    kickstart_version: str = "3.1",
     screen_mode: str = "1080*50",
     custom_cvt: str = "",
     rom_filename: str = "kick.rom",
@@ -83,7 +80,6 @@ def generate_boot_partition_files(
 
     # generate config.txt wiht GPIO-based kernel selection
     config_txt = generate_config_txt(
-        kickstart_version=kickstart_version,
         screen_mode=screen_mode,
         custom_cvt=custom_cvt,
         rom_filename=rom_filename,

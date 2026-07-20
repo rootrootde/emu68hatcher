@@ -125,7 +125,6 @@ def _generate_boot_config(workflow: BuildWorkflow, rom_filename: str) -> None:
 
     generate_boot_partition_files(
         workflow.state.staging_dir,
-        kickstart_version=workflow.config.kickstart.version.value,
         screen_mode=screen_mode,
         custom_cvt=custom_cvt,
         rom_filename=rom_filename,

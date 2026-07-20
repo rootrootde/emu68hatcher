@@ -12,23 +12,11 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ConflictGroup:
-    """a set of selected packages that cannot coexist, plus the deterministic winner."""
-
-    token: str  # contested provides/conflicts token, or "" for a direct name conflict
-    members: list[str]  # selected package names in the conflict
-    chosen: str  # the package kept by deterministic resolution
-    needs_user_choice: bool  # True when >=2 directly-requested picks collide (gui should ask)
-
-
-@dataclass
 class Resolution:
     """the outcome of resolving a requested package set."""
 
     selected: set[str] = field(default_factory=set)
-    locked: dict[str, list[str]] = field(default_factory=dict)  # name -> requirers (greyed in gui)
     install_order: list[str] = field(default_factory=list)  # dep-before-dependent
-    conflicts: list[ConflictGroup] = field(default_factory=list)  # groups worth surfacing in gui
     dropped: dict[str, str] = field(default_factory=dict)  # name -> reason (lost conflict / orphan)
     unsatisfiable: dict[str, list[str]] = field(default_factory=dict)  # token -> requirers
 
@@ -51,20 +39,16 @@ def resolve(
     kickstart_version: str,
     emu68_version: str | None = None,
     *,
-    packages: list[Package] | None = None,
-    mandatory: list[Package] | None = None,
     order_hint: list[str] | None = None,
 ) -> Resolution:
     """resolve a user selection into a complete, conflict-free, ordered install set."""
-    # deselected suppresses recommends only; packages/mandatory are injectable for tests;
-    # order_hint keeps independent packages in the caller's order (deps still install first)
+    # deselected suppresses recommends only; order_hint keeps independent packages
+    # in the caller's order (deps still install first)
     requested = {n.lower() for n in requested}
     deselected = {n.lower() for n in deselected}
 
-    if packages is None:
-        packages = get_packages_for_version(kickstart_version, emu68_version)
-    if mandatory is None:
-        mandatory = get_mandatory_packages(kickstart_version, emu68_version)
+    packages = get_packages_for_version(kickstart_version, emu68_version)
+    mandatory = get_mandatory_packages(kickstart_version, emu68_version)
 
     by_name: dict[str, Package] = {p.name.lower(): p for p in packages}
     mandatory_names = {p.name.lower() for p in mandatory}
@@ -151,23 +135,12 @@ def resolve(
             comps.append(comp)
         return comps
 
-    def shared_token(comp: set[str]) -> str:
-        """a representative contested token for display (best-effort)."""
-        for n in sorted(comp):
-            for t in by_name[n].conflicts:
-                t = t.lower()
-                if any(t in _provides_of(by_name[m]) for m in comp if m != n):
-                    return t
-        return ""
-
-    # fixpoint: exclude conflict losers, re-expand until stable. accumulate conflict groups
-    # so one resolved in an early pass isn't lost when its losers stop re-appearing.
+    # fixpoint: exclude conflict losers, re-expand until stable
     excluded: set[str] = set()
     dropped: dict[str, str] = {}
     selected: set[str] = set()
     requirers: dict[str, set[str]] = {}
     unsat: dict[str, list[str]] = {}
-    seen_conflicts: dict[frozenset, ConflictGroup] = {}
 
     for _ in range(len(packages) + 1):  # bounded; each pass excludes >=1 or stops
         selected, requirers, unsat = closure(excluded)
@@ -192,7 +165,6 @@ def resolve(
                     f"mandatory packages {bad[0]} and {bad[1]} conflict and cannot coexist "
                     f"(fix their provides/conflicts in the yaml)"
                 )
-            picks = sorted(comp & requested)
             # greedy maximal conflict-free subset: a conflict component isn't always a clique
             # (a-b, b-c, a/c ok), so keep highest-priority members, drop only those clashing a kept one.
             order = sorted(
@@ -214,36 +186,17 @@ def resolve(
                     dropped[n] = f"conflicts with {clash}"
                 else:
                     kept.append(n)
-            key = frozenset(comp)
-            if key not in seen_conflicts:
-                seen_conflicts[key] = ConflictGroup(
-                    token=shared_token(comp),
-                    members=sorted(comp),
-                    chosen=kept[0],
-                    needs_user_choice=len(picks) >= 2 and any(p in new_excluded for p in picks),
-                )
         if not (new_excluded - excluded):
             break
         excluded |= new_excluded
     else:
         logger.warning("dependency resolver hit its iteration bound; selection may be incomplete")
 
-    conflicts = list(seen_conflicts.values())
-
-    # locked = pulled in purely by requires (not user-picked, not mandatory) -> greyed in gui
-    locked = {
-        n: sorted(requirers[n])
-        for n in selected
-        if n not in requested and n not in mandatory_names and requirers.get(n)
-    }
-
     install_order = _topological_order(selected, by_name, requirers, order_hint)
 
     return Resolution(
         selected=selected,
-        locked=locked,
         install_order=install_order,
-        conflicts=[c for c in conflicts if c.needs_user_choice],
         dropped=dropped,
         unsatisfiable={k: sorted(set(v)) for k, v in unsat.items()},
     )

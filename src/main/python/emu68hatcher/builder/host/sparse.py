@@ -48,15 +48,3 @@ def _set_windows_sparse_flag(path: Path) -> None:
             f"fsutil sparse setflag failed - destination must be NTFS "
             f"(not FAT32, exFAT, or a network share): {msg}"
         )
-
-
-def actual_disk_usage(path: Path) -> int:
-    """bytes actually on disk for path (vs apparent size); 0 if unknown"""
-    try:
-        st = os.stat(str(path))
-    except OSError:
-        return 0
-    blocks = getattr(st, "st_blocks", None)
-    if blocks is not None:
-        return blocks * 512
-    return st.st_size

@@ -1,6 +1,5 @@
 """build config - pydantic models"""
 
-from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Literal
@@ -49,13 +48,6 @@ class Emu68Version(str, Enum):
 ######################
 # sub-configurations #
 ######################
-
-
-class ConfigMetadata(BaseModel):
-    """config-file metadata"""
-
-    created: datetime = Field(default_factory=datetime.now)
-    modified: datetime | None = None
 
 
 # versions the pipeline builds; adding here enables GUI + validator. needs adf_rules.yaml entry first
@@ -415,7 +407,6 @@ class BuildConfig(BaseModel):
     """full build config - JSON-serializable; drives the pipeline"""
 
     version: str = Field(default="1.0.0", description="Config schema version")
-    metadata: ConfigMetadata = Field(default_factory=ConfigMetadata)
 
     # core settings
     kickstart: KickstartConfig = Field(default_factory=KickstartConfig)
