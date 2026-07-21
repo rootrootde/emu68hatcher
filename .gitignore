@@ -87,3 +87,4 @@ site/
 
 # vscode workspace files
 *.code-workspace
+docs/packages.md

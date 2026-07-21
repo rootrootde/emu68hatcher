@@ -35,7 +35,11 @@ nav:
   - Download: download.md
   - Installation: installation.md
   - Usage: usage.md
+  - Packages: packages.md
   - Troubleshooting: troubleshooting.md
+
+hooks:
+  - docs_hooks.py
 
 markdown_extensions:
   - admonition
