@@ -6,7 +6,7 @@
 - **Windows 10/11** (x64 or arm64) - the **.exe** installer includes Python, no separate install needed
 - **Linux** (recent Ubuntu/Debian, Fedora, Arch, …) - **.deb** installer for Debian/Ubuntu (x64 / arm64), manual Python install everywhere else
 - **a SD card**, 4 GB minimum, 32+ GB recommended
-- **a Kickstart ROM** + **Workbench ADF floppy images** (3.1 / 3.2 / 3.2.2.1 / 3.2.3 - pick one):
+- **a Kickstart ROM** + **Workbench ADF floppy images** (3.1 / 3.2 / 3.2.2.1 / 3.2.3 - pick one), or the **AmigaOS 3.9 CD image** (**.iso**) with a Kickstart 3.1 ROM:
 
 | Workbench | Kickstart (A1200) |
 |---|---|
@@ -14,6 +14,7 @@
 | 3.2 | 47.96 |
 | 3.2.2.1 | 47.111 |
 | 3.2.3 | 47.115 |
+| 3.9 (CD **.iso**) | 40.068 (3.1 ROM - the BoingBag soft ROM update loads at boot) |
 
 ## Pick your OS
 

@@ -8,7 +8,7 @@
 
 3. **Amiga Files tab - pick the Workbench version, icon set, and languages.** Add one or more directories that contain your Kickstart ROMs and Workbench ADFs. Click **Add...** to point at a folder; the list re-scans after each add/remove. Files are identified by hash, so filenames don't matter. Pick the **icon set** (GlowIcons on 3.2+, or Standard) next to the Workbench version, and tick any **language** disks you want installed. **Show details...** opens a tabbed view of what was detected: the boot ROM picked, the WHDLoad ROM inventory that gets staged to **DEVS:Kickstarts/**, and the per-ADF breakdown. For **AmigaOS 3.9**, add your OS 3.9 CD image (**.iso**, do not mount it) and a Kickstart 3.1 ROM instead of ADFs - the BoingBag updates download automatically.
 
-4. **Emu68 tab - pick the HDMI output mode** for your monitor and the Emu68 release to bundle (1.0.7 stable for pistorm32-lite / classic, or 1.1.0-alpha.1 for PiStorm16 support).
+4. **Emu68 tab - pick the HDMI output mode** for your monitor and the Emu68 release to bundle (1.0.7 stable for pistorm32-lite / classic, or 1.1.0-alpha.1 for PiStorm16 support and the consolidated Pi4/CM4 driver stack - interrupt-driven ethernet, USB, NVMe). The **Picasso96 RTG** box lets you point at your own commercial **Picasso96.lha**; left empty, the free Aminet version is used.
 
 5. **Software tab - enable/disable optional packages.** Pick MUI 3.8 or 5.0, plus any applications and commodities you want. Mandatory system packages are always included and not shown here. The first build downloads everything (with caching, subsequent builds are faster).
 

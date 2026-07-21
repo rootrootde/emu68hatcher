@@ -10,7 +10,7 @@ Runs on macOS, Linux and Windows.
 - Workbench install from stock ADFs (3.1 / 3.2 / 3.2.2.1 / 3.2.3) - scanned across as many ROM/ADF directories as you want, identified by hash
 - AmigaOS 3.9 install from the original CD image (**.iso**) - BoingBag 1+2 (including the soft ROM update) download automatically; boots on a Kickstart 3.1 ROM
 - Customizable package set: MUI, WHDLoad+WHDLoadWrapper, IBrowse, HippoPlayer, ...
-- RTG via Picasso96 (shareware driver)
+- RTG via Picasso96 (free Aminet version bundled; point at your own **Picasso96.lha** to install the commercial 3.x version)
 - Network support: Roadshow TCP/IP stack (demo bundled; point at your own **Roadshow.lha** to install the full commercial version), wifipi (wifi) + genet (ethernet) drivers, **Network Config** tool (WiFi/ethernet connect, DHCP or static IP, DNS, default gateway)
 - Partition layout editor (PFS3 + FFS), optional per-partition "extra content" directory to pre-load Work / Data volumes (WHDLoad games, backups, ...)
 - Build configs as JSON (save / load)
