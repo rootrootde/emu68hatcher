@@ -7,12 +7,14 @@ from PySide6.QtCore import QRegularExpression, Qt
 from PySide6.QtGui import QRegularExpressionValidator
 from PySide6.QtWidgets import (
     QFormLayout,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
     QRadioButton,
+    QScrollArea,
     QVBoxLayout,
     QWidget,
 )
@@ -63,7 +65,17 @@ class NetworkTab(QWidget):
         self.setup_ui()
 
     def setup_ui(self):
-        layout = QVBoxLayout(self)
+        # scroll wrapper so short windows scroll instead of squashing the field rows
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        content = QWidget()
+        scroll.setWidget(content)
+        outer.addWidget(scroll)
+
+        layout = QVBoxLayout(content)
 
         # network stack selection
         net_group = QGroupBox("Network Stack")
@@ -125,7 +137,7 @@ class NetworkTab(QWidget):
 
         self.radio_none.toggled.connect(self._update_net_visibility)
         self._update_net_visibility()
-        self._update_static_enabled()  # grey the IP fields - both interfaces default to DHCP
+        self._update_static_visible()  # hide the IP rows - both interfaces default to DHCP
 
     def _build_ethernet_group(self) -> QGroupBox:
         group = QGroupBox("Ethernet (genet)")
@@ -142,7 +154,8 @@ class NetworkTab(QWidget):
         self.eth_mask = _ip_field("255.255.255.0")
         form.addRow(_flabel("IP:"), self.eth_addr)
         form.addRow(_flabel("Netmask:"), self.eth_mask)
-        self.eth_static.toggled.connect(self._update_static_enabled)
+        self._eth_form = form
+        self.eth_static.toggled.connect(self._update_static_visible)
         return group
 
     def _build_wifi_group(self) -> QGroupBox:
@@ -169,7 +182,8 @@ class NetworkTab(QWidget):
         self.wifi_mask = _ip_field("255.255.255.0")
         form.addRow(_flabel("IP:"), self.wifi_addr)
         form.addRow(_flabel("Netmask:"), self.wifi_mask)
-        self.wifi_static.toggled.connect(self._update_static_enabled)
+        self._wifi_form = form
+        self.wifi_static.toggled.connect(self._update_static_visible)
         return group
 
     def _build_routing_group(self) -> QGroupBox:
@@ -190,11 +204,13 @@ class NetworkTab(QWidget):
         for g in self._iface_groups:
             g.setVisible(on)
 
-    def _update_static_enabled(self):
-        self.eth_addr.setEnabled(self.eth_static.isChecked())
-        self.eth_mask.setEnabled(self.eth_static.isChecked())
-        self.wifi_addr.setEnabled(self.wifi_static.isChecked())
-        self.wifi_mask.setEnabled(self.wifi_static.isChecked())
+    def _update_static_visible(self):
+        eth_on = self.eth_static.isChecked()
+        self._eth_form.setRowVisible(self.eth_addr, eth_on)
+        self._eth_form.setRowVisible(self.eth_mask, eth_on)
+        wifi_on = self.wifi_static.isChecked()
+        self._wifi_form.setRowVisible(self.wifi_addr, wifi_on)
+        self._wifi_form.setRowVisible(self.wifi_mask, wifi_on)
 
     # --- network stack ---
     def get_network_stack(self) -> NetworkStack | None:
@@ -243,7 +259,7 @@ class NetworkTab(QWidget):
         _apply(self.wifi_static, self.wifi_dhcp, self.wifi_addr, self.wifi_mask, net.wifi)
         self.gw_edit.setText(net.gateway or "")
         self.dns_edit.setText(" ".join(net.dns_servers))
-        self._update_static_enabled()
+        self._update_static_visible()
 
     # --- roadshow archive ---
     def _browse_roadshow_archive(self):
