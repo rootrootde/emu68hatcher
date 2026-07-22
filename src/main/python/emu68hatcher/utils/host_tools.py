@@ -91,6 +91,21 @@ def find_7z() -> Path | None:
     return _find_named("7z")
 
 
+def run_7z(
+    seven_z: Path, args: list[str], *, cwd: Path | None = None, timeout: float | None = None
+) -> subprocess.CompletedProcess:
+    """run the resolved 7z binary with the house capture settings; args = verb + operands"""
+    return subprocess.run(
+        [str(seven_z), *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        cwd=cwd,
+        timeout=timeout,
+    )
+
+
 def get_hst_imager_env() -> dict[str, str]:
     """parent env + DOTNET_BUNDLE_EXTRACT_BASE_DIR; pass to subprocess.run(env=...) for direct hst-imager calls"""
     env = os.environ.copy()

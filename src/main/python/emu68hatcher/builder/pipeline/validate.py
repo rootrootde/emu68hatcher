@@ -270,20 +270,13 @@ def _archive_has_picasso96install(path: Path) -> bool:
     import os.path
     import subprocess
 
-    from emu68hatcher.utils.host_tools import find_7z
+    from emu68hatcher.utils.host_tools import find_7z, run_7z
 
     sevenz = find_7z()
     if sevenz is None:
         raise BuildError("7-Zip not found; cannot probe Picasso96 archive")
     try:
-        result = subprocess.run(
-            [str(sevenz), "l", "-slt", str(path)],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=30,
-        )
+        result = run_7z(sevenz, ["l", "-slt", str(path)], timeout=30)
     except (OSError, subprocess.SubprocessError) as e:
         raise BuildError(f"could not list Picasso96 archive {path.name}: {e}") from e
     if result.returncode != 0:
@@ -311,21 +304,14 @@ def _classify_roadshow_file(path: Path) -> str:
     """sniff archive contents via 7z l; return 'outer' or 'inner_full' or raise"""
     import subprocess
 
-    from emu68hatcher.utils.host_tools import find_7z
+    from emu68hatcher.utils.host_tools import find_7z, run_7z
 
     sevenz = find_7z()
     if sevenz is None:
         raise BuildError("7-Zip not found; cannot probe Roadshow archive")
 
     try:
-        result = subprocess.run(
-            [str(sevenz), "l", "-slt", str(path)],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=30,
-        )
+        result = run_7z(sevenz, ["l", "-slt", str(path)], timeout=30)
     except (OSError, subprocess.SubprocessError) as e:
         raise BuildError(f"could not list Roadshow archive {path.name}: {e}") from e
 

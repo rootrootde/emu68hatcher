@@ -2,7 +2,6 @@
 
 import gzip
 import shutil
-import subprocess
 import tarfile
 import zipfile
 from collections.abc import Callable
@@ -10,7 +9,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from emu68hatcher.utils.host_tools import find_7z, find_hst_imager, run_hst_extract
+from emu68hatcher.utils.host_tools import find_7z, find_hst_imager, run_7z, run_hst_extract
 from emu68hatcher.utils.paths import get_extracted_dir
 
 
@@ -203,17 +202,6 @@ def _extract_zip(
         return total
 
 
-def _run_7z(seven_z: Path, archive_path: Path, output_dir: Path) -> subprocess.CompletedProcess:
-    """run 7z extraction of archive_path into output_dir"""
-    return subprocess.run(
-        [str(seven_z), "x", "-y", f"-o{output_dir}", str(archive_path)],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-
-
 def _extract_7z(
     archive_path: Path,
     output_dir: Path,
@@ -224,7 +212,7 @@ def _extract_7z(
     if not seven_z:
         raise RuntimeError("7z not found. Please install p7zip.")
 
-    result = _run_7z(seven_z, archive_path, output_dir)
+    result = run_7z(seven_z, ["x", "-y", f"-o{output_dir}", str(archive_path)])
     if result.returncode != 0:
         raise RuntimeError(f"7z extraction failed: {result.stderr}")
 
@@ -260,7 +248,7 @@ def _extract_lha(
 
     seven_z = find_7z()
     if seven_z:
-        result = _run_7z(seven_z, archive_path, output_dir)
+        result = run_7z(seven_z, ["x", "-y", f"-o{output_dir}", str(archive_path)])
         if result.returncode == 0:
             return sum(1 for _ in output_dir.rglob("*") if _.is_file())
         errors.append(

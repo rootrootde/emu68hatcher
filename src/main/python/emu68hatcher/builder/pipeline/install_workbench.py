@@ -354,7 +354,7 @@ def _normalize_rename_case(target: Path) -> None:
 
 def _decompress_z_files(workflow: BuildWorkflow, directory: Path) -> None:
     """decompress .Z files (Unix compress) used in Workbench 3.2.x, via 7-Zip"""
-    from emu68hatcher.utils.host_tools import find_7z
+    from emu68hatcher.utils.host_tools import find_7z, run_7z
 
     z_files = list(directory.rglob("*.Z"))
     if not z_files:
@@ -377,15 +377,7 @@ def _decompress_z_files(workflow: BuildWorkflow, directory: Path) -> None:
     for parent, files in sorted(by_dir.items()):
         workflow._check_cancelled()
         try:
-            result = subprocess.run(
-                [str(sevenz), "e", "*.Z", "-y"],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                cwd=parent,
-                timeout=120,
-            )
+            result = run_7z(sevenz, ["e", "*.Z", "-y"], cwd=parent, timeout=120)
         except (OSError, subprocess.SubprocessError) as e:
             workflow.logger.warning(f"7-Zip failed in {parent.name}: {e}")
             failed += len(files)

@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import logging
 import shutil
-import subprocess
 import tempfile
 from pathlib import Path
 
 from emu68hatcher.builder.errors import BuildError
 from emu68hatcher.builder.staging.files import resolve_staging_path
 from emu68hatcher.builder.staging.packages import _merge_tree
-from emu68hatcher.utils.host_tools import find_7z
+from emu68hatcher.utils.host_tools import find_7z, run_7z
 
 logger = logging.getLogger(__name__)
 
@@ -87,13 +86,7 @@ def _apply_one(seven_z, bb_dir: Path, password: str, items, boot_staging: Path) 
 
     with tempfile.TemporaryDirectory() as td:
         payload = Path(td)
-        r = subprocess.run(
-            [str(seven_z), "x", "-y", f"-p{password}", f"-o{td}", str(inner)],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-        )
+        r = run_7z(seven_z, ["x", "-y", f"-p{password}", f"-o{td}", str(inner)])
         if r.returncode != 0:
             raise BuildError(
                 f"failed to open BoingBag payload: {(r.stderr or r.stdout).strip()[:300]}"
