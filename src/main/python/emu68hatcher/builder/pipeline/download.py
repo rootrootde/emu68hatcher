@@ -8,13 +8,13 @@ from typing import TYPE_CHECKING
 
 from emu68hatcher.builder.errors import BuildError
 from emu68hatcher.builder.host.archive import extract_archive
-from emu68hatcher.builder.host.downloads import (
-    DownloadManager,
+from emu68hatcher.builder.host.download_catalog import (
     get_emu68_boot_files,
     get_mandatory_packages,
     get_package_downloads,
     get_required_startup_files,
 )
+from emu68hatcher.builder.host.downloads import DownloadManager
 from emu68hatcher.builder.staging.files import prepare_staging_directory
 from emu68hatcher.builder.workflow import BuildStage
 from emu68hatcher.config.defaults import EMU68_BOOT_PARTITION_NAME
