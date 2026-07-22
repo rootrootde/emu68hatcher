@@ -241,6 +241,25 @@ class DownloadManager:
                     file_progress=file_progress,
                     name=item.name,
                 )
+                # declared backup_url(s) are independent full URLs (possibly another host);
+                # try each in turn when the primary fails
+                if not success and item.mirrors:
+                    for mirror in item.mirrors:
+                        if self._cancelled():
+                            break
+                        self.logger.info(f"Trying backup URL for {item.name}: {mirror}")
+                        if not self._download_file(
+                            mirror, cached, file_progress=file_progress, name=item.name
+                        ):
+                            continue
+                        if item.expected_hash and not verify_hash(cached, item.expected_hash):
+                            self.logger.warning(
+                                f"hash mismatch from backup {mirror} for {item.name}"
+                            )
+                            cached.unlink(missing_ok=True)
+                            continue
+                        success = True
+                        break
 
             if not success:
                 # log exact error if possible

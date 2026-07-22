@@ -108,6 +108,9 @@ def _parse_info_to_tooltypes(data: bytes) -> tuple[int, list[str], int]:
 
 def _skip_image(data: bytes, offset: int) -> int:
     """skip an Amiga Image structure + pixel data, return new offset"""
+    # bounds-check so a truncated icon raises ValueError (caught upstream) not struct.error
+    if offset + 10 > len(data):
+        raise ValueError("truncated .info: image header runs past end of file")
     width = struct.unpack(">H", data[offset + 4 : offset + 6])[0]
     height = struct.unpack(">H", data[offset + 6 : offset + 8])[0]
     depth = struct.unpack(">H", data[offset + 8 : offset + 10])[0]

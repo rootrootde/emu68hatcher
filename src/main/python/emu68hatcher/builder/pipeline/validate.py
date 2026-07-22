@@ -43,20 +43,27 @@ def stage_validate(workflow: BuildWorkflow) -> None:
 
     if not rom_path:
         # list found ROMs for a useful error message
-        found_roms, _ = scan_for_kickstart_roms(existing_dirs)
+        found_roms, roms_truncated = scan_for_kickstart_roms(existing_dirs)
         dir_list = ", ".join(str(d) for d in existing_dirs)
+        # a truncated scan (5000-file cap per dir) can miss the ROM even when it is present
+        cap_hint = (
+            " A scanned directory hit the 5000-file limit, so the ROM may have been skipped - "
+            "point at a directory with fewer files."
+            if roms_truncated
+            else ""
+        )
         if found_roms:
             versions = ", ".join({r["version"] for r in found_roms})
             raise BuildError(
                 f"No Kickstart {kickstart_version} ROM found across {len(existing_dirs)} "
                 f"asset director{'ies' if len(existing_dirs) != 1 else 'y'} ({dir_list}). "
-                f"Found versions: {versions}"
+                f"Found versions: {versions}.{cap_hint}"
             )
         else:
             raise BuildError(
                 f"No valid Kickstart ROMs found across {len(existing_dirs)} "
                 f"asset director{'ies' if len(existing_dirs) != 1 else 'y'} ({dir_list}). "
-                "Add a directory containing .rom files."
+                f"Add a directory containing .rom files.{cap_hint}"
             )
 
     workflow.state.resolved_rom_path = rom_path
@@ -67,8 +74,13 @@ def stage_validate(workflow: BuildWorkflow) -> None:
     workflow._update_state(progress=40.0)
     workflow._milestone("Scanning for install media (ADFs/ISOs)")
 
-    found_media, _ = scan_install_media_by_hash(existing_dirs)
+    found_media, media_truncated = scan_install_media_by_hash(existing_dirs)
     _, missing_media = check_install_media_complete(found_media, kickstart_version)
+    cap_hint = (
+        " (a scanned directory hit the 5000-file limit; some ADFs may have been skipped)"
+        if media_truncated
+        else ""
+    )
 
     if found_media:
         workflow.state.resolved_install_media = found_media
@@ -78,12 +90,12 @@ def stage_validate(workflow: BuildWorkflow) -> None:
         )
         if missing_media:
             workflow.logger.warning(
-                f"Missing install media for {kickstart_version}: {missing_media}"
+                f"Missing install media for {kickstart_version}: {missing_media}{cap_hint}"
             )
     else:
         required = get_required_install_media(kickstart_version)
         workflow.logger.warning(
-            f"No install media found. Required for {kickstart_version}: {required}"
+            f"No install media found. Required for {kickstart_version}: {required}{cap_hint}"
         )
 
     _check_optional_package_adfs(workflow, found_media, kickstart_version)
@@ -156,6 +168,14 @@ def _check_output_target(workflow: BuildWorkflow) -> None:
 
     if output.type == OutputType.IMG:
         out_path = Path(output.path)
+        # hst-imager's rdb-init and fs-copy stringify the image path via as_posix, which turns a
+        # UNC path (\\server\share) into //server/share and hst-imager then rejects it. fail early.
+        out_str = str(out_path)
+        if out_str.startswith("\\\\") and not out_str.startswith("\\\\.\\"):
+            raise BuildError(
+                "Output image is on a network share (UNC path). hst-imager cannot write the "
+                "partition layout there - pick a local folder for the .img file."
+            )
         if not out_path.parent.exists():
             raise BuildError(f"Output directory not found: {out_path.parent}")
 

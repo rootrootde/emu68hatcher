@@ -8,6 +8,8 @@ import re
 import shlex
 import shutil
 import subprocess
+import threading
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -156,25 +158,124 @@ def run_elevated(
     if token is not None:
         _refresh_sudo_timestamp(token)
     wrapped = wrap_for_elevation(cmd, token)
-    # noop/None path inherits this directly; wrapped paths re-set it inside the elevated shell
-    result = subprocess.run(
+
+    # without a cancel_check nothing polls, so keep the plain buffered run (unchanged behaviour)
+    if cancel_check is None:
+        # noop/None path inherits this directly; wrapped paths re-set it inside the elevated shell
+        result = subprocess.run(
+            wrapped,
+            capture_output=capture_output,
+            text=text,
+            timeout=timeout,
+            encoding=encoding,
+            errors=errors,
+            env=get_hst_imager_env(),
+        )
+        # buffer the whole subprocess; replay lines so callers get the same contract
+        if on_line is not None:
+            for stream, blob in (("out", result.stdout or ""), ("err", result.stderr or "")):
+                for ln in blob.splitlines():
+                    try:
+                        on_line(stream, ln)
+                    except Exception:
+                        pass
+        return result
+
+    # cancel-aware callers get a poll loop so a long fs copy can be interrupted mid-run
+    return _run_cancellable(wrapped, timeout, encoding, errors, cancel_check, on_line)
+
+
+@dataclass
+class _ElevatedResult:
+    """run_elevated return for the cancellable path; mirrors CompletedProcess plus a cancelled flag"""
+
+    returncode: int
+    stdout: str
+    stderr: str
+    cancelled: bool = False
+
+
+def _terminate(proc: subprocess.Popen) -> None:
+    """best-effort stop; an elevated child running as root may refuse an unprivileged signal"""
+    try:
+        proc.terminate()
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        try:
+            proc.kill()
+        except OSError:
+            pass
+    except OSError:
+        pass
+
+
+def _run_cancellable(
+    wrapped: list[str],
+    timeout: float | None,
+    encoding: str,
+    errors: str,
+    cancel_check: Callable[[], bool],
+    on_line: Callable[[str, str], None] | None,
+) -> _ElevatedResult:
+    """Popen + poll so a long elevated command can be cancelled between output reads.
+
+    when wrapped in sudo/pkexec the child runs as root and terminate/kill may be refused;
+    cancellation then stops the pipeline promptly but the spawned child can run to completion.
+    acceptable here: a cancelled build's image is discarded, and this covers fs-copy-class
+    commands, not the raw device write (that path has its own Popen loop in disk_writer).
+    """
+    proc = subprocess.Popen(
         wrapped,
-        capture_output=capture_output,
-        text=text,
-        timeout=timeout,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
         encoding=encoding,
         errors=errors,
         env=get_hst_imager_env(),
     )
-    # non-helper paths buffer the whole subprocess; replay lines so callers get the same contract
-    if on_line is not None:
-        for stream, blob in (("out", result.stdout or ""), ("err", result.stderr or "")):
-            for ln in blob.splitlines():
-                try:
-                    on_line(stream, ln)
-                except Exception:
-                    pass
-    return result
+    out_chunks: list[str] = []
+    err_chunks: list[str] = []
+
+    def _drain(pipe, sink: list[str], stream_name: str) -> None:
+        try:
+            for line in pipe:
+                sink.append(line)
+                if on_line is not None:
+                    try:
+                        on_line(stream_name, line.rstrip("\n"))
+                    except Exception:
+                        pass
+        finally:
+            pipe.close()
+
+    t_out = threading.Thread(target=_drain, args=(proc.stdout, out_chunks, "out"), daemon=True)
+    t_err = threading.Thread(target=_drain, args=(proc.stderr, err_chunks, "err"), daemon=True)
+    t_out.start()
+    t_err.start()
+
+    deadline = (time.time() + timeout) if timeout else None
+    cancelled = False
+    while proc.poll() is None:
+        if cancel_check():
+            cancelled = True
+            _terminate(proc)
+            break
+        if deadline is not None and time.time() > deadline:
+            _terminate(proc)
+            t_out.join(timeout=2)
+            t_err.join(timeout=2)
+            raise subprocess.TimeoutExpired(wrapped, timeout)
+        time.sleep(0.1)
+
+    t_out.join(timeout=5)
+    t_err.join(timeout=5)
+    rc = proc.returncode if proc.returncode is not None else -1
+    return _ElevatedResult(
+        returncode=rc,
+        stdout="".join(out_chunks),
+        stderr="".join(err_chunks),
+        cancelled=cancelled,
+    )
 
 
 def _write_askpass(script: str) -> Path:

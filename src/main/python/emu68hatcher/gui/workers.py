@@ -1,5 +1,6 @@
 """GUI background worker threads"""
 
+import logging
 import threading
 from pathlib import Path
 
@@ -7,6 +8,8 @@ from PySide6.QtCore import QThread, Signal
 
 from emu68hatcher.builder.workflow import BuildState, BuildWorkflow
 from emu68hatcher.config.schema import BuildConfig
+
+logger = logging.getLogger(__name__)
 
 
 class BuildWorker(QThread):
@@ -115,8 +118,8 @@ class ToolDownloadWorker(QThread):
                     result = download_7zip(progress_callback=_cb)
                 else:
                     result = download_tool(tool_name, force=True, progress_callback=_cb)
-            except Exception as exc:
-                print(f"Error downloading {tool_name}: {exc}")
+            except Exception:
+                logger.exception(f"Error downloading {tool_name}")
                 result = None
 
             success = result is not None

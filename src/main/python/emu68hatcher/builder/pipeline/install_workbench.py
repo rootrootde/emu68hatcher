@@ -210,7 +210,7 @@ def _resolve_adf_rules(workflow: BuildWorkflow) -> list:
     enabled_packages = resolve_selection(workflow.config, ks_version, emu68_version).selected
     workflow.logger.debug(f"Enabled packages for ADF rules: {enabled_packages}")
 
-    user_icon_set = getattr(workflow.config, "icon_set", "Standard") or "Standard"
+    user_icon_set = workflow.config.icon_set or "Default"
 
     adf_rules = get_filtered_adf_rules(ks_version, enabled_packages, user_icon_set)
     workflow.logger.info(f"Found {len(adf_rules)} ADF extraction rules for Kickstart {ks_version}")

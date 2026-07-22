@@ -112,23 +112,23 @@ def download_7zip(force: bool = False, progress_callback=None) -> Path | None:
     target_path = tools_dir / ("7z.exe" if is_windows else "7zz")
 
     if not force and target_path.exists():
-        print(f"7-Zip already installed at {target_path}")
+        logger.info(f"7-Zip already installed at {target_path}")
         return target_path
 
     # prefer system wide 7zip installation if available
     system_7z = shutil.which("7z") or shutil.which("7zz") or shutil.which("7za")
     if system_7z:
-        print(f"7-Zip found in system: {system_7z}")
+        logger.info(f"7-Zip found in system: {system_7z}")
         return Path(system_7z)
 
     dl_info = resolve_tool_download("7zip")
     if not dl_info or not dl_info.get("url"):
-        print(f"No 7-Zip download available for {platform_key}")
+        logger.error(f"No 7-Zip download available for {platform_key}")
         return None
 
     url = dl_info["url"]
     extract_method = dl_info["extract_method"]
-    print(f"Downloading 7-Zip for {platform_key}...")
+    logger.info(f"Downloading 7-Zip for {platform_key}...")
 
     # ignore_cleanup_errors: windows defender can hold 7zr.exe handle after subprocess exits and triggers WinError 5
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp_dir:
@@ -136,13 +136,13 @@ def download_7zip(force: bool = False, progress_callback=None) -> Path | None:
         archive_path = temp_path / url.rsplit("/", 1)[-1]
 
         if not download_file(url, archive_path, progress_callback):
-            print("Failed to download 7-Zip")
+            logger.error("Failed to download 7-Zip")
             return None
 
         if not _verify_hash(archive_path, dl_info.get("hash"), "7-Zip"):
             return None
 
-        print("Extracting...")
+        logger.info("Extracting...")
         extract_dir = temp_path / "extracted"
         extract_dir.mkdir()
 
@@ -151,7 +151,7 @@ def download_7zip(force: bool = False, progress_callback=None) -> Path | None:
         elif extract_method == "tar-xz":
             wanted = _extract_7z_tarxz(archive_path, extract_dir)
         else:
-            print(f"Unknown 7-Zip extract method: {extract_method}")
+            logger.error(f"Unknown 7-Zip extract method: {extract_method}")
             return None
         if wanted is None:
             return None
@@ -160,7 +160,7 @@ def download_7zip(force: bool = False, progress_callback=None) -> Path | None:
         for name in wanted:
             found = _first_in_tree(extract_dir, name)
             if not found:
-                print(f"Could not find {name} in extracted archive")
+                logger.error(f"Could not find {name} in extracted archive")
                 return None
             dest = tools_dir / name
             shutil.copy2(found, dest)
@@ -170,10 +170,10 @@ def download_7zip(force: bool = False, progress_callback=None) -> Path | None:
                 installed_target = dest
 
         if installed_target:
-            print(f"Installed: {installed_target}")
+            logger.info(f"Installed: {installed_target}")
             return installed_target
 
-        print("Failed to install 7-Zip binary")
+        logger.error("Failed to install 7-Zip binary")
         return None
 
 
@@ -184,12 +184,12 @@ def _extract_7z_installer(
     # installer .exe is itself a self-extracting 7-Zip archive - need 7zr.exe to bootstrap
     bootstrap = resolve_tool_download("7zr-bootstrap")
     if not bootstrap or not bootstrap.get("url"):
-        print("7zr-bootstrap not configured; cannot unpack installer")
+        logger.error("7zr-bootstrap not configured; cannot unpack installer")
         return None
     sevenzr = temp_path / "7zr.exe"
-    print("Downloading 7-Zip bootstrap...")
+    logger.info("Downloading 7-Zip bootstrap...")
     if not download_file(bootstrap["url"], sevenzr):
-        print("Failed to download 7zr.exe bootstrap")
+        logger.error("Failed to download 7zr.exe bootstrap")
         return None
     try:
         subprocess.run(
@@ -199,7 +199,7 @@ def _extract_7z_installer(
         )
     except subprocess.CalledProcessError as e:
         stderr = (e.stderr or b"").decode(errors="replace")
-        print(f"7zr extraction failed: {stderr[:300] or e}")
+        logger.error(f"7zr extraction failed: {stderr[:300] or e}")
         return None
     return ["7z.exe", "7z.dll", "License.txt"]
 
@@ -319,7 +319,7 @@ def download_tool(
         ),
     }
     if tool_name not in layout:
-        print(f"Unknown tool: {tool_name}")
+        logger.error(f"Unknown tool: {tool_name}")
         return None
 
     target_name, archive_names = layout[tool_name]
@@ -330,34 +330,34 @@ def download_tool(
 
     info = resolve_tool_download(tool_name)
     if not info or not info.get("url"):
-        print(f"Could not find download info for {label}")
+        logger.error(f"Could not find download info for {label}")
         return None
     url = info["url"]
 
     # skip only when the installed copy matches the pinned download (version stamp)
     if target_path.exists() and not force and _read_stamp(target_path) == url:
-        print(f"{label} already installed at {target_path}")
+        logger.info(f"{label} already installed at {target_path}")
         return target_path
 
     filename = info.get("filename") or url.rsplit("/", 1)[-1]
-    print(f"Downloading {filename}...")
+    logger.info(f"Downloading {filename}...")
 
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp_dir:
         temp_path = Path(temp_dir)
         archive_path = temp_path / filename
 
         if not download_file(url, archive_path, progress_callback):
-            print(f"Failed to download {label}")
+            logger.error(f"Failed to download {label}")
             return None
 
         if not _verify_hash(archive_path, info.get("hash"), label):
             return None
 
         if not filename.endswith(".zip"):
-            print(f"Unknown archive format: {filename}")
+            logger.error(f"Unknown archive format: {filename}")
             return None
 
-        print("Extracting...")
+        logger.info("Extracting...")
         extract_dir = temp_path / "extracted"
         extract_dir.mkdir()
         extract_zip(archive_path, extract_dir)
@@ -378,11 +378,11 @@ def download_tool(
                     break
 
         if not binary_path:
-            print("Could not find binary in archive")
+            logger.error("Could not find binary in archive")
             return None
 
         shutil.copy2(binary_path, target_path)
         os.chmod(target_path, 0o755)
         _write_stamp(target_path, url)
-        print(f"Installed: {target_path}")
+        logger.info(f"Installed: {target_path}")
         return target_path
