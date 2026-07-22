@@ -217,7 +217,7 @@ class PartitionsTab(QWidget):
 
     def _apply_disk_size_bytes(self, disk_size_bytes: int) -> None:
         """recompute the Workbench+Work default for this exact byte size"""
-        from emu68hatcher.config.schema import create_default_partition_layout
+        from emu68hatcher.config.partition_helpers import create_default_partition_layout
 
         self._disk_size_bytes = disk_size_bytes
         # carry user-picked extra-content dirs across the default rebuild (keyed by device)
@@ -529,7 +529,7 @@ class PartitionsTab(QWidget):
 
     def _reset_to_default(self):
         """reset partitions to the default for the current disk size"""
-        from emu68hatcher.config.schema import create_default_partition_layout
+        from emu68hatcher.config.partition_helpers import create_default_partition_layout
 
         gb = self.size_combo.currentData()
         if gb is None:

@@ -34,11 +34,11 @@ EMU68_BOOT_PARTITION_NAME: Final[str] = "EMU68BOOT"
 
 def create_default_config():
     """default BuildConfig"""
+    from emu68hatcher.config.partition_helpers import create_default_partition_layout
     from emu68hatcher.config.schema import (
         BuildConfig,
         KickstartConfig,
         KickstartVersion,
-        create_default_partition_layout,
     )
 
     return BuildConfig(
