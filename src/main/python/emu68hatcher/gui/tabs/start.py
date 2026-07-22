@@ -344,7 +344,12 @@ class StartTab(QWidget):
             self.progress_status.setText(f"Failed to download: {failed_list}.{hint}")
             self.progress_status.setTextFormat(Qt.TextFormat.RichText)
 
-        if sys.platform == "darwin" and "hst-imager" in self._fresh_downloads:
+        from emu68hatcher.utils.platform import OperatingSystem, get_platform_info
+
+        if (
+            get_platform_info().os == OperatingSystem.MACOS
+            and "hst-imager" in self._fresh_downloads
+        ):
             self._offer_macos_tcc_registration()
 
     def _offer_macos_tcc_registration(self):

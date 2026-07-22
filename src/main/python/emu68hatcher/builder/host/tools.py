@@ -17,9 +17,9 @@ from emu68hatcher.builder.host.archive import (
 from emu68hatcher.data.data_manager import load_yaml_data
 from emu68hatcher.utils.hashing import verify_hash
 from emu68hatcher.utils.paths import get_tools_dir
-from emu68hatcher.utils.platform import get_platform_info
+from emu68hatcher.utils.platform import OperatingSystem, get_platform_info
 
-logger = logging.getLogger("emu68hatcher.tools")
+logger = logging.getLogger(__name__)
 
 
 def resolve_tool_download(name: str) -> dict | None:
@@ -233,7 +233,7 @@ def _first_in_tree(root: Path, name: str) -> Path | None:
 
 def _exe_suffix() -> str:
     """return '.exe' on windows, '' everywhere else"""
-    return ".exe" if get_platform_info().os.value == "windows" else ""
+    return ".exe" if get_platform_info().os == OperatingSystem.WINDOWS else ""
 
 
 # display labels

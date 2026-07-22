@@ -17,7 +17,7 @@ from emu68hatcher.builder.host.hst_commands import (
 )
 from emu68hatcher.utils.host_tools import find_hst_imager
 
-_logger = logging.getLogger("emu68hatcher")
+_logger = logging.getLogger(__name__)
 
 
 class CommandStatus(str, Enum):
