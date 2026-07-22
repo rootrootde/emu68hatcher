@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 
 from emu68hatcher.builder.errors import BuildError
 from emu68hatcher.builder.host.download_catalog import (
+    downloadable_mandatory_names,
     get_emu68_boot_files,
-    get_mandatory_packages,
     get_package_downloads,
     get_required_startup_files,
 )
@@ -200,7 +200,7 @@ def stage_download(workflow: BuildWorkflow) -> None:
 
     # only genuinely-mandatory packages are fatal on download failure; a requires-pulled
     # dep of an optional app fails as a warning (the app just won't be usable).
-    mandatory_names = get_mandatory_packages(ks_version, emu68_version)
+    mandatory_names = downloadable_mandatory_names(ks_version, emu68_version)
 
     workflow.logger.info(f"Total packages to process: {len(all_package_names)}")
 

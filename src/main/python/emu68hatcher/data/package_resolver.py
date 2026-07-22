@@ -6,7 +6,7 @@ import logging
 from dataclasses import dataclass, field
 
 from emu68hatcher.data.package_loader import get_mandatory_packages, get_packages_for_version
-from emu68hatcher.data.package_schema import PACKAGE_GROUPS, Package
+from emu68hatcher.data.package_schema import Package, _group_rank
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +24,6 @@ class Resolution:
 def _provides_of(pkg: Package) -> set[str]:
     """tokens a package satisfies: its own name plus its declared provides."""
     return {pkg.name.lower(), *(t.lower() for t in pkg.provides)}
-
-
-def _group_rank(pkg: Package) -> int:
-    try:
-        return PACKAGE_GROUPS.index(pkg.group)
-    except ValueError:
-        return len(PACKAGE_GROUPS)
 
 
 def resolve(

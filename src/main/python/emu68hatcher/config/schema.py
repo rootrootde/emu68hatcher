@@ -223,6 +223,13 @@ class PartitionConfig(BaseModel):
                 return amiga_part.device
         return None
 
+    @property
+    def bootable_device_or_default(self) -> str:
+        """bootable device name, or the default boot device when none is marked"""
+        from emu68hatcher.config.defaults import DEFAULT_BOOT_DEVICE
+
+        return self.bootable_device or DEFAULT_BOOT_DEVICE
+
     @model_validator(mode="after")
     def validate_partition_sizes(self):
         from emu68hatcher.config.defaults import MBR_OVERHEAD, RDB_OVERHEAD

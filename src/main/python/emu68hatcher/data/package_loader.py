@@ -6,7 +6,7 @@ from pathlib import Path
 import yaml
 from pydantic import ValidationError
 
-from emu68hatcher.data.package_schema import ADFRule, Bundle, Package
+from emu68hatcher.data.package_schema import ADFRule, Bundle, Package, _group_rank
 
 logger = logging.getLogger(__name__)
 
@@ -106,8 +106,6 @@ def get_packages_for_version(
     ]
 
     # sort by group order, then by name
-    from emu68hatcher.data.package_resolver import _group_rank
-
     return sorted(compatible, key=lambda p: (_group_rank(p), p.name))
 
 
@@ -174,8 +172,6 @@ def get_bundles_for_version(kickstart_version: str) -> list[Bundle]:
         for p in get_packages_for_version(kickstart_version)
         if p.bundle and not p.mandatory
     }
-
-    from emu68hatcher.data.package_resolver import _group_rank
 
     return sorted(
         (bundles[bid] for bid in compatible),

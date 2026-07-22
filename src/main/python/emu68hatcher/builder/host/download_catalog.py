@@ -183,7 +183,7 @@ def get_package_downloads(package_names: list[str]) -> list[DownloadItem]:
     return items
 
 
-def get_mandatory_packages(
+def downloadable_mandatory_names(
     kickstart_version: str = "3.1", emu68_version: str | None = None
 ) -> list[str]:
     """names of mandatory=true packages with downloadable sources"""

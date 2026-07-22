@@ -172,6 +172,14 @@ PACKAGE_GROUPS = [
 ]
 
 
+def _group_rank(pkg: Package) -> int:
+    """sort rank of a package's group within PACKAGE_GROUPS; unknown groups sort last"""
+    try:
+        return PACKAGE_GROUPS.index(pkg.group)
+    except ValueError:
+        return len(PACKAGE_GROUPS)
+
+
 ########################
 # ADF Extraction Rules #
 ########################

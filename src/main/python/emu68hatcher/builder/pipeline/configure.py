@@ -30,7 +30,8 @@ def stage_configure(workflow: BuildWorkflow) -> None:
     workflow._update_state(BuildStage.CONFIGURE, 0.0)
     workflow._milestone("Configuring system")
 
-    boot_device = _resolve_boot_device(workflow)
+    partitions = workflow.config.partitions
+    boot_device = partitions.bootable_device_or_default if partitions else DEFAULT_BOOT_DEVICE
     boot_staging = workflow.state.staging_dir / boot_device
     s_dir = ensure_dir(boot_staging / "S")
     prefs_dir = ensure_dir(boot_staging / "Prefs")
@@ -61,13 +62,6 @@ def stage_configure(workflow: BuildWorkflow) -> None:
 
     workflow._update_state(progress=100.0)
     workflow._milestone("System configured")
-
-
-def _resolve_boot_device(workflow: BuildWorkflow) -> str:
-    """find the bootable Amiga device name from partition config"""
-    if not workflow.config.partitions:
-        return DEFAULT_BOOT_DEVICE
-    return workflow.config.partitions.bootable_device or DEFAULT_BOOT_DEVICE
 
 
 def _apply_os39_boingbags(workflow: BuildWorkflow, boot_staging) -> None:
