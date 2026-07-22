@@ -2,6 +2,10 @@
 
 [pi4]
 arm_boost=1
+{% if usb_otg %}
+# xhci.device unit 0 (the USB-C OTG port) needs the controller in host mode
+otg_mode=1
+{% endif %}
 [all]
 disable_splash=1
 arm_64bit=1

@@ -1,0 +1,24 @@
+name: stackattack
+friendly_name: StackAttack
+group: System
+description: 'boot patch that enforces a minimum stack size for newly started processes'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+download:
+  source: aminet
+  path: util/boot/StackAttack2.lha
+  hash: D1E22C526BAEAA45F04992D6D99A4655
+  filename: StackAttack2.lha
+install:
+- from: StackAttack
+  to: C/
+scripts:
+- name: StackAttack
+  content: |
+    If Exists C:StackAttack
+      C:StackAttack AUTO >NIL:
+    EndIf

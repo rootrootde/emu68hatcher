@@ -202,6 +202,8 @@ def configure_preferences(
     # HDToolBox SCSI name: brcm-emmc on Pi4/CM4, brcm-sdhc on Pi3/Zero (FirstBoot picks at runtime)
     _configure_hdtoolbox_tooltypes(workflow, boot_staging)
 
+    _seed_poseidon_config(workflow, boot_staging)
+
     workflow._update_state(progress=90.0)
     workflow._milestone("Generating drawer icons")
     from emu68hatcher.builder.staging.icons import (
@@ -234,6 +236,45 @@ def _override_videocore_card(workflow: BuildWorkflow, boot_staging: Path) -> Non
         return
     shutil.copy2(src, dest)
     workflow.logger.info(f"Overrode VideoCore.card with {src.name}")
+
+
+def _seed_poseidon_config(workflow: BuildWorkflow, boot_staging: Path) -> None:
+    """embed the captured Trident config (xhci units) into the staged Poseidon stackloader"""
+    import struct
+
+    target = boot_staging / "Prefs" / "Env-Archive" / "PsdStackloader"
+    if not target.exists():
+        return
+    seed = Path(__file__).parent.parent.parent / "data" / "reference" / "poseidon.psdc"
+    if not seed.exists():
+        return
+
+    form = seed.read_bytes()
+    data = target.read_bytes()
+
+    # the stackloader is a hunk executable whose data hunk holds a FORM PSDC config
+    # (Trident saves back into it). swap that hunk's payload for the captured config
+    # and fix the two length fields: the header size table entry and the hunk length.
+    f = data.find(b"FORM")
+    if f < 12 or data[f + 8 : f + 12] != b"PSDC" or struct.unpack(">I", data[:4])[0] != 0x3F3:
+        workflow.logger.warning("PsdStackloader layout not recognised; Poseidon config not seeded")
+        return
+    table_size = struct.unpack(">I", data[8:12])[0]
+    old_longs = struct.unpack(">I", data[f - 4 : f])[0]
+    # data hunk is the last table entry; verify the length fields agree before patching
+    size_entry_off = 20 + 4 * (table_size - 1)
+    if struct.unpack(">I", data[size_entry_off : size_entry_off + 4])[0] != old_longs:
+        workflow.logger.warning("PsdStackloader hunk table mismatch; Poseidon config not seeded")
+        return
+
+    padded = form + b"\x00" * (-len(form) % 4)
+    new_longs = len(padded) // 4
+    patched = bytearray(data)
+    patched[size_entry_off : size_entry_off + 4] = struct.pack(">I", new_longs)
+    patched[f - 4 : f] = struct.pack(">I", new_longs)
+    patched[f : f + old_longs * 4] = padded
+    target.write_bytes(bytes(patched))
+    workflow.logger.info("Seeded Poseidon config (xhci units preconfigured)")
 
 
 def _configure_videocore_tooltypes(workflow: BuildWorkflow, boot_staging: Path) -> None:

@@ -123,12 +123,23 @@ def _generate_boot_config(workflow: BuildWorkflow, rom_filename: str) -> None:
         if screen_mode == "Custom" and workflow.config.display.custom:
             custom_cvt = workflow.config.display.custom.to_cvt_string()
 
+    # otg_mode=1 only when the poseidon package is in the build - it flips the
+    # pi4/cm4 usb-c controller into host mode for xhci.device unit 0
+    from emu68hatcher.builder.pipeline._selection import resolve_selection
+
+    selected = resolve_selection(
+        workflow.config,
+        workflow.config.kickstart.version.value,
+        workflow.config.emu68_version.value,
+    ).selected
+
     generate_boot_partition_files(
         workflow.state.staging_dir,
         screen_mode=screen_mode,
         custom_cvt=custom_cvt,
         rom_filename=rom_filename,
         emu68_version=workflow.config.emu68_version.value,
+        usb_otg="poseidon" in selected,
     )
     workflow.logger.info(
         f"Generated config.txt (HDMI mode: {screen_mode}, ROM: {rom_filename}) and cmdline.txt"

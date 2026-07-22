@@ -1,0 +1,50 @@
+name: poseidon
+friendly_name: Poseidon USB Stack
+group: Drivers
+description: 'USB support for the Pi4/CM4 ports via xhci.device - Poseidon stack with Trident prefs, xhci units preconfigured'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+emu68_versions:
+- 1.1.0-alpha.1
+# stackattack raises the stack of processes poseidon.library spawns with a
+# hardcoded 8k (PoPo) - its user-startup block runs first via dep ordering
+requires:
+- stackattack
+download:
+  source: web
+  url: https://wiki.icomp.de/w/images/4/40/PoseidonV4.lha
+  hash: 4209D5940A7FCD2F2744A80F1472D672
+  filename: PoseidonV4.lha
+install:
+- from: PoseidonV4/InstallData/Libs/poseidon.library
+  to: Libs/
+- from: PoseidonV4/InstallData/Libs/VHI/*
+  to: Libs/VHI/
+- from: PoseidonV4/InstallData/Classes/USB/*
+  to: Classes/USB/
+- from: PoseidonV4/InstallData/Prefs/Trident
+  to: Prefs/
+# the stock Trident.info is an 8-plane planar icon that renders as noise on a
+# standard workbench palette; the bundled mason glowicon displays properly
+- from: PoseidonV4/Extra/MasonIcons.lha/MasonIcons/ColorIcons/Trident.info
+  to: Prefs/
+  stack: 65536
+- from: PoseidonV4/InstallData/Tools/*
+  to: C/
+# the seeded config references the connect/disconnect popup sounds
+- from: PoseidonV4/InstallData/Prefs/Presets/*
+  to: Prefs/Presets/
+  recursive: true
+# the stackloader binary carries the stack config; trident saves back into it
+- from: PoseidonV4/InstallData/PsdStackloader
+  to: Prefs/Env-Archive/
+scripts:
+- name: Poseidon USB
+  content: |
+    If Exists ENVARC:PsdStackloader
+      ENVARC:PsdStackloader
+    EndIf

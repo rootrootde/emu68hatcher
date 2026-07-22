@@ -37,6 +37,7 @@ def generate_config_txt(
     custom_cvt: str = "",
     rom_filename: str = "kick.rom",
     emu68_version: str = "1.0.7",
+    usb_otg: bool = False,
 ) -> str:
     """generate Emu68 boot config.txt wiht GPIO-based detection for PiStorm variants"""
     # load available screen modes from YAML
@@ -60,6 +61,7 @@ def generate_config_txt(
         screen_mode=screen_mode_normalized,
         custom_cvt=custom_cvt,
         rom_filename=rom_filename,
+        usb_otg=usb_otg,
         available_modes=available_modes,
         is_custom_mode=is_custom_mode,
         kernel_modern=kernels["modern"],
@@ -74,6 +76,7 @@ def generate_boot_partition_files(
     custom_cvt: str = "",
     rom_filename: str = "kick.rom",
     emu68_version: str = "1.0.7",
+    usb_otg: bool = False,
 ) -> None:
     """generate files for the EMU68BOOT (FAT32) partition"""
     boot_dir = ensure_dir(staging_dir / "EMU68BOOT")
@@ -84,6 +87,7 @@ def generate_boot_partition_files(
         custom_cvt=custom_cvt,
         rom_filename=rom_filename,
         emu68_version=emu68_version,
+        usb_otg=usb_otg,
     )
     (boot_dir / "config.txt").write_text(config_txt, newline="\n")
 
