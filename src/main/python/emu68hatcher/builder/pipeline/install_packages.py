@@ -44,9 +44,9 @@ def stage_install_packages(workflow: BuildWorkflow) -> None:
         emu68_version=emu68_version,
     )
 
-    from emu68hatcher.builder.pipeline._selection import resolve_selection
+    from emu68hatcher.builder.pipeline._selection import get_resolution
 
-    resolution = resolve_selection(workflow.config, ks_version, emu68_version)
+    resolution = get_resolution(workflow)
     all_packages = resolution.install_order  # dep-before-dependent; independent order preserved
     for token, reqs in resolution.unsatisfiable.items():
         workflow.logger.warning(f"unsatisfiable dependency '{token}' required by {sorted(reqs)}")

@@ -186,11 +186,11 @@ def stage_download(workflow: BuildWorkflow) -> None:
 
     # resolver gives the full set: user-enabled + network stack + mandatory + anything
     # pulled in via requires. download has to see the requires deps or they never reach install.
-    from emu68hatcher.builder.pipeline._selection import resolve_selection
+    from emu68hatcher.builder.pipeline._selection import get_resolution
 
     ks_version = workflow.config.kickstart.version.value
     emu68_version = workflow.config.emu68_version.value
-    all_package_names = resolve_selection(workflow.config, ks_version, emu68_version).install_order
+    all_package_names = get_resolution(workflow).install_order
 
     # a user-supplied Picasso96 archive replaces the aminet download; drop it from the fetch
     # list so the aminet .lha is neither downloaded nor extracted over the staged user archive

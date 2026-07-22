@@ -109,7 +109,7 @@ def _extract_downloaded(workflow: BuildWorkflow) -> None:
 def _extract_local_archives(workflow: BuildWorkflow) -> None:
     """extract bundled local-source package archives the download stage skipped"""
     from emu68hatcher.builder.host.archive import ARCHIVE_EXTENSIONS
-    from emu68hatcher.builder.pipeline._selection import resolve_selection
+    from emu68hatcher.builder.pipeline._selection import get_resolution
     from emu68hatcher.data.package_loader import (
         get_local_packages_dir,
         get_package_by_name,
@@ -120,9 +120,7 @@ def _extract_local_archives(workflow: BuildWorkflow) -> None:
     local_packages_dir = get_local_packages_dir()
 
     # full resolved set (same as stage_download) so requires-pulled local archives extract too
-    ks_version = workflow.config.kickstart.version.value
-    emu68_version = workflow.config.emu68_version.value
-    all_package_names = resolve_selection(workflow.config, ks_version, emu68_version).install_order
+    all_package_names = get_resolution(workflow).install_order
 
     local_extracted = 0
 

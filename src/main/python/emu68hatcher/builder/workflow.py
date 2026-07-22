@@ -13,6 +13,7 @@ from emu68hatcher.builder.errors import BuildCancelledError, BuildError
 from emu68hatcher.builder.host.elevation import ElevationToken
 from emu68hatcher.config.schema import BuildConfig
 from emu68hatcher.data.install_media import IdentifiedInstallMedia
+from emu68hatcher.data.package_resolver import Resolution
 from emu68hatcher.utils.logging import get_logger
 
 
@@ -68,6 +69,9 @@ class BuildState:
     extracted_paths: dict[str, Path] = field(default_factory=dict)
     pfs3_handler_path: Path | None = None
     ffs_handler_path: Path | None = None
+
+    # package selection resolved once (build-invariant) and reused across stages
+    resolution: Resolution | None = None
 
     # user-supplied Roadshow archive resolution (set by validate, consumed by extract)
     roadshow_archive_path: Path | None = None

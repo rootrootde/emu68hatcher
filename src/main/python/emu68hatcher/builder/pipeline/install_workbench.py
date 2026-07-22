@@ -200,14 +200,13 @@ def _build_adf_name_map(workflow: BuildWorkflow, adf_paths: list[Path]) -> dict[
 
 def _resolve_adf_rules(workflow: BuildWorkflow) -> list:
     """resolved package set -> filtered ADF extraction rules for this Kickstart"""
-    from emu68hatcher.builder.pipeline._selection import resolve_selection
+    from emu68hatcher.builder.pipeline._selection import get_resolution
     from emu68hatcher.data.package_loader import get_filtered_adf_rules
 
     ks_version = workflow.config.kickstart.version.value
-    emu68_version = workflow.config.emu68_version.value
 
     # full resolved set (incl. requires-pulled) so a dep's optional ADF rule isn't missed
-    enabled_packages = resolve_selection(workflow.config, ks_version, emu68_version).selected
+    enabled_packages = get_resolution(workflow).selected
     workflow.logger.debug(f"Enabled packages for ADF rules: {enabled_packages}")
 
     user_icon_set = workflow.config.icon_set or "Default"

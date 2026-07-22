@@ -8,7 +8,17 @@ from emu68hatcher.data.package_loader import get_mandatory_packages
 from emu68hatcher.data.package_resolver import Resolution, resolve
 
 if TYPE_CHECKING:
+    from emu68hatcher.builder.workflow import BuildWorkflow
     from emu68hatcher.config.schema import BuildConfig
+
+
+def get_resolution(workflow: BuildWorkflow) -> Resolution:
+    """resolve the package selection once per build and cache it on the workflow state"""
+    if workflow.state.resolution is None:
+        ks = workflow.config.kickstart.version.value
+        emu = workflow.config.emu68_version.value
+        workflow.state.resolution = resolve_selection(workflow.config, ks, emu)
+    return workflow.state.resolution
 
 
 def resolve_selection(
