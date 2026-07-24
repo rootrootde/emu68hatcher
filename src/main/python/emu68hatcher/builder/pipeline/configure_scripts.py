@@ -33,42 +33,6 @@ def _connect_cmd(con_title: str, iface: str) -> str:
     )
 
 
-_NETWORK_SUBMENU = "Network"
-
-# entries injected into the WB 3.2.x MenuTools ARexx script (network=True ones only when a stack is configured)
-_MENUTOOLS_ENTRIES: tuple[dict, ...] = (
-    {
-        "name": "NetConfig",
-        "submenu": _NETWORK_SUBMENU,
-        "title": "Config",
-        "cmd": _menu_cmd("NetworkConfig"),
-        "network": True,
-    },
-    {
-        "name": "NetConnectWifi",
-        "submenu": _NETWORK_SUBMENU,
-        "title": "Connect WiFi",
-        "cmd": _connect_cmd("Connect-WiFi", "WIFI"),
-        "network": True,
-    },
-    {
-        "name": "NetConnectEth",
-        "submenu": _NETWORK_SUBMENU,
-        "title": "Connect Ethernet",
-        "cmd": _connect_cmd("Connect-Ethernet", "ETHERNET"),
-        "network": True,
-    },
-    {
-        # reboot is a mandatory package, so C:Reboot is always present
-        "name": "SysReboot",
-        "submenu": "System",
-        "title": "Reboot",
-        "cmd": "C:Reboot",
-        "rank": 2,  # sort after the app entries (rank 1) in the System submenu
-    },
-)
-
-
 # System->Prefs submenu launchers (WB 3.2 nests 3 deep via menuclass; 3.1/3.9 have no MenuTools yet).
 # requires: package name(s) that must be installed for the editor to exist; empty = stock editor.
 # p96_modern: editor exists only in the user-supplied modern Picasso96 archive, not the aminet one.
@@ -105,6 +69,7 @@ _PREFS_ENTRIES: tuple[dict, ...] = (
         "wb_launch": True,
     },
     {"title": "ScreenMode", "exe": "Prefs/ScreenMode"},
+    {"title": "Trident", "exe": "Prefs/Trident", "requires": ("poseidon",), "wb_launch": True},
     {"title": "WBPattern", "exe": "Prefs/WBPattern"},
     {"title": "Workbench", "exe": "Prefs/Workbench"},
 )
@@ -174,8 +139,11 @@ def _compose_menu_title(submenu: str, title: str) -> str:
     return f"\\{submenu}\\{title}" if submenu else title
 
 
-def _menu_add_line(name: str, menu_title: str, cmd: str) -> str:
+def _menu_add_line(name: str, menu_title: str, cmd: str | None) -> str:
     """one MENU ADD line; menu_title may be a backslash path (\\Sub\\Item) for a Tools submenu"""
+    if cmd is None:
+        # a "~" title renders as a separator bar; needs a unique NAME and an empty CMD
+        return f'MENU ADD NAME {name} TITLE \'"{menu_title}"\' CMD ""'
     return f"MENU ADD NAME {name} TITLE '\"{menu_title}\"' CMD \"'address command ''{cmd}'''\""
 
 
@@ -196,32 +164,55 @@ def _collect_app_entries(all_packages: list[str]) -> list[tuple[str, str, str, s
 def _build_menutools_entries(
     has_network: bool, all_packages: list[str], p96_modern: bool = False
 ) -> list[str]:
-    """build MENU ADD lines, keeping each submenu's items contiguous (top-level items last)"""
-    # sort key: (top-level last, submenu, rank, order) - rank 0 builtins, 1 apps, 2 late builtins.
-    # contiguity matters: non-adjacent same-submenu adds can spawn a duplicate submenu.
-    rows: list[tuple[tuple, str, str, str]] = []
-    for i, entry in enumerate(_MENUTOOLS_ENTRIES):
-        if entry.get("network") and not has_network:
-            continue
-        sub = entry.get("submenu", "")
-        key = (sub == "", sub.lower(), entry.get("rank", 0), f"{i:03d}")
-        rows.append((key, entry["name"], _compose_menu_title(sub, entry["title"]), entry["cmd"]))
-    for sub, title, name, cmd in _collect_app_entries(all_packages):
-        key = (sub == "", sub.lower(), 1, title.lower())
-        rows.append((key, name, _compose_menu_title(sub, title), cmd))
-    for entry in _PREFS_ENTRIES:
+    """build MENU ADD lines; append order is display order, grouped per root menu"""
+    # all adds sharing a root menu must stay adjacent in the script - non-adjacent
+    # adds can spawn a duplicate submenu. lines are therefore collected per root
+    # menu (insertion-ordered) and flattened at the end.
+    menus: dict[str, list[str]] = {}
+
+    def add(submenu: str, name: str, title: str, cmd: str | None) -> None:
+        root = submenu.split("\\")[0]
+        line = _menu_add_line(name, _compose_menu_title(submenu, title), cmd)
+        menus.setdefault(root, []).append(line)
+
+    if has_network:
+        add("Network", "NetConfig", "Config", _menu_cmd("NetworkConfig"))
+        add("Network", "NetConnectWifi", "Connect WiFi", _connect_cmd("Connect-WiFi", "WIFI"))
+        add(
+            "Network",
+            "NetConnectEth",
+            "Connect Ethernet",
+            _connect_cmd("Connect-Ethernet", "ETHERNET"),
+        )
+
+    for sub, title, name, cmd in sorted(
+        _collect_app_entries(all_packages), key=lambda e: (e[0].lower(), e[1].lower())
+    ):
+        add(sub, name, title, cmd)
+
+    for entry in _PREFS_ENTRIES:  # tuple order = menu order
         requires = entry.get("requires")
         if requires and not (set(all_packages) & set(requires)):
             continue
         if entry.get("p96_modern") and not p96_modern:
             continue
-        title = entry["title"]
-        key = (False, _PREFS_SUBMENU.lower(), 1, title.lower())
         launch = "WBRun" if entry.get("wb_launch") else "run"
-        cmd = f"{launch} >NIL: SYS:{entry['exe']}"
-        rows.append((key, f"Prefs{title}", _compose_menu_title(_PREFS_SUBMENU, title), cmd))
-    rows.sort(key=lambda r: r[0])
-    return [_menu_add_line(name, menu_title, cmd) for _key, name, menu_title, cmd in rows]
+        add(
+            _PREFS_SUBMENU,
+            f"Prefs{entry['title']}",
+            entry["title"],
+            f"{launch} >NIL: SYS:{entry['exe']}",
+        )
+    add(_PREFS_SUBMENU, "PrefsSep1", "~", None)
+    add(_PREFS_SUBMENU, "PrefsOpen", "Open Prefs", "SYS:Rexxc/rx >NIL: s:Win SYS:Prefs")
+
+    # reboot is a mandatory package, so C:Reboot is always present
+    add("System", "SysSep1", "~", None)
+    add("System", "SysReboot", "Reboot", "C:Reboot")
+
+    # entries without a submenu sit at the Tools level and go last
+    roots = sorted(menus, key=lambda r: r == "")
+    return [line for root in roots for line in menus[root]]
 
 
 def _inject_menutools_entries(
