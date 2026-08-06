@@ -100,10 +100,7 @@ def stage_install_workbench(workflow: BuildWorkflow) -> None:
     workflow._milestone("Copying Workbench files to staging")
 
     # find the boot partition - first bootable Amiga partition wins
-    from emu68hatcher.config.defaults import DEFAULT_BOOT_DEVICE
-
-    partitions = workflow.config.partitions
-    boot_device = partitions.bootable_device_or_default if partitions else DEFAULT_BOOT_DEVICE
+    boot_device = workflow.config.boot_device
 
     file_mapping = FileMapping()
     file_mapping.add_directory(

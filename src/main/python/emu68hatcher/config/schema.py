@@ -453,6 +453,15 @@ class BuildConfig(BaseModel):
         description="upstream Emu68 release to bundle on the boot partition",
     )
 
+    @property
+    def boot_device(self) -> str:
+        """resolved boot partition device name - the single place stages read it from"""
+        from emu68hatcher.config.defaults import DEFAULT_BOOT_DEVICE
+
+        if self.partitions:
+            return self.partitions.bootable_device_or_default
+        return DEFAULT_BOOT_DEVICE
+
     @field_validator("roadshow_archive", mode="before")
     @classmethod
     def _convert_roadshow_archive(cls, v):

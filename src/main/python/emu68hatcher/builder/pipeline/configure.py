@@ -13,7 +13,6 @@ from emu68hatcher.builder.pipeline.configure_prefs import (
 from emu68hatcher.builder.pipeline.configure_scripts import configure_scripts
 from emu68hatcher.builder.pipeline.relocate import apply_relocations
 from emu68hatcher.builder.workflow import BuildStage
-from emu68hatcher.config.defaults import DEFAULT_BOOT_DEVICE
 from emu68hatcher.utils.paths import ensure_dir
 
 if TYPE_CHECKING:
@@ -30,8 +29,7 @@ def stage_configure(workflow: BuildWorkflow) -> None:
     workflow._update_state(BuildStage.CONFIGURE, 0.0)
     workflow._milestone("Configuring system")
 
-    partitions = workflow.config.partitions
-    boot_device = partitions.bootable_device_or_default if partitions else DEFAULT_BOOT_DEVICE
+    boot_device = workflow.config.boot_device
     boot_staging = workflow.state.staging_dir / boot_device
     s_dir = ensure_dir(boot_staging / "S")
     prefs_dir = ensure_dir(boot_staging / "Prefs")

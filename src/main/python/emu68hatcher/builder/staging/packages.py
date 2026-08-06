@@ -88,7 +88,10 @@ class PackageInstaller:
         extracted_packages_dir: Path,
         local_packages_dir: Path | None = None,
         emu68_version: str | None = None,
+        boot_device: str | None = None,
     ):
+        # must match the tree configure/install_workbench stage into, or finalize splits the device
+        self.boot_device = boot_device or DEFAULT_BOOT_DEVICE
         self.kickstart_version = kickstart_version
         self.emu68_version = emu68_version
         self.staging_dir = staging_dir
@@ -217,7 +220,7 @@ class PackageInstaller:
         source_dir, source_pattern = self._resolve_nested_archive(source_dir, source_pattern)
 
         # case-insensitive dest resolution: archives may use different casing than ADFs
-        dest_base = self.staging_dir / DEFAULT_BOOT_DEVICE  # default to System drive
+        dest_base = self.staging_dir / self.boot_device
         dest_dir = resolve_staging_path(dest_base, rule.dest.strip("/"))
 
         ensure_dir(dest_dir)

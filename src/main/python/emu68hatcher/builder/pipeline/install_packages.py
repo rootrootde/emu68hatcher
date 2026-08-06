@@ -42,6 +42,7 @@ def stage_install_packages(workflow: BuildWorkflow) -> None:
         extracted_packages_dir=extracted_dir,
         local_packages_dir=local_packages_dir if local_packages_dir.exists() else None,
         emu68_version=emu68_version,
+        boot_device=workflow.config.boot_device,
     )
 
     from emu68hatcher.builder.pipeline._selection import get_resolution
