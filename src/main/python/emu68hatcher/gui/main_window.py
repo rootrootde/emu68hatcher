@@ -64,15 +64,19 @@ class MainWindow(QMainWindow):
         self.emu68_tab = Emu68Tab()
         self.tabs.addTab(self.emu68_tab, "Emu68")
 
-        self.packages_tab = PackagesTab()
+        # kickstart + emu68 both gate packages (the resolver filters on both);
+        # seed them here so the initial tree is built once, already filtered
+        self.packages_tab = PackagesTab(
+            kickstart_version=self.kickstart_tab.get_selected_version(),
+            emu68_version=self.emu68_tab.get_emu68_version().value,
+        )
         self.tabs.addTab(self.packages_tab, "Software")
 
         self.network_tab = NetworkTab()
         self.tabs.addTab(self.network_tab, "Network")
 
-        # version drives the package tree; the Amiga Files tab refreshes its own icon-set list
         self.kickstart_tab.version_changed.connect(self.packages_tab.set_kickstart_version)
-        self.packages_tab.set_kickstart_version(self.kickstart_tab.get_selected_version())
+        self.emu68_tab.emu68_version_changed.connect(self.packages_tab.set_emu68_version)
 
         self.output_tab = OutputTab()
         self.tabs.addTab(self.output_tab, "Output")

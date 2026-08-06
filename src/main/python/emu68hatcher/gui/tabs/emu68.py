@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
@@ -52,6 +53,8 @@ def _read_picasso96_version(archive: Path) -> str | None:
 class Emu68Tab(QWidget):
     """Pi-side boot configuration: Emu68 release + HDMI output mode + custom resolution"""
 
+    emu68_version_changed = Signal(str)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.hdmi_modes = []
@@ -96,6 +99,7 @@ class Emu68Tab(QWidget):
         self.release_radio_stable.setChecked(True)
         self.release_button_group.addButton(self.release_radio_stable)
         self.release_button_group.addButton(self.release_radio_alpha)
+        self.release_button_group.buttonClicked.connect(self._emit_emu68_version)
         release_layout.addWidget(self.release_radio_stable)
         release_layout.addWidget(self.release_radio_alpha)
 
@@ -215,12 +219,17 @@ class Emu68Tab(QWidget):
             return Emu68Version.V1_1_0_ALPHA_1
         return Emu68Version.V1_0_7
 
+    def _emit_emu68_version(self, _button=None):
+        self.emu68_version_changed.emit(self.get_emu68_version().value)
+
     def set_emu68_version(self, version: Emu68Version):
         """flip the matching radio when loading a config"""
         if version == Emu68Version.V1_1_0_ALPHA_1:
             self.release_radio_alpha.setChecked(True)
         else:
             self.release_radio_stable.setChecked(True)
+        # setChecked doesnt fire buttonClicked, so the package tree needs telling by hand
+        self._emit_emu68_version()
 
     def _browse_picasso96_archive(self):
         from PySide6.QtWidgets import QFileDialog

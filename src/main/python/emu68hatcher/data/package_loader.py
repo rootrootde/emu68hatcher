@@ -1,6 +1,7 @@
 """YAML package loader - loads packages/*.yaml definitions adn adf_rules.yaml extraction rules"""
 
 import logging
+from functools import cache
 from pathlib import Path
 
 import yaml
@@ -94,10 +95,11 @@ def _validate_dependency_graph(packages: list[Package]) -> None:
         raise ValueError("invalid package dependency graph:\n  " + "\n  ".join(errors))
 
 
+@cache
 def get_packages_for_version(
     kickstart_version: str, emu68_version: str | None = None
 ) -> list[Package]:
-    """get all packages compatible with a Kickstart version (and optionally an Emu68 release)"""
+    """packages compatible with a Kickstart (and optionally Emu68) version; cached - don't mutate"""
     packages = load_all_packages()
     compatible = [
         p
@@ -164,12 +166,14 @@ def load_all_bundles() -> dict[str, Bundle]:
     return _bundles_cache
 
 
-def get_bundles_for_version(kickstart_version: str) -> list[Bundle]:
+def get_bundles_for_version(
+    kickstart_version: str, emu68_version: str | None = None
+) -> list[Bundle]:
     """bundles with at least one member compatible with a Kickstart version"""
     bundles = load_all_bundles()
     compatible = {
         p.bundle
-        for p in get_packages_for_version(kickstart_version)
+        for p in get_packages_for_version(kickstart_version, emu68_version)
         if p.bundle and not p.mandatory
     }
 
@@ -179,11 +183,13 @@ def get_bundles_for_version(kickstart_version: str) -> list[Bundle]:
     )
 
 
-def get_bundle_members(bundle_id: str, kickstart_version: str) -> list[Package]:
+def get_bundle_members(
+    bundle_id: str, kickstart_version: str, emu68_version: str | None = None
+) -> list[Package]:
     """member packages of a bundle compatible with the given Kickstart version"""
     return [
         p
-        for p in get_packages_for_version(kickstart_version)
+        for p in get_packages_for_version(kickstart_version, emu68_version)
         if p.bundle == bundle_id and not p.mandatory
     ]
 

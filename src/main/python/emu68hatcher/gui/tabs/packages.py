@@ -31,10 +31,13 @@ _HIDDEN_GROUPS = {"System", "Locale"}
 class PackagesTab(QWidget):
     """package selection tab that loads packages from YAML definitions"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, kickstart_version="3.2.3", emu68_version: str | None = None):
         super().__init__(parent)
         self.checkboxes: dict[str, QTreeWidgetItem] = {}
-        self.kickstart_version = "3.2.3"  # set a default version
+        self.kickstart_version = kickstart_version
+        # None = show everything; the resolver filters on this too, so seed the real
+        # value or the tree offers packages that silently vanish at build time
+        self.emu68_version = emu68_version
         self._selectables: list[tuple[str, Bundle | Package]] = []
         self._key_to_packages: dict[str, list[str]] = {}
         self._updating = False  # reentrancy guard for the mui mutual-exclusion handler
@@ -90,7 +93,7 @@ class PackagesTab(QWidget):
         self._key_to_packages: dict[str, list[str]] = {}
 
         # standalone packages (not in a bundle, not mandatory, not a network stack)
-        for p in get_packages_for_version(self.kickstart_version):
+        for p in get_packages_for_version(self.kickstart_version, self.emu68_version):
             if not p.group or p.group in _HIDDEN_GROUPS:
                 continue
             if p.mandatory:
@@ -103,8 +106,8 @@ class PackagesTab(QWidget):
             self._key_to_packages[p.name] = [p.name]
 
         # bundles
-        for b in get_bundles_for_version(self.kickstart_version):
-            members = get_bundle_members(b.id, self.kickstart_version)
+        for b in get_bundles_for_version(self.kickstart_version, self.emu68_version):
+            members = get_bundle_members(b.id, self.kickstart_version, self.emu68_version)
             if not members or all(m.mandatory for m in members):
                 continue  # no members, or all mandatory (installed unconditionally) - not a choice
             # bundle id may clash with a package name; prefix on collision
@@ -184,6 +187,12 @@ class PackagesTab(QWidget):
         """reload the package tree when the Kickstart version changes"""
         if version != self.kickstart_version:
             self.kickstart_version = version
+            self.refresh_packages()
+
+    def set_emu68_version(self, version: str):
+        """reload the package tree when the Emu68 release changes"""
+        if version != self.emu68_version:
+            self.emu68_version = version
             self.refresh_packages()
 
     def select_all(self):
