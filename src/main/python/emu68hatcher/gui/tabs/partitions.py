@@ -94,7 +94,11 @@ class PartitionsTab(QWidget):
         self.boot_spin.setSuffix(" MB")
         self.boot_spin.setSingleStep(64)
         self.boot_spin.setValue(self._boot_size // (1024 * 1024))
-        self.boot_spin.editingFinished.connect(self._on_boot_size_changed)
+        # no keyboard tracking: typed digits commit on enter/focus-out only. arrow
+        # steps get the cheap bar/status preview; the table rebuild waits for commit
+        self.boot_spin.setKeyboardTracking(False)
+        self.boot_spin.valueChanged.connect(self._on_boot_size_changed)
+        self.boot_spin.editingFinished.connect(self._refresh_table)
         boot_layout.addWidget(self.boot_spin)
         top_row.addWidget(boot_group)
 
@@ -259,7 +263,7 @@ class PartitionsTab(QWidget):
     def _on_boot_size_changed(self):
         mb = self.boot_spin.value()
         self._boot_size = round_to_mbr_sector(mb * 1024 * 1024)
-        self._refresh_table()
+        self._update_status()  # includes the bar refresh
 
     def _on_add_partition(self):
         if len(self._amiga_partitions) >= MAX_AMIGA_PARTITIONS:
