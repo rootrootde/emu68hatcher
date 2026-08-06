@@ -58,9 +58,10 @@ _TOOL_NAMES: dict[str, tuple[list[str], list[str]]] = {
         ["hst-amiga.exe", "hst.amiga.exe", "Hst.Amiga.exe"],
         ["hst-amiga", "hst.amiga", "Hst.Amiga"],
     ),
+    # never accept 7za (no LHA codec); 7zz first so a system 7z cant shadow the full build
     "7z": (
-        ["7z.exe", "7za.exe"],
-        ["7z", "7za", "7zz"],
+        ["7z.exe"],
+        ["7zz", "7z"],
     ),
 }
 

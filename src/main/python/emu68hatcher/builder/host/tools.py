@@ -115,11 +115,13 @@ def download_7zip(force: bool = False, progress_callback=None) -> Path | None:
         logger.info(f"7-Zip already installed at {target_path}")
         return target_path
 
-    # prefer system wide 7zip installation if available
-    system_7z = shutil.which("7z") or shutil.which("7zz") or shutil.which("7za")
+    # prefer a system-wide install; the acceptable-names policy lives in _TOOL_NAMES
+    from emu68hatcher.utils.host_tools import find_7z
+
+    system_7z = find_7z()
     if system_7z:
         logger.info(f"7-Zip found in system: {system_7z}")
-        return Path(system_7z)
+        return system_7z
 
     dl_info = resolve_tool_download("7zip")
     if not dl_info or not dl_info.get("url"):
