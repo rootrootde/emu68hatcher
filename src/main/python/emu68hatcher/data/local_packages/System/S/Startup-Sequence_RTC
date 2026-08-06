@@ -1,0 +1,13 @@
+failat 21
+; load system time from whichever RTC is present: I2C module on the CM4/CM5
+; IO board (SetClockI2C) or classic clockport battclock (SetClock). with no
+; RTC at all both fail silently and NTP corrects the clock once online.
+IF EXISTS C:SetClockI2C
+   C:SetClockI2C >NIL: LOAD
+   IF WARN
+      C:SetClock >NIL: LOAD
+   ENDIF
+ELSE
+   C:SetClock >NIL: LOAD
+ENDIF
+failat 10

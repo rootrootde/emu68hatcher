@@ -206,7 +206,7 @@ def _action_remove(
     return result
 
 
-# InjectAfter BindDrivers stacks LIFO; list reverse of exec order: UAEGFX, FirstBoot, iconlib, REXXMAST
+# InjectAfter BindDrivers stacks LIFO; list reverse of exec order: UAEGFX, FirstBoot, iconlib, REXXMAST, RTC
 STARTUP_SEQUENCE_INJECTIONS = [
     # ROM CheckInstall block is kept intact (matches the reference imager). its
     # LoadModule steps soft-kick the patched graphics/intuition modules from L:
@@ -263,13 +263,21 @@ STARTUP_SEQUENCE_INJECTIONS = [
         start_pattern=r"BindDrivers",
         name="Iconlib",
     ),
-    # RexxMast - start ARexx interpreter (runs 1st, closest to anchor)
+    # RexxMast - start ARexx interpreter (runs 2nd)
     ScriptInjection(
         target_script="S/Startup-Sequence",
         action=InjectionAction.INJECT_AFTER,
         content_file="S/Startup-Sequence_REXXMAST",
         start_pattern=r"BindDrivers",
         name="RexxMast",
+    ),
+    # RTC load - I2C or clockport, auto-probed (runs 1st: before RexxMast's Wait 5)
+    ScriptInjection(
+        target_script="S/Startup-Sequence",
+        action=InjectionAction.INJECT_AFTER,
+        content_file="S/Startup-Sequence_RTC",
+        start_pattern=r"BindDrivers",
+        name="RTC Load",
     ),
     # second+ boots: BindDrivers loads SD0 before the Mount glob, suppress the duplicate-mount error
     ScriptInjection(

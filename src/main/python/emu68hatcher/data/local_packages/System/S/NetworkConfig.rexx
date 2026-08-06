@@ -57,6 +57,22 @@ if upper(strip(hCmd)) = "ONLINE" then do
     exit 0
 end
 
+/* boot entry, run from User-Startup after Network-Startup. DHCP may still
+   be settling, so retry for up to a minute before giving up quietly. */
+if upper(strip(hCmd)) = "SYNCTIME" then do
+    if ~exists("C:sntp") then exit 0
+    do hTry = 1 to 6
+        "C:sntp pool.ntp.org >NIL:"
+        if rc = 0 then do
+            /* server reachable - the shared routine does the sync + RTC save */
+            call HatcherSyncTime
+            exit 0
+        end
+        "C:Wait 10"
+    end
+    exit 5
+end
+
 /* main loop */
 do forever
     "RequestChoice >"hChoiceFile ,
@@ -272,6 +288,18 @@ HatcherSyncTime:
     end
     "C:SetDST NOASK NOREQ QUIET >NIL:"
     "C:sntp pool.ntp.org >NIL:"
+    call HatcherSaveClock
+    return
+
+/* write the synced time to whichever RTC is present - I2C (CM4 IO board)
+   first, clockport battclock as fallback; both absent is fine. */
+HatcherSaveClock:
+    if exists("C:SetClockI2C") then do
+        "C:SetClockI2C SAVE >NIL:"
+        /* same WARN threshold as the boot-side probe - LOAD and SAVE must agree */
+        if rc < 5 then return
+    end
+    "C:SetClock SAVE >NIL:"
     return
 
 ReadSsid:
