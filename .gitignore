@@ -72,6 +72,10 @@ temp/
 fbs_pro*.tar.gz
 tests/
 
+# user-supplied archives dropped in the repo root for testing
+# (root only - local_packages/ still tracks its own .lha files)
+/*.lha
+
 # unused icon drafts
 emu68-hatcher-logo*.svg
 
