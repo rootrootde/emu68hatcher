@@ -115,7 +115,6 @@ class MainWindow(QMainWindow):
             "Open Configuration",
             "",
             "JSON Files (*.json);;All Files (*)",
-            options=QFileDialog.Option.DontUseNativeDialog,
         )
         if path:
             try:
@@ -153,7 +152,6 @@ class MainWindow(QMainWindow):
             "Save Configuration",
             "emu68-config.json",
             "JSON Files (*.json);;All Files (*)",
-            options=QFileDialog.Option.DontUseNativeDialog,
         )
         if not path:
             return  # user cancelled

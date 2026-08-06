@@ -191,7 +191,6 @@ class KickstartTab(QWidget):
             self,
             "Add directory containing ROMs / ADFs",
             "",
-            QFileDialog.Option.DontUseNativeDialog,
         )
         if not path:
             return

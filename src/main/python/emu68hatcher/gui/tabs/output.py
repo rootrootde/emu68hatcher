@@ -137,7 +137,6 @@ class OutputTab(QWidget):
             "Select Output Location",
             start,
             "Disk Images (*.img);;All Files (*)",
-            options=QFileDialog.Option.DontUseNativeDialog,
         )
         if path:
             self.output_path.setText(path)

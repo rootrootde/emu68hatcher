@@ -398,7 +398,6 @@ class PartitionsTab(QWidget):
             self,
             "Select directory to mirror into this partition",
             start,
-            QFileDialog.Option.DontUseNativeDialog,
         )
         if not path:
             return
