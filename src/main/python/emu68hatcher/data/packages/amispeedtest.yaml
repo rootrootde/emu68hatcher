@@ -1,6 +1,6 @@
 name: amispeedtest
 friendly_name: AmiSpeedTest
-group: Applications
+group: Internet
 description: 'internet speed test'
 versions:
 - '3.1'
