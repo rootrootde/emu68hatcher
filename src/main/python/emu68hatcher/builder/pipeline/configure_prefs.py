@@ -222,6 +222,16 @@ def configure_preferences(
     workflow._milestone("Configuring icons")
     _install_icon_set(workflow, boot_staging)
 
+    # after the icon set: apply_icon_set_drawer matches by byte-equality, so
+    # position patches have to come last
+    workflow._update_state(progress=97.0)
+    workflow._milestone("Arranging icons")
+    from emu68hatcher.builder.staging.icon_grid import arrange_icons
+
+    arranged = arrange_icons(boot_staging)
+    if arranged:
+        workflow.logger.info(f"Arranged {arranged} icons into alphabetical drawer grids")
+
 
 def _override_videocore_card(workflow: BuildWorkflow, boot_staging: Path) -> None:
     """replace Emu68-tools VideoCore.card with the version-specific one (1.1+ needs v1.5)"""
