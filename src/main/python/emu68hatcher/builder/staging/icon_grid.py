@@ -48,7 +48,10 @@ def _color_icon_size(data: bytes) -> tuple[int, int, bool] | None:
     while pos != -1:
         if data[pos + 8 : pos + 12] == b"ICON":
             face = data.find(b"FACE", pos)
-            if face != -1 and len(data) >= face + 11:
+            # MagicWB-era icons (MUI 3.8, MagicMenu) end in a degenerate FACE
+            # claiming 256x256 with no image data - only trust FACE when an
+            # IMAG chunk backs it, otherwise the planar size is the real one
+            if face != -1 and len(data) >= face + 11 and data.find(b"IMAG", face) != -1:
                 return data[face + 8] + 1, data[face + 9] + 1, bool(data[face + 10] & 1)
             return None
         pos = data.find(b"FORM", pos + 4)
