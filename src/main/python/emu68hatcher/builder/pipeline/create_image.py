@@ -148,10 +148,11 @@ def _prepare_device_target(workflow: BuildWorkflow) -> None:
             f"target {device} is {info.size_bytes:,} bytes; configured disk_size is "
             f"{required:,} bytes (card too small)"
         )
-    if info.mounted_partitions:
-        from emu68hatcher.builder.host.disk_enum import unmount_disk
+    from emu68hatcher.builder.host.disk_enum import unmount_disk
 
-        unmount_disk(info, workflow.logger, elevation=workflow.state.elevation)
+    result = unmount_disk(info, workflow.logger, elevation=workflow.state.elevation)
+    if not result.success:
+        raise BuildError(f"cannot prepare target {device}: {result.error}")
 
 
 def _is_tcc_protected(path: Path) -> bool:

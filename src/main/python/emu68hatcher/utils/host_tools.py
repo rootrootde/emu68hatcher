@@ -1,4 +1,4 @@
-"""host tool resolution - locates hst-imager / hst-amiga / 7z and builds their subprocess env"""
+"""host tool resolution - locates hst-imager / 7z and builds their subprocess env"""
 
 import hashlib
 import logging
@@ -54,10 +54,6 @@ _TOOL_NAMES: dict[str, tuple[list[str], list[str]]] = {
         ["hst-imager.exe", "hst.imager.exe", "Hst.Imager.Console.exe"],
         ["hst-imager", "hst.imager", "Hst.Imager.Console"],
     ),
-    "hst-amiga": (
-        ["hst-amiga.exe", "hst.amiga.exe", "Hst.Amiga.exe"],
-        ["hst-amiga", "hst.amiga", "Hst.Amiga"],
-    ),
     # never accept 7za (no LHA codec); 7zz first so a system 7z cant shadow the full build
     "7z": (
         ["7z.exe"],
@@ -80,11 +76,6 @@ def _find_named(tool: str) -> Path | None:
 def find_hst_imager() -> Path | None:
     """find the HST Imager binary"""
     return _find_named("hst-imager")
-
-
-def find_hst_amiga() -> Path | None:
-    """find the HST Amiga binary"""
-    return _find_named("hst-amiga")
 
 
 def find_7z() -> Path | None:

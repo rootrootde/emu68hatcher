@@ -99,7 +99,7 @@ class ToolDownloadWorker(QThread):
             tool_needs_download,
         )
 
-        pending = [t for t in ("hst-imager", "hst-amiga", "7z") if tool_needs_download(t)]
+        pending = [t for t in ("hst-imager", "7z") if tool_needs_download(t)]
 
         if not pending:
             self.download_finished.emit(True, [])

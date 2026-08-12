@@ -55,7 +55,6 @@ def _find_app_icon() -> Path | None:
 
 _TOOL_ROWS = [
     ("hst-imager", "Disk image creation and manipulation"),
-    ("hst-amiga", "Amiga filesystem tools"),
     ("7z", "Archive extraction (p7zip)"),
 ]
 
@@ -201,11 +200,10 @@ class StartTab(QWidget):
     def refresh_status(self):
         """re-query tool install state and repaint the rows"""
         from emu68hatcher.builder.host.tools import tool_needs_download
-        from emu68hatcher.utils.host_tools import find_7z, find_hst_amiga, find_hst_imager
+        from emu68hatcher.utils.host_tools import find_7z, find_hst_imager
 
         finders = {
             "hst-imager": find_hst_imager,
-            "hst-amiga": find_hst_amiga,
             "7z": find_7z,
         }
         any_missing = False

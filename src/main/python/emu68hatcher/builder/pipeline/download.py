@@ -56,6 +56,7 @@ def _download_pfs3aio_if_needed(workflow: BuildWorkflow, manager: DownloadManage
 
     for item in startup_files:
         if item.name == "pfs3aio":
+            workflow.state.required_artifacts.add(item.name)
             result = manager.download(item)
             if result.success and result.extracted_path:
                 workflow.state.downloaded_files["pfs3aio"] = result.path
@@ -142,7 +143,7 @@ def _extract_ffs_handler_if_needed(workflow: BuildWorkflow) -> None:
 
 
 def stage_download(workflow: BuildWorkflow) -> None:
-    """download all network resources (Emu68 boot files, PFS3AIO handler, user packages) abort on any failures"""
+    """download network resources and record the required inputs."""
     workflow._update_state(BuildStage.DOWNLOAD, 0.0)
     workflow._milestone("Preparing downloads")
 
@@ -154,7 +155,18 @@ def stage_download(workflow: BuildWorkflow) -> None:
         cancel_callback=lambda: workflow._cancelled,
     )
 
-    # PFS3AIO must be available before CREATE_IMAGE
+    from emu68hatcher.builder.pipeline._selection import get_resolution
+    from emu68hatcher.data.package_loader import get_mandatory_packages
+
+    resolution = get_resolution(workflow)
+    mandatory_packages = get_mandatory_packages(
+        workflow.config.kickstart.version.value,
+        workflow.config.emu68_version.value,
+    )
+    workflow.state.required_packages = {
+        package.name for package in mandatory_packages if package.name in resolution.selected
+    }
+
     _download_pfs3aio_if_needed(workflow, manager)
 
     _extract_ffs_handler_if_needed(workflow)
@@ -163,34 +175,34 @@ def stage_download(workflow: BuildWorkflow) -> None:
     workflow._update_state(progress=5.0)
     workflow._milestone(f"Downloading Emu68 {workflow.config.emu68_version.value} boot files")
     emu68_items = get_emu68_boot_files(version=workflow.config.emu68_version.value)
-    if emu68_items:
-        workflow.logger.info(
-            f"Downloading {len(emu68_items)} Emu68 boot file variant(s) from GitHub..."
+    if not emu68_items:
+        raise BuildError(
+            f"No boot files are defined for Emu68 {workflow.config.emu68_version.value}"
         )
-        for item in emu68_items:
-            result = manager.download(item)
-            if result.success:
-                workflow.state.downloaded_files[item.name] = result.path
-                if result.extracted_path:
-                    workflow.state.extracted_paths[item.name] = result.extracted_path
-                workflow.logger.info(f"Downloaded Emu68 variant: {item.name} -> {result.path}")
-            elif item.optional:
-                workflow.logger.warning(
-                    f"Optional Emu68 variant failed (non-fatal): {item.name} - {result.error}"
-                )
-            else:
-                workflow.logger.error(f"Failed to download Emu68 boot files: {result.error}")
-                raise BuildError(f"Failed to download required Emu68 boot files: {result.error}")
-    else:
-        workflow.logger.warning("Could not get Emu68 boot file download info from GitHub")
 
-    # resolver gives the full set: user-enabled + network stack + mandatory + anything
-    # pulled in via requires. download has to see the requires deps or they never reach install.
-    from emu68hatcher.builder.pipeline._selection import get_resolution
+    workflow.logger.info(
+        f"Downloading {len(emu68_items)} Emu68 boot file variant(s) from GitHub..."
+    )
+    for item in emu68_items:
+        if not item.optional:
+            workflow.state.required_artifacts.add(item.name)
+            workflow.state.required_boot_artifacts.add(item.name)
+        result = manager.download(item)
+        if result.success:
+            workflow.state.downloaded_files[item.name] = result.path
+            if result.extracted_path:
+                workflow.state.extracted_paths[item.name] = result.extracted_path
+            workflow.logger.info(f"Downloaded Emu68 variant: {item.name} -> {result.path}")
+        elif item.optional:
+            workflow.logger.warning(
+                f"Optional Emu68 variant failed (non-fatal): {item.name} - {result.error}"
+            )
+        else:
+            raise BuildError(f"Failed to download required {item.name}: {result.error}")
 
     ks_version = workflow.config.kickstart.version.value
     emu68_version = workflow.config.emu68_version.value
-    all_package_names = get_resolution(workflow).install_order
+    all_package_names = resolution.install_order
 
     # a user-supplied Picasso96 archive replaces the aminet download; drop it from the fetch
     # list so the aminet .lha is neither downloaded nor extracted over the staged user archive
@@ -201,6 +213,7 @@ def stage_download(workflow: BuildWorkflow) -> None:
     # only genuinely-mandatory packages are fatal on download failure; a requires-pulled
     # dep of an optional app fails as a warning (the app just won't be usable).
     mandatory_names = downloadable_mandatory_names(ks_version, emu68_version)
+    workflow.state.required_artifacts.update(mandatory_names)
 
     workflow.logger.info(f"Total packages to process: {len(all_package_names)}")
 

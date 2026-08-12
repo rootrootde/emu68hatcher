@@ -5,13 +5,13 @@ from __future__ import annotations
 import logging
 import re
 import shlex
-import subprocess
 import time
 from collections import deque
 from collections.abc import Callable
 from pathlib import Path
 
 from emu68hatcher.builder.errors import BuildCancelledError, BuildError
+from emu68hatcher.builder.host._flash_process import run_local_flash
 from emu68hatcher.builder.host.elevation import ElevationToken, wrap_for_elevation
 from emu68hatcher.utils.host_tools import find_hst_imager
 
@@ -130,54 +130,34 @@ def flash_image_to_disk(
         progress_callback(0.0, f"Flashing to {target_device}, this can take a few minutes…")
 
     start = time.time()
+    phase_seen: set[str] = set()
+    recent: deque[str] = deque(maxlen=30)
+
+    def on_local_line(line: str) -> None:
+        line = line.rstrip()
+        if line:
+            _handle_progress_line(line, phase_seen, progress_callback, recent)
+
     try:
-        proc = subprocess.Popen(
+        result = run_local_flash(
             cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            bufsize=1,
+            timeout=timeout,
+            cancel_check=cancel_predicate,
+            on_line=on_local_line,
         )
     except OSError as e:
         raise BuildError(f"failed to launch hst-imager: {e}") from e
 
-    cancelled = False
-    deadline = (time.time() + timeout) if timeout else None
-    phase_seen: set[str] = set()
-    # tail buffer so a failure surfaces more than the outermost stack frame
-    recent: deque[str] = deque(maxlen=30)
-
-    try:
-        assert proc.stdout is not None
-        for line in proc.stdout:
-            line = line.rstrip()
-            if not line:
-                continue
-
-            if cancel_predicate and cancel_predicate():
-                cancelled = True
-                logger.info("flash: cancel requested - killing subprocess")
-                proc.kill()
-                break
-
-            if deadline and time.time() > deadline:
-                logger.warning("flash: timeout exceeded - killing subprocess")
-                proc.kill()
-                raise BuildError(f"flash timed out after {timeout}s")
-
-            _handle_progress_line(line, phase_seen, progress_callback, recent)
-
-    finally:
-        rc = proc.wait()
-
     duration = time.time() - start
-    if cancelled:
+    if result.stop_failed:
+        raise BuildError("flash process did not stop after cancel or timeout")
+    if result.cancelled:
         raise BuildCancelledError("flash cancelled by user")
+    if result.timed_out:
+        raise BuildError(f"flash timed out after {timeout}s")
 
-    if rc != 0:
-        _raise_flash_failure(rc, duration, recent)
+    if result.returncode != 0:
+        _raise_flash_failure(result.returncode, duration, recent)
 
     logger.info(f"flash: done in {duration:.1f}s")
     if progress_callback:

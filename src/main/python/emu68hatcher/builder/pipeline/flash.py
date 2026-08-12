@@ -33,15 +33,11 @@ def stage_flash(workflow: BuildWorkflow) -> None:
     if info.is_system_disk:
         raise BuildError(f"refusing to flash to system disk {output.flash_target}")
 
-    if info.mounted_partitions:
-        from emu68hatcher.builder.host.disk_enum import unmount_disk
+    from emu68hatcher.builder.host.disk_enum import unmount_disk
 
-        unmount_disk(info, workflow.logger, elevation=workflow.state.elevation)
-
-    # online_disk() is a no-op on macos/linux; windows-only re-online after unmount
-    from emu68hatcher.builder.host.disk_enum import online_disk
-
-    online_disk(info, workflow.logger, elevation=workflow.state.elevation)
+    result = unmount_disk(info, workflow.logger, elevation=workflow.state.elevation)
+    if not result.success:
+        raise BuildError(f"cannot prepare target {output.flash_target}: {result.error}")
 
     def progress_cb(pct: float, msg: str) -> None:
         workflow._update_state(progress=pct, message=msg)

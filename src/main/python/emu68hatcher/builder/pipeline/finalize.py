@@ -59,9 +59,11 @@ def _ensure_device_unmounted(workflow: BuildWorkflow) -> None:
     from emu68hatcher.builder.host.disk_enum import find_disk, unmount_disk
 
     info = find_disk(str(workflow.config.output.path))
-    if info is None or not info.mounted_partitions:
-        return
-    unmount_disk(info, workflow.logger, elevation=workflow.state.elevation)
+    if info is None:
+        raise BuildError(f"target {workflow.config.output.path} is no longer present")
+    result = unmount_disk(info, workflow.logger, elevation=workflow.state.elevation)
+    if not result.success:
+        raise BuildError(f"cannot prepare target {workflow.config.output.path}: {result.error}")
 
 
 def _copy_staged_files_to_image(workflow: BuildWorkflow) -> None:
@@ -94,20 +96,16 @@ def _copy_staged_files_to_image(workflow: BuildWorkflow) -> None:
 
     # device -> 1-based MBR partition number
     device_to_mbr: dict[str, int] = {}
-    id76_mbr_num: int | None = None
-
     if workflow.config.partitions:
         for index, mbr_part in enumerate(workflow.config.partitions.layout, start=1):
             if mbr_part.type == "fat32":
                 device_to_mbr[EMU68_BOOT_PARTITION_NAME] = index
             elif mbr_part.type == "id76" and mbr_part.amiga_partitions:
-                id76_mbr_num = index
                 for amiga_part in mbr_part.amiga_partitions:
                     device_to_mbr[amiga_part.device] = index
 
-    if id76_mbr_num is None:
-        # no Amiga RDB to copy onto - bail before trying
-        raise BuildError("partition layout has no ID76/Amiga partition; nothing to install")
+    if EMU68_BOOT_PARTITION_NAME not in device_to_mbr:
+        raise BuildError("partition layout has no FAT32 boot partition")
 
     workflow.logger.info(f"finalize: device->MBR mapping: {device_to_mbr}")
 
@@ -136,11 +134,13 @@ def _copy_staged_files_to_image(workflow: BuildWorkflow) -> None:
             workflow.logger.info(f"Skipping empty staging directory: {device_name}")
             continue
 
+        mbr_num = device_to_mbr.get(device_name)
+        if mbr_num is None:
+            raise BuildError(f"staging device {device_name} is absent from the partition layout")
         if device_name == EMU68_BOOT_PARTITION_NAME:
-            mbr_num = device_to_mbr.get(EMU68_BOOT_PARTITION_NAME, 1)
             dest = hst_path(workflow.state.image_path, "mbr", mbr_num)
         else:
-            dest = hst_path(workflow.state.image_path, "mbr", id76_mbr_num, "rdb", device_name)
+            dest = hst_path(workflow.state.image_path, "mbr", mbr_num, "rdb", device_name)
 
         source_pattern = f"{device_dir.as_posix()}/*"
 

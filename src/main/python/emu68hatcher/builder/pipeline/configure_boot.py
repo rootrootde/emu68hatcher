@@ -6,6 +6,7 @@ import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from emu68hatcher.builder.errors import BuildError
 from emu68hatcher.builder.staging.scripts.generator import generate_boot_partition_files
 from emu68hatcher.config.defaults import EMU68_BOOT_PARTITION_NAME
 from emu68hatcher.utils.paths import ensure_dir
@@ -40,10 +41,7 @@ def _copy_emu68_boot_files(workflow: BuildWorkflow, emu68_boot_staging: Path) ->
     emu68_extracted = workflow.state.extracted_paths.get("emu68_boot")
 
     if not emu68_extracted or not emu68_extracted.exists():
-        workflow.logger.warning(
-            "No extracted Emu68 boot files found - boot partition may be incomplete"
-        )
-        return
+        raise BuildError("Required Emu68 primary boot archive was not extracted")
 
     # primary variant (pistorm32lite): copy everything except config.txt
     boot_files_copied = 0
@@ -63,19 +61,24 @@ def _copy_emu68_boot_files(workflow: BuildWorkflow, emu68_boot_staging: Path) ->
             boot_files_copied += 1
 
     workflow.logger.info(f"Copied {boot_files_copied} Emu68 boot files from primary variant")
+    if boot_files_copied == 0:
+        raise BuildError("Emu68 primary boot archive contained no boot files")
 
-    # secondary kernel zip - 1.0.7 use "emu68_boot_pistorm", 1.1+ uses "emu68_boot_classic"
-    secondary_dir = workflow.state.extracted_paths.get(
-        "emu68_boot_pistorm"
-    ) or workflow.state.extracted_paths.get("emu68_boot_classic")
-    if secondary_dir and secondary_dir.exists():
+    secondary_names = sorted(
+        name for name in workflow.state.required_boot_artifacts if name.startswith("emu68_boot_")
+    )
+    for secondary_name in secondary_names:
+        secondary_dir = workflow.state.extracted_paths.get(secondary_name)
+        if not secondary_dir or not secondary_dir.exists():
+            raise BuildError(f"Required Emu68 kernel archive was not extracted: {secondary_name}")
+        kernels_copied = 0
         for item in secondary_dir.iterdir():
             if item.is_file() and item.name.lower().startswith("emu68-"):
                 dest = emu68_boot_staging / item.name
                 shutil.copy2(item, dest)
                 boot_files_copied += 1
+                kernels_copied += 1
                 workflow.logger.info(f"Copied kernel from secondary variant: {item.name}")
-        # 1.1+ ships a device tree overlay used by the firmware on boot
         overlays_src = secondary_dir / "overlays"
         if overlays_src.is_dir():
             overlays_dst = emu68_boot_staging / "overlays"
@@ -85,6 +88,8 @@ def _copy_emu68_boot_files(workflow: BuildWorkflow, emu68_boot_staging: Path) ->
                     shutil.copy2(ov, overlays_dst / ov.name)
                     boot_files_copied += 1
                     workflow.logger.info(f"Copied overlay: {ov.name}")
+        if kernels_copied == 0:
+            raise BuildError(f"Emu68 archive {secondary_name} contained no kernel")
 
     workflow.logger.info(f"Total Emu68 boot files copied: {boot_files_copied}")
 

@@ -2,26 +2,42 @@ name: magicmenu
 friendly_name: MagicMenu
 bundle: magicmenu
 group: Commodities
-description: 'intuition menu enhancer - icons + gtlayout.library base'
+description: 'intuition menu enhancer 3.0 - pop-up, sticky and transparent menus'
 versions:
 - '3.1'
 - '3.2'
 - 3.2.2.1
 - 3.2.3
 - '3.9'
+# wbrun: the MenuTools prefs entry launches the editor via WBRun.
+# mui: the rewritten prefs editor is a MUI app (muimaster 19+); the commodity
+# itself runs without MUI
 requires:
 - wbrun
+- mui
 download:
   source: aminet
-  path: util/wb/MagicMenu_II.lha
-  hash: 56B42F5CA46EF164CC91AF2723EC0762
-  filename: MagicMenu_II.lha
-# the 2.35 archive ships no icons; this commodity icon already carries
-# DONOTWAIT + STARTPRI=80 + CX_POPUP=NO, so it autostarts from WBStartup cleanly
+  path: util/wb/MagicMenu_3.lha
+  hash: 52A0D8F225A155FEF960374CBD2C4179
+  filename: MagicMenu_3.lha
+# the archive mirrors the destinations (WBStartup/, Prefs/, Catalogs/); the
+# install script only adds the icon-set choice and the LOCALE: copies.
+# DualPNG icons (the 3.0 default set): PowerIcons-style plain PNG files -
+# rendered by PeterK's icon.library (mandatory iconlib package), positioned
+# by icon_grid's icOn-chunk writer. their tooltypes carry DONOTWAIT +
+# CX_POPUP=NO like before, but STARTPRI=0 where the old MagicWB icon used
+# 80 - upstream's choice for this set
 install:
-- from: MagicMenu/020/MagicMenu.info
+- from: MagicMenu/WBStartup/MagicMenu
   to: WBStartup/
-- from: MagicMenu/020/MagicMenuPrefs.info
+- from: MagicMenu/Icons/DualPNG/MagicMenu.info
+  to: WBStartup/
+- from: MagicMenu/Prefs/MagicMenuPrefs
   to: Prefs/
-- from: MagicMenu/libs/gtlayout.library
-  to: Libs/
+- from: MagicMenu/Icons/DualPNG/MagicMenuPrefs.info
+  to: Prefs/
+# espanol/francais/portugues/turkce ship under ascii names (the installer
+# copies them to their real drawer names on the amiga); staged as-is, so
+# locale.library falls back to english for those four
+- from: MagicMenu/Catalogs/*
+  to: Locale/Catalogs/

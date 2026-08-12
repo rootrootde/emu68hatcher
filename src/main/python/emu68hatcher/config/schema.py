@@ -232,7 +232,31 @@ class PartitionConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_partition_sizes(self):
-        from emu68hatcher.config.defaults import MBR_OVERHEAD, RDB_OVERHEAD
+        from emu68hatcher.config.defaults import (
+            CYLINDER_SIZE,
+            FFS_MAX_PARTITION_SIZE,
+            MAX_AMIGA_PARTITIONS,
+            MBR_OVERHEAD,
+            MBR_SECTOR_SIZE,
+            MIN_AMIGA_PARTITION_SIZE,
+            MIN_BOOT_PARTITION_SIZE,
+            PFS3_MAX_PARTITION_SIZE,
+            RDB_OVERHEAD,
+        )
+
+        self.layout = [MBRPartition.model_validate(part.model_dump()) for part in self.layout]
+        if len(self.layout) != 2 or [part.type for part in self.layout] != ["fat32", "id76"]:
+            raise ValueError("Partition layout must contain FAT32 followed by one ID76 container")
+
+        boot, id76 = self.layout
+        if boot.size < MIN_BOOT_PARTITION_SIZE:
+            raise ValueError(
+                f"Boot partition must be at least {MIN_BOOT_PARTITION_SIZE // (1024 * 1024)} MB"
+            )
+        if boot.size % MBR_SECTOR_SIZE:
+            raise ValueError("Boot partition size must be MBR sector aligned (512 bytes)")
+        if id76.size % MBR_SECTOR_SIZE:
+            raise ValueError("ID76 partition size must be MBR sector aligned (512 bytes)")
 
         total = sum(p.size for p in self.layout)
         if total + MBR_OVERHEAD > self.disk_size:
@@ -241,7 +265,6 @@ class PartitionConfig(BaseModel):
                 f"exceeds disk size ({self.disk_size})"
             )
 
-        # cross-check amiga side here too - hand-edited JSON shouldnt bypass GUI pre-flight
         all_devices: list[str] = []
         all_volumes: list[str] = []
         bootable_count = 0
@@ -249,6 +272,8 @@ class PartitionConfig(BaseModel):
             if mbr.type != "id76" or not mbr.amiga_partitions:
                 continue
             usable = mbr.size - RDB_OVERHEAD
+            if len(mbr.amiga_partitions) > MAX_AMIGA_PARTITIONS:
+                raise ValueError(f"Maximum {MAX_AMIGA_PARTITIONS} Amiga partitions allowed")
             inner_total = sum(p.size for p in mbr.amiga_partitions)
             if inner_total > usable:
                 over = inner_total - usable
@@ -256,6 +281,25 @@ class PartitionConfig(BaseModel):
                     f"Amiga partitions in {mbr.name!r} exceed RDB usable space by {over} bytes"
                 )
             for p in mbr.amiga_partitions:
+                if p.size < MIN_AMIGA_PARTITION_SIZE:
+                    raise ValueError(
+                        f"{p.device}: size must be at least "
+                        f"{MIN_AMIGA_PARTITION_SIZE // (1024 * 1024)} MB"
+                    )
+                if p.size % CYLINDER_SIZE:
+                    raise ValueError(
+                        f"{p.device}: size must be cylinder aligned ({CYLINDER_SIZE} bytes)"
+                    )
+                if p.filesystem == Filesystem.PFS3 and p.size > PFS3_MAX_PARTITION_SIZE:
+                    raise ValueError(
+                        f"{p.device}: PFS3 partition cannot exceed "
+                        f"{PFS3_MAX_PARTITION_SIZE // (1024**3)} GB"
+                    )
+                if p.filesystem == Filesystem.FFS and p.size > FFS_MAX_PARTITION_SIZE:
+                    raise ValueError(
+                        f"{p.device}: FFS partition cannot exceed "
+                        f"{FFS_MAX_PARTITION_SIZE // (1024**3)} GB"
+                    )
                 all_devices.append(p.device.upper())
                 all_volumes.append(p.volume.lower())
                 if p.bootable:

@@ -39,6 +39,12 @@ class DiskInfo:
         return f"{self.name} ({self.size_human}) - {self.device}"
 
 
+@dataclass(frozen=True)
+class DiskOperationResult:
+    success: bool
+    error: str = ""
+
+
 def list_removable_disks() -> list[DiskInfo]:
     """removable disks; no elevation needed"""
     info = get_platform_info()
@@ -76,7 +82,7 @@ def unmount_disk(
     info: DiskInfo,
     logger: logging.Logger | None = None,
     elevation: object | None = None,
-) -> None:
+) -> DiskOperationResult:
     """unmount any mounted partitions before raw write"""
     import shutil
     import subprocess
@@ -93,13 +99,16 @@ def unmount_disk(
             timeout=30,
         )
         if r.returncode != 0:
-            log.warning(
-                f"diskutil unmountDisk {info.device} failed (rc={r.returncode}): "
-                f"{r.stderr.strip() or r.stdout.strip()}"
+            detail = r.stderr.strip() or r.stdout.strip()
+            return DiskOperationResult(
+                False,
+                f"diskutil unmountDisk {info.device} failed (rc={r.returncode}): {detail}",
             )
+        return DiskOperationResult(True)
     elif plat == OperatingSystem.LINUX:
         # udisksctl when present, umount-via-elevation fallback
         have_udisksctl = shutil.which("udisksctl") is not None
+        failures: list[str] = []
         for mp in info.mounted_partitions:
             ok = False
             if have_udisksctl:
@@ -132,13 +141,15 @@ def unmount_disk(
                     cmd = wrap_for_elevation(cmd, elevation)
                 r = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
                 if r.returncode != 0:
-                    log.warning(
-                        f"umount {mp} failed (rc={r.returncode}): "
-                        f"{r.stderr.strip() or r.stdout.strip()}"
-                    )
+                    detail = r.stderr.strip() or r.stdout.strip()
+                    failures.append(f"umount {mp} failed (rc={r.returncode}): {detail}")
+        if failures:
+            return DiskOperationResult(False, "; ".join(failures))
+        return DiskOperationResult(True)
     elif plat == OperatingSystem.WINDOWS:
         # offline stops explorer/shell from re-probing on every hst-imager call
-        _set_windows_disk_offline(info, log, elevation, offline=True)
+        return _set_windows_disk_offline(info, log, elevation, offline=True)
+    return DiskOperationResult(False, f"unmount is unsupported on {plat.value}")
 
 
 def eject_disk(device: str, logger: logging.Logger | None = None) -> tuple[bool, str]:
@@ -185,11 +196,12 @@ def online_disk(
     info: DiskInfo,
     logger: logging.Logger | None = None,
     elevation: object | None = None,
-) -> None:
+) -> DiskOperationResult:
     """windows: bring a disk back online after the build; no-op on macos/linux"""
     log = logger or globals()["logger"]
     if get_platform_info().os == OperatingSystem.WINDOWS:
-        _set_windows_disk_offline(info, log, elevation, offline=False)
+        return _set_windows_disk_offline(info, log, elevation, offline=False)
+    return DiskOperationResult(True)
 
 
 def _set_windows_disk_offline(
@@ -198,13 +210,13 @@ def _set_windows_disk_offline(
     elevation: object | None,
     *,
     offline: bool,
-) -> None:
+) -> DiskOperationResult:
     import re
     import subprocess
 
     m = re.search(r"PhysicalDrive(\d+)", info.device, re.IGNORECASE)
     if not m:
-        return
+        return DiskOperationResult(False, f"invalid Windows disk path: {info.device}")
     disk_num = m.group(1)
     flag = "$true" if offline else "$false"
     ps = f"Set-Disk -Number {disk_num} -IsOffline {flag}; Set-Disk -Number {disk_num} -IsReadOnly $false"
@@ -214,16 +226,18 @@ def _set_windows_disk_offline(
         from emu68hatcher.builder.host.elevation import run_elevated
 
         try:
-            run_elevated(cmd, elevation, timeout=30)
+            r = run_elevated(cmd, elevation, timeout=30)
         except (OSError, subprocess.SubprocessError) as e:
-            log.warning(f"set-disk failed: {e}")
+            return DiskOperationResult(False, f"set-disk failed: {e}")
     else:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-        if r.returncode != 0:
-            log.warning(
-                f"set-disk {disk_num} IsOffline={offline} failed (rc={r.returncode}): "
-                f"{r.stderr.strip() or r.stdout.strip()}"
-            )
+    if r.returncode != 0:
+        detail = (r.stderr or r.stdout or "").strip()
+        return DiskOperationResult(
+            False,
+            f"set-disk {disk_num} IsOffline={offline} failed (rc={r.returncode}): {detail}",
+        )
+    return DiskOperationResult(True)
 
 
 # ----------------------------------------------------------------------------

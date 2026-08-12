@@ -49,10 +49,22 @@ def stage_install_packages(workflow: BuildWorkflow) -> None:
 
     resolution = get_resolution(workflow)
     all_packages = resolution.install_order  # dep-before-dependent; independent order preserved
-    for token, reqs in resolution.unsatisfiable.items():
-        workflow.logger.warning(f"unsatisfiable dependency '{token}' required by {sorted(reqs)}")
+    if resolution.unsatisfiable:
+        details = ", ".join(
+            f"{token} (required by {', '.join(sorted(reqs))})"
+            for token, reqs in sorted(resolution.unsatisfiable.items())
+        )
+        raise BuildError(f"Unsatisfied package requirements: {details}")
     for name, reason in resolution.dropped.items():
         workflow.logger.info(f"dropped {name}: {reason}")
+
+    missing_sources = sorted(
+        name
+        for name in workflow.state.required_packages
+        if name in resolution.selected and not installer.has_package_source(name)
+    )
+    if missing_sources:
+        raise BuildError("Required package source is missing: " + ", ".join(missing_sources))
 
     workflow.logger.info(f"Installing {len(all_packages)} packages using YAML rules")
 

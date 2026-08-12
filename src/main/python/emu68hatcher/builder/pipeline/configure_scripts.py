@@ -49,7 +49,7 @@ _PREFS_ENTRIES: tuple[dict, ...] = (
     {
         "title": "MagicMenu",
         "exe": "Prefs/MagicMenuPrefs",
-        "requires": ("magicmenu", "magicmenu235"),
+        "requires": ("magicmenu",),
         "wb_launch": True,
     },
     {"title": "MUI", "exe": "Programs/MUI/MUI", "requires": ("mui38", "mui5"), "wb_launch": True},

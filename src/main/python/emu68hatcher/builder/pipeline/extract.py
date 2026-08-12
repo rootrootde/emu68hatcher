@@ -58,6 +58,12 @@ def _extract_downloaded(workflow: BuildWorkflow) -> None:
         # mirror download-manager extractions into extracted_dir (symlink, copy on windows w/o privilege)
         if package_name in workflow.state.extracted_paths:
             dm_path = workflow.state.extracted_paths[package_name]
+            if not dm_path.exists():
+                if package_name in workflow.state.required_artifacts:
+                    raise BuildError(f"Required artifact {package_name} was not extracted")
+                workflow.logger.warning(f"Extracted path is missing for {package_name}: {dm_path}")
+                completed += 1
+                continue
             std_path = workflow.state.extracted_dir / package_name
             if dm_path.is_dir() and dm_path != std_path and not std_path.exists():
                 std_path.parent.mkdir(parents=True, exist_ok=True)
@@ -98,7 +104,10 @@ def _extract_downloaded(workflow: BuildWorkflow) -> None:
                 f"Extracted {package_name}: {result.files_extracted} files to {result.output_dir}"
             )
         else:
-            workflow.logger.warning(f"Failed to extract {package_name}: {result.error}")
+            message = f"Failed to extract {package_name}: {result.error}"
+            if package_name in workflow.state.required_artifacts:
+                raise BuildError(message)
+            workflow.logger.warning(message)
 
         completed += 1
 
@@ -135,6 +144,8 @@ def _extract_local_archives(workflow: BuildWorkflow) -> None:
         if _stage_user_picasso96(workflow, p96_out):
             workflow.state.extracted_paths["picasso96"] = p96_out
             local_extracted += 1
+        elif "picasso96" in workflow.state.required_packages:
+            raise BuildError("Failed to extract required Picasso96 archive")
 
     for pkg_name in all_package_names:
         if pkg_name in workflow.state.extracted_paths:
@@ -150,12 +161,18 @@ def _extract_local_archives(workflow: BuildWorkflow) -> None:
             if _stage_user_roadshow(workflow, output_dir):
                 workflow.state.extracted_paths[pkg_name] = output_dir
                 local_extracted += 1
+            elif pkg_name in workflow.state.required_packages:
+                raise BuildError(f"Failed to extract required {pkg_name} archive")
             continue
 
         if not pkg.download.path:
             continue
         archive_path = local_packages_dir / pkg.download.path
         if not archive_path.exists() or archive_path.suffix.lower() not in archive_extensions:
+            if pkg_name in workflow.state.required_packages:
+                raise BuildError(
+                    f"Required local archive is missing for {pkg_name}: {archive_path}"
+                )
             continue
         output_dir = workflow.state.extracted_dir / pkg_name
         workflow._milestone(f"Extracting {pkg_name} (local)")
@@ -170,7 +187,10 @@ def _extract_local_archives(workflow: BuildWorkflow) -> None:
                 f"Extracted local archive {pkg_name}: {result.files_extracted} files"
             )
         else:
-            workflow.logger.warning(f"Failed to extract local archive {pkg_name}: {result.error}")
+            message = f"Failed to extract local archive {pkg_name}: {result.error}"
+            if pkg_name in workflow.state.required_packages:
+                raise BuildError(message)
+            workflow.logger.warning(message)
 
     workflow._update_state(progress=100.0)
     workflow._milestone(

@@ -16,8 +16,9 @@ RDB_OVERHEAD: Final[int] = 16 * 63 * 512 * 2  # ~1 MB
 
 # amiga partitions
 
-# FFS > 4GB needs NSD/TD64 patches to mount reliably. PFS3 max (101GB) lives in partition_helpers.py
+# FFS > 4GB needs NSD/TD64 patches to mount reliably.
 FFS_MAX_PARTITION_SIZE: Final[int] = 4 * 1024 * 1024 * 1024  # 4 GB
+PFS3_MAX_PARTITION_SIZE: Final[int] = 101 * 1024 * 1024 * 1024
 
 CYLINDER_SIZE: Final[int] = 16 * 63 * 512  # 516,096 bytes
 MBR_SECTOR_SIZE: Final[int] = 512

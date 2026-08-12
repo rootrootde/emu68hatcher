@@ -87,6 +87,8 @@ class MainWindow(QMainWindow):
         # output mode + selected disk drives partition sizing in DEVICE/flash modes
         self.output_tab.target_size_changed.connect(self.partitions_tab.set_auto_disk_size)
         self.output_tab.target_size_cleared.connect(self.partitions_tab.clear_auto_disk_size)
+        self.output_tab.target_restore_complete.connect(self._on_output_target_restored)
+        self._pending_loaded_partitions = None
 
         layout.addWidget(self.tabs)
 
@@ -141,14 +143,17 @@ class MainWindow(QMainWindow):
                 self.network_tab.set_network_settings(self.config.network)
                 self.packages_tab.set_config(self.config.packages)
                 self.kickstart_tab.set_locale(self.config.packages)
-                # output first: emits target_size_changed which rebuilds the partition
-                # layout for the picked SD card. apply the saved partitions AFTER that so the
-                # resize signal doesnt overwrite custom sizes / extra_content_directory paths.
+                self._pending_loaded_partitions = self.config.partitions
                 self.output_tab.set_config(self.config.output)
-                self.partitions_tab.set_config(self.config.partitions)
                 self.statusBar().showMessage(f"Loaded: {path}")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to load config: {e}")
+
+    def _on_output_target_restored(self):
+        config = self._pending_loaded_partitions
+        self._pending_loaded_partitions = None
+        if config is not None:
+            self.partitions_tab.set_config(config)
 
     def save_config_file(self):
         path, _ = QFileDialog.getSaveFileName(
@@ -314,11 +319,15 @@ class MainWindow(QMainWindow):
             return
 
         # confirm build
+        target_line = ""
+        if self.config.output.flash_target:
+            target_line = f"Flash target: {self.config.output.flash_target}\n"
         reply = QMessageBox.question(
             self,
             "Start Build",
             f"Ready to build disk image.\n\n"
             f"Output: {self.config.output.path}\n"
+            f"{target_line}"
             f"Size: {self.config.partitions.disk_size // (1024**3)} GB\n\n"
             "This may take several minutes. Continue?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,

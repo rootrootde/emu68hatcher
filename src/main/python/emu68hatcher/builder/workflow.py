@@ -67,6 +67,9 @@ class BuildState:
     # package_name -> local path
     downloaded_files: dict[str, Path] = field(default_factory=dict)
     extracted_paths: dict[str, Path] = field(default_factory=dict)
+    required_artifacts: set[str] = field(default_factory=set)
+    required_boot_artifacts: set[str] = field(default_factory=set)
+    required_packages: set[str] = field(default_factory=set)
     pfs3_handler_path: Path | None = None
     ffs_handler_path: Path | None = None
 
@@ -225,7 +228,9 @@ class BuildWorkflow:
             if info is None:
                 continue
             try:
-                online_disk(info, self.logger, elevation=self.state.elevation)
+                result = online_disk(info, self.logger, elevation=self.state.elevation)
+                if not result.success:
+                    self.logger.warning(f"could not bring {device} online: {result.error}")
             except Exception:
                 self.logger.exception(f"error bringing {device} online")
 

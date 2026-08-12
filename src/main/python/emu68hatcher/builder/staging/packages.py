@@ -6,7 +6,8 @@ from collections.abc import Callable
 from pathlib import Path
 
 from emu68hatcher.builder.host.archive import ARCHIVE_EXTENSIONS, extract_archive
-from emu68hatcher.builder.staging.files import ci_match_child
+from emu68hatcher.builder.staging.files import ci_match_child, resolve_staging_path
+from emu68hatcher.builder.staging.tree_copy import copy_contained_tree
 from emu68hatcher.config.defaults import DEFAULT_BOOT_DEVICE
 from emu68hatcher.data.package_loader import (
     get_package_by_name,
@@ -52,30 +53,12 @@ def _ci_resolve_path(base: Path, rel_path: str) -> Path | None:
 
 def _merge_tree(source: Path, dest: Path) -> int:
     """recursively merge source into dest; same-name collisions overwrite (case-insensitive)"""
-    from emu68hatcher.builder.staging.files import resolve_staging_path
-
-    count = 0
-    dest.mkdir(parents=True, exist_ok=True)
-    dest_root = dest.resolve()
-    for item in source.iterdir():
-        target = resolve_staging_path(dest, item.name)
-        # double-check no symlink-out, even though extractors already filter
-        if not target.resolve().parent.is_relative_to(dest_root) and target.resolve() != dest_root:
-            continue
-        if item.is_symlink():
-            # follow the link only if its real target stays under source root
-            try:
-                real = item.resolve(strict=True)
-            except OSError:
-                continue
-            if not real.is_relative_to(source.resolve()):
-                continue
-        if item.is_file():
-            shutil.copy2(item, target)
-            count += 1
-        elif item.is_dir():
-            count += _merge_tree(item, target)
-    return count
+    result = copy_contained_tree(source, dest, resolve_target=resolve_staging_path)
+    if result.skipped_cycles:
+        get_logger().warning(
+            f"Skipped {result.skipped_cycles} repeated directories while copying {source}"
+        )
+    return result.files_copied
 
 
 class PackageInstaller:
@@ -125,6 +108,13 @@ class PackageInstaller:
             files_installed += count
 
         return files_installed
+
+    def has_package_source(self, package_name: str) -> bool:
+        """Return whether a package with install rules has a usable source tree."""
+        pkg = get_package_by_name(package_name)
+        if not pkg or not pkg.download or not pkg.install:
+            return True
+        return self._get_source_dir(pkg) is not None
 
     def _get_source_dir(self, pkg: Package) -> Path | None:
         """get the source directory for package files"""
@@ -208,8 +198,6 @@ class PackageInstaller:
         source_dir: Path | None,
     ) -> int:
         """apply a single install rule"""
-        from emu68hatcher.builder.staging.files import resolve_staging_path
-
         if not source_dir:
             return 0
 

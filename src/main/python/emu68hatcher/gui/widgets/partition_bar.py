@@ -239,6 +239,15 @@ class PartitionBar(QWidget):
             if seg_idx < len(self._segments) - 1 and self._resizable_border(seg_idx):
                 self._borders.append((x, seg_idx, seg_idx + 1))
 
+        # a layout with no free segment still gets a handle on the outer edge -
+        # dragging it left shrinks the last partition and mints free space.
+        # the virtual right side (index past the segments) is treated as free
+        last = self._segments[-1]
+        if not (last[0] == "free" and last[2] == ""):
+            self._borders.append(
+                (children.right() + 1, len(self._segments) - 1, len(self._segments))
+            )
+
         # badge and band go after the children so their indices fail the click guard
         self._rects.append((badge, "RDB header\n~1 MB\nnot to scale"))
         self._rects.append(
@@ -249,7 +258,7 @@ class PartitionBar(QWidget):
         arrow = 6
         gap = 3
         mid_y = children.center().y()
-        for bx, _, _ in self._borders:
+        for bx, _, right_seg in self._borders:
             painter.setPen(QPen(QColor(255, 255, 255, 200), 2))
             painter.drawLine(bx, children.top() + 3, bx, children.bottom() - 3)
 
@@ -264,15 +273,17 @@ class PartitionBar(QWidget):
                     ]
                 )
             )
-            painter.drawPolygon(
-                QPolygon(
-                    [
-                        QPoint(bx + gap, mid_y),
-                        QPoint(bx + gap + arrow, mid_y - arrow),
-                        QPoint(bx + gap + arrow, mid_y + arrow),
-                    ]
+            # the outer-edge handle has no room to its right - left arrow only
+            if right_seg < len(self._segments):
+                painter.drawPolygon(
+                    QPolygon(
+                        [
+                            QPoint(bx + gap, mid_y),
+                            QPoint(bx + gap + arrow, mid_y - arrow),
+                            QPoint(bx + gap + arrow, mid_y + arrow),
+                        ]
+                    )
                 )
-            )
 
         painter.end()
 
@@ -300,10 +311,13 @@ class PartitionBar(QWidget):
             right_amiga = right_seg - 1
 
             left_is_amiga = 0 <= left_amiga < len(self._amiga_partitions)
-            right_is_free = (
+            # an index past the segments is the virtual free side of the outer edge
+            right_is_free = right_seg >= len(self._segments) or (
                 right_seg == len(self._segments) - 1 and self._segments[right_seg][0] == "free"
             )
-            right_is_amiga = 0 <= right_amiga < len(self._amiga_partitions)
+            right_is_amiga = right_seg < len(self._segments) and (
+                0 <= right_amiga < len(self._amiga_partitions)
+            )
 
             if left_is_amiga and (right_is_amiga or right_is_free):
                 left_size = self._amiga_partitions[left_amiga].size

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from emu68hatcher.builder.errors import BuildError
+from emu68hatcher.builder.staging.tree_copy import copy_contained_tree
 from emu68hatcher.builder.workflow import BuildStage
 
 if TYPE_CHECKING:
@@ -52,40 +52,22 @@ def stage_install_extras(workflow: BuildWorkflow) -> None:
         dest.mkdir(parents=True, exist_ok=True)
 
         # user content wins on collision (intentional - "put my files in the image")
-        count = _mirror_tree(src, dest)
-        total_files += count
-        workflow.logger.info(f"Mirrored {count} files from {src} -> staging/{part.device}/")
+        result = copy_contained_tree(src, dest)
+        total_files += result.files_copied
+        workflow.logger.info(
+            f"Mirrored {result.files_copied} files from {src} -> staging/{part.device}/"
+        )
+        if result.skipped_cycles:
+            workflow.logger.warning(
+                f"Skipped {result.skipped_cycles} repeated directories while copying {src}"
+            )
+        if result.skipped_outside:
+            workflow.logger.warning(
+                f"Skipped {result.skipped_outside} paths outside the extras root {src}"
+            )
 
         progress = ((i + 1) / len(parts)) * 100
         workflow._update_state(progress=progress)
 
     workflow._update_state(progress=100.0)
     workflow._milestone(f"Extras mirrored ({total_files} files across {len(parts)} partition(s))")
-
-
-def _mirror_tree(src: Path, dest: Path) -> int:
-    """recursive copy; same-name files overwrite. returns files copied"""
-    count = 0
-    dest_root = dest.resolve()
-    src_root = src.resolve()
-    for item in src.iterdir():
-        # block traversal via dotfile symlinks pointing outside src
-        if item.is_symlink():
-            try:
-                real = item.resolve(strict=True)
-            except OSError:
-                continue
-            if not real.is_relative_to(src_root):
-                continue
-
-        target = dest / item.name
-        if not target.resolve().parent.is_relative_to(dest_root) and target.resolve() != dest_root:
-            continue
-
-        if item.is_dir():
-            target.mkdir(parents=True, exist_ok=True)
-            count += _mirror_tree(item, target)
-        else:
-            shutil.copy2(item, target)
-            count += 1
-    return count
