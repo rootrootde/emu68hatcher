@@ -39,12 +39,12 @@ jobs:
             arch: arm64
             python: '3.10'
           - label: macos-arm64
-            runner: macos-14
+            runner: macos-26
             os: macos
             arch: arm64
             python: '3.10'
           - label: macos-x64
-            runner: macos-15-intel
+            runner: macos-26-intel
             os: macos
             arch: x64
             python: '3.10'
@@ -267,6 +267,10 @@ jobs:
           DMG="target/Emu68 Hatcher.dmg"
           codesign --force --sign "$MACOS_SIGN_IDENTITY" --timestamp "$DMG"
           scripts/macos-notarize.sh "$DMG"
+
+      - name: Verify app inside .dmg (macOS)
+        if: matrix.os == 'macos'
+        run: scripts/macos-verify-dmg.sh "target/Emu68 Hatcher.dmg"
 
       - name: Rename artifact
         shell: bash
