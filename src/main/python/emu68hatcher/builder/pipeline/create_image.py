@@ -6,14 +6,17 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from emu68hatcher.builder.errors import BuildError
-from emu68hatcher.builder.workflow import BuildStage
+from emu68hatcher.builder.state import BuildStage, CreatedImage, ExtractedArtifacts
 from emu68hatcher.config.schema import Filesystem, OutputType
 
 if TYPE_CHECKING:
     from emu68hatcher.builder.workflow import BuildWorkflow
 
 
-def stage_create_image(workflow: BuildWorkflow) -> None:
+def stage_create_image(
+    workflow: BuildWorkflow,
+    extracted: ExtractedArtifacts,
+) -> CreatedImage:
     """create .img file or init the target SD device"""
     from emu68hatcher.builder.host.hst_commands import (
         generate_disk_creation_script,
@@ -22,13 +25,12 @@ def stage_create_image(workflow: BuildWorkflow) -> None:
 
     workflow._update_state(BuildStage.CREATE_IMAGE, 0.0)
 
-    if workflow.config.output is None or workflow.config.partitions is None:
-        raise BuildError("Missing output or partition configuration")
-    if not workflow.state.work_dir:
-        raise BuildError("Work directory not set - setup stage may have failed")
-
-    output_type = workflow.config.output.type
-    raw_target = workflow.config.output.path
+    output = workflow.config.output
+    partitions = workflow.config.partitions
+    assert output is not None and partitions is not None
+    workspace = extracted.downloaded.workspace
+    output_type = output.type
+    raw_target = output.path
     # device targets are strings on purpose (see OutputConfig.path); re-wrapping in Path
     # would corrupt \\.\PhysicalDriveN on windows 3.10/3.11
     target_path = raw_target if isinstance(raw_target, str) else Path(raw_target)
@@ -40,49 +42,50 @@ def stage_create_image(workflow: BuildWorkflow) -> None:
     if (
         output_type == OutputType.IMG
         and workflow.state.elevation is not None
-        and workflow.state.work_dir is not None
         and _is_tcc_protected(target_path)
     ):
-        workflow.state.final_output_path = target_path
-        workflow.state.image_path = workflow.state.work_dir / target_path.name
+        final_output_path = target_path
+        image_path = workspace.work_dir / target_path.name
         workflow.logger.info(
             f"building image in work dir (macOS TCC), will move to {target_path} after flashing"
         )
     else:
-        workflow.state.image_path = target_path
+        final_output_path = None
+        image_path = target_path
 
     if output_type == OutputType.DEVICE:
-        workflow._milestone(f"Initialising SD card on {workflow.state.image_path}")
-        _prepare_device_target(workflow)
+        workflow._milestone(f"Initialising SD card on {image_path}")
+        _prepare_device_target(workflow, image_path)
         skip_blank = True
-    elif workflow.config.output.sparse:
-        workflow._milestone(f"Allocating sparse image at {workflow.state.image_path}")
-        _prepare_sparse_image(workflow)
+    elif output.sparse:
+        workflow._milestone(f"Allocating sparse image at {image_path}")
+        _prepare_sparse_image(workflow, Path(image_path))
         skip_blank = True
     else:
-        workflow._milestone(f"Creating image file at {workflow.state.image_path}")
+        workflow._milestone(f"Creating image file at {image_path}")
         skip_blank = False
 
     fs_handler_paths: dict[Filesystem, Path] = {}
-    if workflow.config.partitions.uses_pfs3:
-        if not workflow.state.pfs3_handler_path:
+    downloaded = extracted.downloaded
+    if partitions.uses_pfs3:
+        if not downloaded.pfs3_handler_path:
             raise BuildError(
                 "PFS3AIO filesystem handler not available. "
                 "This should have been downloaded during the DOWNLOAD stage."
             )
-        fs_handler_paths[Filesystem.PFS3] = workflow.state.pfs3_handler_path
-    if workflow.config.partitions.uses_ffs:
-        if not workflow.state.ffs_handler_path:
+        fs_handler_paths[Filesystem.PFS3] = downloaded.pfs3_handler_path
+    if partitions.uses_ffs:
+        if not downloaded.ffs_handler_path:
             raise BuildError(
                 "FFS filesystem handler not available. L/FastFileSystem "
                 "should have been extracted from Install3.x.adf during the "
                 "DOWNLOAD stage."
             )
-        fs_handler_paths[Filesystem.FFS] = workflow.state.ffs_handler_path
+        fs_handler_paths[Filesystem.FFS] = downloaded.ffs_handler_path
 
     script = generate_disk_creation_script(
         workflow.config,
-        workflow.state.image_path,
+        image_path,
         fs_handler_paths=fs_handler_paths,
         skip_blank=skip_blank,
     )
@@ -109,16 +112,20 @@ def stage_create_image(workflow: BuildWorkflow) -> None:
     workflow._milestone(
         "Disk image created" if output_type == OutputType.IMG else "SD card initialised"
     )
+    return CreatedImage(
+        extracted=extracted,
+        image_path=image_path,
+        final_output_path=final_output_path,
+    )
 
 
-def _prepare_sparse_image(workflow: BuildWorkflow) -> None:
+def _prepare_sparse_image(workflow: BuildWorkflow, path: Path) -> None:
     """sparse .img at target path, sized by disk_size"""
     from emu68hatcher.builder.host.sparse import (
         SparseUnsupportedError,
         allocate_sparse,
     )
 
-    path = workflow.state.image_path
     size = workflow.config.partitions.disk_size
     try:
         allocate_sparse(path, size)
@@ -130,11 +137,11 @@ def _prepare_sparse_image(workflow: BuildWorkflow) -> None:
         raise
 
 
-def _prepare_device_target(workflow: BuildWorkflow) -> None:
+def _prepare_device_target(workflow: BuildWorkflow, image_path: Path | str) -> None:
     """sanity-check + unmount the SD before hst-imager touches it"""
     from emu68hatcher.builder.host.disk_enum import find_disk
 
-    device = str(workflow.state.image_path)
+    device = str(image_path)
     info = find_disk(device)
     if info is None:
         raise BuildError(

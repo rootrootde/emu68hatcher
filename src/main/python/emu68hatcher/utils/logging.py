@@ -85,7 +85,7 @@ class Emu68Logger:
         self.logger.error(message, **kwargs)
 
     def exception(self, message: str, **kwargs) -> None:
-        """log at ERROR wiht the active traceback attached"""
+        """log at ERROR with the active traceback attached"""
         self.logger.exception(message, **kwargs)
 
 

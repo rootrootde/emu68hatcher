@@ -13,7 +13,7 @@ def generate_shell_startup() -> str:
 
 
 def get_screen_modes() -> list[dict]:
-    """load screen modes form bundled YAML"""
+    """load screen modes from bundled YAML"""
     return load_yaml_data("screen_modes")
 
 
@@ -39,7 +39,7 @@ def generate_config_txt(
     emu68_version: str = "1.0.7",
     usb_otg: bool = False,
 ) -> str:
-    """generate Emu68 boot config.txt wiht GPIO-based detection for PiStorm variants"""
+    """generate Emu68 boot config.txt with GPIO-based detection for PiStorm variants"""
     # load available screen modes from YAML
     available_modes = get_screen_modes()
 
@@ -81,7 +81,7 @@ def generate_boot_partition_files(
     """generate files for the EMU68BOOT (FAT32) partition"""
     boot_dir = ensure_dir(staging_dir / "EMU68BOOT")
 
-    # generate config.txt wiht GPIO-based kernel selection
+    # generate config.txt with GPIO-based kernel selection
     config_txt = generate_config_txt(
         screen_mode=screen_mode,
         custom_cvt=custom_cvt,

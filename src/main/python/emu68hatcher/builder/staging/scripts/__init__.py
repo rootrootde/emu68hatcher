@@ -1,1 +1,1 @@
-"""AmigaDOS script generation (templates) adn patching (injector)."""
+"""AmigaDOS script generation and patching."""

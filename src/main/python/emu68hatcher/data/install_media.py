@@ -1,6 +1,7 @@
 """hash-based install media identification (ADFs, ISOs) via install_media_hashes.yaml"""
 
 import os
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -8,12 +9,24 @@ from pathlib import Path
 SCAN_SKIP_DIRS = {".git", ".venv", "__pycache__", "node_modules", ".tox", ".mypy_cache"}
 
 
-def walk_files_capped(directory: Path, max_files: int):
+def _raise_walk_error(error: OSError) -> None:
+    raise error
+
+
+def walk_files_capped(
+    directory: Path,
+    max_files: int,
+    cancel_check: Callable[[], bool] | None = None,
+):
     """yield (path, ext) pairs under 'directory', pruning common skip-dirs, capped at 'max_files'"""
     seen = 0
-    for dirpath, dirnames, filenames in os.walk(directory):
+    for dirpath, dirnames, filenames in os.walk(directory, onerror=_raise_walk_error):
+        if cancel_check and cancel_check():
+            return
         dirnames[:] = [d for d in dirnames if d not in SCAN_SKIP_DIRS and not d.startswith(".")]
         for fname in filenames:
+            if cancel_check and cancel_check():
+                return
             seen += 1
             if seen > max_files:
                 return
@@ -33,6 +46,7 @@ class IdentifiedInstallMedia:
 def scan_install_media_by_hash(
     directories: Path | list[Path] | tuple[Path, ...],
     max_files: int = 5000,
+    cancel_check: Callable[[], bool] | None = None,
 ) -> tuple[list["IdentifiedInstallMedia"], bool]:
     """scan one or more dirs for install media, MD5-identify via install_media_hashes.yaml"""
     from emu68hatcher.data.data_manager import lookup_install_media
@@ -46,11 +60,13 @@ def scan_install_media_by_hash(
     truncated = False
 
     for directory in dirs:
+        if cancel_check and cancel_check():
+            break
         if not directory.exists() or not directory.is_dir():
             continue
 
         seen_count = 0
-        for path, ext in walk_files_capped(directory, max_files):
+        for path, ext in walk_files_capped(directory, max_files, cancel_check):
             seen_count += 1
             if ext not in media_extensions:
                 continue
@@ -69,6 +85,8 @@ def scan_install_media_by_hash(
 
     identified = []
     for path in candidates:
+        if cancel_check and cancel_check():
+            break
         try:
             md5 = calculate_hash(path, HashAlgorithm.MD5)
             info = lookup_install_media(md5)

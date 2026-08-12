@@ -2,24 +2,25 @@
 
 import shutil
 import struct
-from collections.abc import Callable
+import tempfile
 from pathlib import Path
 
 from emu68hatcher.builder.host.archive import ARCHIVE_EXTENSIONS, extract_archive
-from emu68hatcher.builder.staging.files import ci_match_child, resolve_staging_path
+from emu68hatcher.builder.staging.files import (
+    ci_match_child,
+    resolve_source_path,
+    resolve_staging_path,
+)
 from emu68hatcher.builder.staging.tree_copy import copy_contained_tree
 from emu68hatcher.config.defaults import DEFAULT_BOOT_DEVICE
-from emu68hatcher.data.package_loader import (
-    get_package_by_name,
-    get_packages_for_version,
-)
+from emu68hatcher.data.package_loader import get_package_by_name
 from emu68hatcher.data.package_schema import InstallRule, Package
 from emu68hatcher.utils.logging import get_logger
 from emu68hatcher.utils.paths import ensure_dir
 
 
 def _ci_glob_pattern(pattern: str) -> str:
-    """expand glob pattern wiht [aA] char classes for case-insensitive matching (Amiga FS semantics)"""
+    """expand a glob with case-insensitive character classes"""
     result = []
     for ch in pattern:
         if ch.isalpha():
@@ -38,19 +39,6 @@ def _set_icon_stack(info_path: Path, size: int) -> None:
         info_path.write_bytes(data)
 
 
-def _ci_resolve_path(base: Path, rel_path: str) -> Path | None:
-    """case-insensitive lookup of 'rel_path' under 'base', returning None on any miss (cf. 'resolve_staging_path')"""
-    current = base
-    for part in rel_path.split("/"):
-        if not part:
-            continue
-        matched = ci_match_child(current, part)
-        if matched is None:
-            return None
-        current = current / matched
-    return current
-
-
 def _merge_tree(source: Path, dest: Path) -> int:
     """recursively merge source into dest; same-name collisions overwrite (case-insensitive)"""
     result = copy_contained_tree(source, dest, resolve_target=resolve_staging_path)
@@ -66,29 +54,19 @@ class PackageInstaller:
 
     def __init__(
         self,
-        kickstart_version: str,
         staging_dir: Path,
         extracted_packages_dir: Path,
         local_packages_dir: Path | None = None,
-        emu68_version: str | None = None,
         boot_device: str | None = None,
     ):
         # must match the tree configure/install_workbench stage into, or finalize splits the device
         self.boot_device = boot_device or DEFAULT_BOOT_DEVICE
-        self.kickstart_version = kickstart_version
-        self.emu68_version = emu68_version
         self.staging_dir = staging_dir
         self.extracted_dir = extracted_packages_dir
         self.local_packages_dir = local_packages_dir
         self.logger = get_logger()
 
-        self.packages = get_packages_for_version(kickstart_version, emu68_version)
-
-    def install_package(
-        self,
-        package_name: str,
-        progress_callback: Callable[[str], None] | None = None,
-    ) -> int:
+    def install_package(self, package_name: str) -> int:
         """install a single package"""
         pkg = get_package_by_name(package_name)
 
@@ -96,15 +74,12 @@ class PackageInstaller:
             self.logger.warning(f"Package not found: {package_name}")
             return 0
 
-        if progress_callback:
-            progress_callback(f"Installing {pkg.friendly_name}")
-
         files_installed = 0
 
         source_dir = self._get_source_dir(pkg)
 
         for rule in pkg.install:
-            count = self._apply_install_rule(pkg, rule, source_dir)
+            count = self._apply_install_rule(rule, source_dir)
             files_installed += count
 
         return files_installed
@@ -158,133 +133,111 @@ class PackageInstaller:
         current_path = source_dir
 
         for i, part in enumerate(parts):
-            # try case-insensitive resolution for this component
             matched = ci_match_child(current_path, part)
             next_path = current_path / (matched or part)
 
-            # check if this is an archive file that needs extraction
             if next_path.is_file():
                 suffix = next_path.suffix.lower()
                 if suffix in ARCHIVE_EXTENSIONS:
-                    # extract the archive to a temp directory
                     extract_dir = next_path.parent / f"_extracted_{next_path.stem}"
 
                     if not extract_dir.exists():
                         self.logger.info(f"Extracting nested archive: {next_path.name}")
-                        result = extract_archive(next_path, extract_dir)
+                        temp_dir = Path(
+                            tempfile.mkdtemp(
+                                prefix=f".{extract_dir.name}-",
+                                dir=extract_dir.parent,
+                            )
+                        )
+                        result = extract_archive(next_path, temp_dir)
 
                         if not result.success:
+                            shutil.rmtree(temp_dir)
                             self.logger.warning(
                                 f"Failed to extract nested archive {next_path}: {result.error}"
                             )
                             return source_dir, path_pattern
+                        temp_dir.replace(extract_dir)
 
-                    # return the extracted directory and remaining path
                     remaining = "/".join(parts[i + 1 :])
                     return extract_dir, remaining
 
             elif next_path.exists():
                 current_path = next_path
             else:
-                # path doesn't exist, return original
                 break
 
         return source_dir, path_pattern
 
     def _apply_install_rule(
         self,
-        pkg: Package,
         rule: InstallRule,
         source_dir: Path | None,
     ) -> int:
-        """apply a single install rule"""
         if not source_dir:
             return 0
-
-        # get source pattern
-        source_pattern = rule.source  # 'form' field
-
-        # check for nested archives in the path and extract if needed
-        source_dir, source_pattern = self._resolve_nested_archive(source_dir, source_pattern)
-
-        # case-insensitive dest resolution: archives may use different casing than ADFs
+        source_dir, source_pattern = self._resolve_nested_archive(source_dir, rule.source)
         dest_base = self.staging_dir / self.boot_device
         dest_dir = resolve_staging_path(dest_base, rule.dest.strip("/"))
-
         ensure_dir(dest_dir)
-
-        files_installed = 0
-
-        # handle wildcards
         if "*" in source_pattern:
-            # glob pattern - e.g. "IBrowse*-OS3/Catalogs/*"
-            parts = source_pattern.split("/")
+            return self._install_wildcard(rule, source_dir, source_pattern, dest_dir)
+        return self._install_exact(rule, source_dir, source_pattern, dest_dir)
 
-            # find base directory (non-wildcard prefix) and glob part
-            base_parts = []
-            glob_part = ""
+    def _install_wildcard(
+        self,
+        rule: InstallRule,
+        source_dir: Path,
+        source_pattern: str,
+        dest_dir: Path,
+    ) -> int:
+        parts = source_pattern.split("/")
+        first_glob = next(index for index, part in enumerate(parts) if "*" in part)
+        base_parts = parts[:first_glob]
+        glob_part = "/".join(parts[first_glob:])
+        search_dir = source_dir
+        if base_parts:
+            resolved = resolve_source_path(source_dir, "/".join(base_parts))
+            if resolved:
+                search_dir = resolved
 
-            for i, part in enumerate(parts):
-                if "*" in part:
-                    glob_part = "/".join(parts[i:])
-                    break
-                base_parts.append(part)
+        strip_levels = len(glob_part.split("/")) - 1
+        installed = 0
+        if not search_dir.exists():
+            return installed
+        for source_item in search_dir.glob(_ci_glob_pattern(glob_part)):
+            relative = source_item.relative_to(search_dir).parts
+            keep = relative[strip_levels:] if len(relative) > strip_levels else (source_item.name,)
+            destination = resolve_staging_path(
+                dest_dir,
+                rule.rename or str(Path(*keep)),
+            )
+            installed += self._copy_item(source_item, destination, rule.stack, merge_dirs=True)
+        return installed
 
-            search_dir = source_dir
-            if base_parts:
-                # resolve non-wildcard prefix case-insensitively
-                resolved = _ci_resolve_path(source_dir, "/".join(base_parts))
-                if resolved:
-                    search_dir = resolved
+    def _install_exact(
+        self,
+        rule: InstallRule,
+        source_dir: Path,
+        source_pattern: str,
+        dest_dir: Path,
+    ) -> int:
+        source = resolve_source_path(source_dir, source_pattern)
+        if source is None:
+            source = source_dir / source_pattern
+        if not source.exists():
+            return 0
+        destination = resolve_staging_path(dest_dir, rule.rename or source.name)
+        return self._copy_item(source, destination, rule.stack, merge_dirs=rule.recursive)
 
-            # nav-level count to strip from matches: "a/b/*" -> strip 2 ("a", "b")
-            glob_nav_levels = len(glob_part.split("/")) - 1
-
-            # use case-insensitive glob (Amiga is case-insensitive)
-            ci_glob = _ci_glob_pattern(glob_part)
-
-            if search_dir.exists():
-                for source_item in search_dir.glob(ci_glob):
-                    # strip navigation directories form the matched path
-                    rel_parts = source_item.relative_to(search_dir).parts
-                    if len(rel_parts) > glob_nav_levels:
-                        keep_parts = rel_parts[glob_nav_levels:]
-                    else:
-                        keep_parts = (source_item.name,)
-
-                    if rule.rename:
-                        dest_path = resolve_staging_path(dest_dir, rule.rename)
-                    else:
-                        dest_path = resolve_staging_path(dest_dir, str(Path(*keep_parts)))
-
-                    if source_item.is_file():
-                        dest_path.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.copy2(source_item, dest_path)
-                        if rule.stack:
-                            _set_icon_stack(dest_path, rule.stack)
-                        files_installed += 1
-                    elif source_item.is_dir():
-                        files_installed += _merge_tree(source_item, dest_path)
-        else:
-            # specific file - resolve case-insensitively (Amiga is case-insensitive)
-            source_file = _ci_resolve_path(source_dir, source_pattern)
-            if not source_file:
-                source_file = source_dir / source_pattern  # fallback for logging
-
-            if source_file.exists():
-                if rule.rename:
-                    dest_path = resolve_staging_path(dest_dir, rule.rename)
-                else:
-                    dest_path = resolve_staging_path(dest_dir, source_file.name)
-
-                dest_path.parent.mkdir(parents=True, exist_ok=True)
-
-                if source_file.is_dir() and rule.recursive:
-                    files_installed += _merge_tree(source_file, dest_path)
-                else:
-                    shutil.copy2(source_file, dest_path)
-                    if rule.stack:
-                        _set_icon_stack(dest_path, rule.stack)
-                    files_installed = 1
-
-        return files_installed
+    @staticmethod
+    def _copy_item(source: Path, destination: Path, stack: int | None, merge_dirs: bool) -> int:
+        if not source.is_file() and not source.is_dir():
+            return 0
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if source.is_dir() and merge_dirs:
+            return _merge_tree(source, destination)
+        shutil.copy2(source, destination)
+        if stack:
+            _set_icon_stack(destination, stack)
+        return 1

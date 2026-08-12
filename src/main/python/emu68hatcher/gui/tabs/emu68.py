@@ -228,7 +228,7 @@ class Emu68Tab(QWidget):
             self.release_radio_alpha.setChecked(True)
         else:
             self.release_radio_stable.setChecked(True)
-        # setChecked doesnt fire buttonClicked, so the package tree needs telling by hand
+        # setChecked does not emit buttonClicked, so update the package tree explicitly
         self._emit_emu68_version()
 
     def _browse_picasso96_archive(self):

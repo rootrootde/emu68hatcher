@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from emu68hatcher.builder.errors import BuildError
 from emu68hatcher.builder.staging.scripts.generator import generate_boot_partition_files
+from emu68hatcher.builder.state import CreatedImage
 from emu68hatcher.config.defaults import EMU68_BOOT_PARTITION_NAME
 from emu68hatcher.utils.paths import ensure_dir
 
@@ -15,30 +16,34 @@ if TYPE_CHECKING:
     from emu68hatcher.builder.workflow import BuildWorkflow
 
 
-def configure_boot_partition(workflow: BuildWorkflow) -> None:
+def configure_boot_partition(workflow: BuildWorkflow, image: CreatedImage) -> None:
     """copy Emu68 boot files, ROM, and generate config.txt/cmdline.txt."""
-    emu68_boot_staging = workflow.state.staging_dir / EMU68_BOOT_PARTITION_NAME
+    emu68_boot_staging = image.workspace.staging_dir / EMU68_BOOT_PARTITION_NAME
     ensure_dir(emu68_boot_staging)
 
     workflow._update_state(progress=45.0)
     workflow._milestone("Copying Emu68 boot files")
-    _copy_emu68_boot_files(workflow, emu68_boot_staging)
+    _copy_emu68_boot_files(workflow, image, emu68_boot_staging)
 
     workflow._update_state(progress=55.0)
     workflow._milestone("Copying Kickstart ROM to boot partition")
-    rom_filename = _copy_kickstart_rom(workflow, emu68_boot_staging)
+    rom_filename = _copy_kickstart_rom(workflow, image, emu68_boot_staging)
 
     workflow._update_state(progress=60.0)
     workflow._milestone("Generating Emu68 boot config")
-    _generate_boot_config(workflow, rom_filename)
+    _generate_boot_config(workflow, image, rom_filename)
 
     # marker file so anyone inspecting the SD card knows which tool built it
     _write_hatcher_marker(emu68_boot_staging)
 
 
-def _copy_emu68_boot_files(workflow: BuildWorkflow, emu68_boot_staging: Path) -> None:
+def _copy_emu68_boot_files(
+    workflow: BuildWorkflow,
+    image: CreatedImage,
+    emu68_boot_staging: Path,
+) -> None:
     """copy Emu68 boot files from all variant archives to EMU68BOOT staging"""
-    emu68_extracted = workflow.state.extracted_paths.get("emu68_boot")
+    emu68_extracted = image.extracted.extracted_paths.get("emu68_boot")
 
     if not emu68_extracted or not emu68_extracted.exists():
         raise BuildError("Required Emu68 primary boot archive was not extracted")
@@ -65,10 +70,12 @@ def _copy_emu68_boot_files(workflow: BuildWorkflow, emu68_boot_staging: Path) ->
         raise BuildError("Emu68 primary boot archive contained no boot files")
 
     secondary_names = sorted(
-        name for name in workflow.state.required_boot_artifacts if name.startswith("emu68_boot_")
+        name
+        for name in image.extracted.downloaded.required_boot_artifacts
+        if name.startswith("emu68_boot_")
     )
     for secondary_name in secondary_names:
-        secondary_dir = workflow.state.extracted_paths.get(secondary_name)
+        secondary_dir = image.extracted.extracted_paths.get(secondary_name)
         if not secondary_dir or not secondary_dir.exists():
             raise BuildError(f"Required Emu68 kernel archive was not extracted: {secondary_name}")
         kernels_copied = 0
@@ -101,15 +108,20 @@ def _copy_emu68_boot_files(workflow: BuildWorkflow, emu68_boot_staging: Path) ->
         workflow.logger.info("Copied ps32lite-stealth-firmware.gz for stealth mode")
 
 
-def _copy_kickstart_rom(workflow: BuildWorkflow, emu68_boot_staging: Path) -> str:
+def _copy_kickstart_rom(
+    workflow: BuildWorkflow,
+    image: CreatedImage,
+    emu68_boot_staging: Path,
+) -> str:
     """copy Kickstart ROM to boot partition. returns the ROM filename used"""
     rom_filename = "kick.rom"
-    if workflow.state.resolved_rom_info and workflow.state.resolved_rom_info.get("fat32_name"):
-        rom_filename = workflow.state.resolved_rom_info["fat32_name"]
+    validated = image.workspace.validated
+    if validated.resolved_rom_info.get("fat32_name"):
+        rom_filename = validated.resolved_rom_info["fat32_name"]
 
-    if workflow.state.resolved_rom_path and workflow.state.resolved_rom_path.exists():
+    if validated.resolved_rom_path.exists():
         rom_dest = emu68_boot_staging / rom_filename
-        shutil.copy2(workflow.state.resolved_rom_path, rom_dest)
+        shutil.copy2(validated.resolved_rom_path, rom_dest)
         workflow.logger.info(f"Copied Kickstart ROM to EMU68BOOT as {rom_filename}")
     else:
         workflow.logger.warning("No Kickstart ROM found - boot partition will be incomplete")
@@ -117,7 +129,11 @@ def _copy_kickstart_rom(workflow: BuildWorkflow, emu68_boot_staging: Path) -> st
     return rom_filename
 
 
-def _generate_boot_config(workflow: BuildWorkflow, rom_filename: str) -> None:
+def _generate_boot_config(
+    workflow: BuildWorkflow,
+    image: CreatedImage,
+    rom_filename: str,
+) -> None:
     """generate config.txt and cmdline.txt for Emu68 boot partition"""
     screen_mode = "1280*720-50"  # default to 720p50
     custom_cvt = ""
@@ -135,7 +151,7 @@ def _generate_boot_config(workflow: BuildWorkflow, rom_filename: str) -> None:
     selected = get_resolution(workflow).selected
 
     generate_boot_partition_files(
-        workflow.state.staging_dir,
+        image.workspace.staging_dir,
         screen_mode=screen_mode,
         custom_cvt=custom_cvt,
         rom_filename=rom_filename,

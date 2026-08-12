@@ -2,7 +2,9 @@
 
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+_IDENTIFIER_PATTERN = r"^[a-z][a-z0-9_]*$"
 
 
 class SourceType(str, Enum):
@@ -51,7 +53,7 @@ class InstallRule(BaseModel):
     # source pattern (glob) within extracted archive
     source: str = Field(alias="from")
 
-    # destination path on Amiga filesystem (relative to System:)
+    # destination path below the configured boot partition's staging root
     dest: str = Field(alias="to")
 
     # options
@@ -94,7 +96,7 @@ class Package(BaseModel):
     """complete package definition"""
 
     # identity
-    name: str  # internal identifier (lowercase, no spaces)
+    name: str = Field(pattern=_IDENTIFIER_PATTERN)
     friendly_name: str  # display name in UI
     group: str  # category group (System, Applications, Internet, etc.)
     description: str  # tooltip description
@@ -135,8 +137,21 @@ class Package(BaseModel):
     # optional Workbench Tools-menu launcher (injected on WB 3.2.x only)
     menu_entry: MenuEntry | None = None
 
+    @field_validator("requires", "recommends", "conflicts", "provides")
+    @classmethod
+    def _validate_tokens(cls, values: list[str]) -> list[str]:
+        import re
+
+        invalid = [value for value in values if not re.fullmatch(_IDENTIFIER_PATTERN, value)]
+        if invalid:
+            raise ValueError(f"tokens must be lowercase identifiers: {invalid}")
+        normalized = [value.lower() for value in values]
+        if len(normalized) != len(set(normalized)):
+            raise ValueError("capability list contains duplicate tokens")
+        return values
+
     def matches_version(self, kickstart_version: str) -> bool:
-        """check if package is compatible wiht a Kickstart version"""
+        """check if package is compatible with a Kickstart version"""
         if not self.versions:
             return True  # no version restriction
         return kickstart_version in self.versions
@@ -163,9 +178,13 @@ class Bundle(BaseModel):
 # groups for organizing packages in UI
 PACKAGE_GROUPS = [
     "System",
+    "Drivers",
+    "RTG",
+    "Commodities",
     "Applications",
     "Utilities",
     "Internet",
+    "Network",
     "Development",
     "Games",
     "Locale",
@@ -186,7 +205,7 @@ def _group_rank(pkg: Package) -> int:
 
 
 class ADFRule(BaseModel):
-    """rule for extracting files form an ADF disk image"""
+    """rule for extracting files from an ADF disk image"""
 
     # source ADF identifier (e.g., "Workbench3_1", "Storage3_2")
     adf: str

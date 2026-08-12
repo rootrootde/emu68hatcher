@@ -1,15 +1,54 @@
 """JSON config file load/save"""
 
 import json
+from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
-from emu68hatcher.config.schema import BuildConfig
+from emu68hatcher.config.schema import CURRENT_CONFIG_VERSION, BuildConfig
 
 
 class ConfigurationError(Exception):
-    """raised when configu loading or validation fails"""
+    """raised when config loading or validation fails"""
 
     pass
+
+
+def _migrate_1_0(data: dict[str, Any]) -> dict[str, Any]:
+    migrated = deepcopy(data)
+    migrated.pop("metadata", None)
+
+    install_media = migrated.get("install_media")
+    if isinstance(install_media, dict):
+        install_media.pop("version", None)
+
+    if not migrated.get("asset_directories"):
+        paths = []
+        kickstart = migrated.get("kickstart")
+        if isinstance(kickstart, dict) and kickstart.get("rom_directory"):
+            paths.append(kickstart["rom_directory"])
+        if isinstance(install_media, dict) and install_media.get("directory"):
+            paths.append(install_media["directory"])
+        migrated["asset_directories"] = list(dict.fromkeys(paths))
+
+    migrated["version"] = CURRENT_CONFIG_VERSION
+    return migrated
+
+
+def migrate_config_data(raw: Any) -> dict[str, Any]:
+    if not isinstance(raw, dict):
+        raise ConfigurationError("Configuration root must be a JSON object")
+
+    version = raw.get("version", "1.0.0")
+    if not isinstance(version, str):
+        raise ConfigurationError("Configuration version must be a string")
+    if version == CURRENT_CONFIG_VERSION:
+        return deepcopy(raw)
+    if version == "1.0.0":
+        return _migrate_1_0(raw)
+    raise ConfigurationError(
+        f"Unsupported configuration version {version!r}; expected {CURRENT_CONFIG_VERSION}"
+    )
 
 
 def load_config(path: str | Path) -> BuildConfig:
@@ -28,8 +67,10 @@ def load_config(path: str | Path) -> BuildConfig:
         raise ConfigurationError(f"Failed to read configuration file: {e}") from e
 
     try:
-        # model_validate_json skips field validators, so loads() + model_validate
-        return BuildConfig.model_validate(json.loads(content))
+        raw = json.loads(content)
+        return BuildConfig.model_validate(migrate_config_data(raw))
+    except ConfigurationError:
+        raise
     except Exception as e:
         raise ConfigurationError(f"Invalid configuration: {e}") from e
 
@@ -42,10 +83,7 @@ def save_config(
     path = Path(path)
 
     try:
-        # ensure parent directory exists
         path.parent.mkdir(parents=True, exist_ok=True)
-
-        # write with pretty formatting
         content = config.model_dump_json(indent=2)
         path.write_text(content, encoding="utf-8")
     except OSError as e:

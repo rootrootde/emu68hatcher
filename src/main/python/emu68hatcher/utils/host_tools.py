@@ -54,7 +54,7 @@ _TOOL_NAMES: dict[str, tuple[list[str], list[str]]] = {
         ["hst-imager.exe", "hst.imager.exe", "Hst.Imager.Console.exe"],
         ["hst-imager", "hst.imager", "Hst.Imager.Console"],
     ),
-    # never accept 7za (no LHA codec); 7zz first so a system 7z cant shadow the full build
+    # never accept 7za (no LHA codec); 7zz first so a system 7z cannot shadow the full build
     "7z": (
         ["7z.exe"],
         ["7zz", "7z"],
@@ -96,6 +96,45 @@ def run_7z(
         cwd=cwd,
         timeout=timeout,
     )
+
+
+def parse_7z_member_sizes(output: str) -> list[int]:
+    """Return regular-file sizes from 7-Zip's technical listing."""
+    sizes: list[int] = []
+    record: dict[str, str] = {}
+
+    def finish_record() -> None:
+        if "Size" not in record:
+            return
+        attributes = record.get("Attributes", "")
+        if record.get("Folder") == "+" or attributes.startswith("D"):
+            return
+        try:
+            size = int(record["Size"])
+        except ValueError as e:
+            raise RuntimeError(f"Invalid 7-Zip member size: {record['Size']!r}") from e
+        if size < 0:
+            raise RuntimeError(f"Invalid negative 7-Zip member size: {size}")
+        sizes.append(size)
+
+    for line in output.splitlines():
+        if not line.strip():
+            finish_record()
+            record = {}
+            continue
+        key, separator, value = line.partition(" = ")
+        if separator:
+            record[key] = value
+    finish_record()
+    return sizes
+
+
+def list_7z_member_sizes(seven_z: Path, archive_path: Path) -> list[int]:
+    result = run_7z(seven_z, ["l", "-slt", str(archive_path)], timeout=60)
+    if result.returncode != 0:
+        message = (result.stderr or result.stdout).strip()
+        raise RuntimeError(f"7z listing failed: {message}")
+    return parse_7z_member_sizes(result.stdout)
 
 
 def get_hst_imager_env() -> dict[str, str]:

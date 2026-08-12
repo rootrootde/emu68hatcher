@@ -13,12 +13,12 @@ if TYPE_CHECKING:
 
 
 def get_resolution(workflow: BuildWorkflow) -> Resolution:
-    """resolve the package selection once per build and cache it on the workflow state"""
-    if workflow.state.resolution is None:
+    """Resolve and cache the package selection once per build."""
+    if workflow._resolution is None:
         ks = workflow.config.kickstart.version.value
         emu = workflow.config.emu68_version.value
-        workflow.state.resolution = resolve_selection(workflow.config, ks, emu)
-    return workflow.state.resolution
+        workflow._resolution = resolve_selection(workflow.config, ks, emu)
+    return workflow._resolution
 
 
 def resolve_selection(
@@ -27,6 +27,7 @@ def resolve_selection(
     """resolve the build's package selection (user-enabled + network stack + deps)."""
     enabled = [p.name for p in config.packages if p.enabled]
     requested = {n.lower() for n in enabled}
+    deselected = {p.name.lower() for p in config.packages if not p.enabled}
 
     net: list[str] = []
     if config.network_stack:
@@ -38,5 +39,10 @@ def resolve_selection(
     mandatory = [p.name for p in get_mandatory_packages(kickstart_version, emu68_version)]
     order_hint = [n.lower() for n in (enabled + net + mandatory)]
 
-    # deselected stays empty until the gui lets users untick a recommended package
-    return resolve(requested, set(), kickstart_version, emu68_version, order_hint=order_hint)
+    return resolve(
+        requested,
+        deselected,
+        kickstart_version,
+        emu68_version,
+        order_hint=order_hint,
+    )

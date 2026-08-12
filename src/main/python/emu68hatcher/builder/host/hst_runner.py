@@ -91,7 +91,9 @@ class HSTRunner:
         if self._hst_imager is None:
             self._hst_imager = find_hst_imager()
         if self._hst_imager is None:
-            raise RuntimeError("HST Imager not found. Run 'emu68hatcher setup' to download it.")
+            raise RuntimeError(
+                "HST Imager not found. Open the Start tab and download the required tools."
+            )
         return self._hst_imager
 
     def is_available(self) -> bool:

@@ -1,6 +1,7 @@
 """output tab - image file, image+flash, or direct-to-SD"""
 
 from pathlib import Path
+from time import monotonic
 
 from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtWidgets import (
@@ -35,6 +36,8 @@ class OutputTab(QWidget):
         super().__init__(parent)
         self._disks: list = []
         self._disk_worker: DiskListWorker | None = None
+        self._disk_workers: set[DiskListWorker] = set()
+        self._disk_generation = 0
         self._pending_device: str | None = None
         self._restore_in_progress = False
         self._last_emitted_device: str | None = None
@@ -151,8 +154,11 @@ class OutputTab(QWidget):
 
     def refresh_disks(self):
         """spawn DiskListWorker, fill combo on result"""
-        if self._disk_worker is not None and self._disk_worker.isRunning():
-            return  # already in flight
+        self._disk_generation += 1
+        generation = self._disk_generation
+        for worker in tuple(self._disk_workers):
+            if worker.isRunning():
+                worker.requestInterruption()
         if self._pending_device is None:
             self._pending_device = self.disk_combo.currentData()
         # block signals: clear() flips the index and would emit a stale
@@ -162,8 +168,46 @@ class OutputTab(QWidget):
         self.disk_combo.addItem("Scanning…", None)
         self.disk_combo.blockSignals(False)
         self._disk_worker = DiskListWorker(self)
-        self._disk_worker.disks_loaded.connect(self._on_disks_loaded)
-        self._disk_worker.start()
+        worker = self._disk_worker
+        self._disk_workers.add(worker)
+        worker.disks_loaded.connect(lambda disks, g=generation: self._accept_disks(g, disks))
+        worker.load_error.connect(lambda message, g=generation: self._accept_disk_error(g, message))
+        worker.finished.connect(lambda w=worker: self._disk_worker_finished(w))
+        worker.start()
+
+    def _disk_worker_finished(self, worker: DiskListWorker) -> None:
+        self._disk_workers.discard(worker)
+        if worker is self._disk_worker:
+            self._disk_worker = None
+
+    def _accept_disks(self, generation: int, disks: list) -> None:
+        if generation == self._disk_generation:
+            self._on_disks_loaded(disks)
+
+    def _accept_disk_error(self, generation: int, message: str) -> None:
+        if generation != self._disk_generation:
+            return
+        restoring = self._restore_in_progress
+        self._pending_device = None
+        self._restore_in_progress = False
+        self._disks = []
+        self.disk_combo.blockSignals(True)
+        self.disk_combo.clear()
+        self.disk_combo.addItem(f"(disk scan failed: {message})", None)
+        self.disk_combo.blockSignals(False)
+        self._emit_target_size(force=True)
+        if restoring:
+            self.target_restore_complete.emit()
+
+    def shutdown_workers(self, timeout_ms: int = 500) -> bool:
+        workers = tuple(worker for worker in self._disk_workers if worker.isRunning())
+        for worker in workers:
+            worker.requestInterruption()
+        deadline = monotonic() + timeout_ms / 1000
+        for worker in workers:
+            remaining = max(0, int((deadline - monotonic()) * 1000))
+            worker.wait(remaining)
+        return not any(worker.isRunning() for worker in workers)
 
     @Slot(list)
     def _on_disks_loaded(self, disks: list):
@@ -244,7 +288,7 @@ class OutputTab(QWidget):
             self.sparse_cb.setChecked(config.sparse)
         self._pending_device = pending_device
         self._restore_in_progress = pending_device is not None
-        # programmatic setChecked doesnt fire buttonClicked; call the handler directly
+        # setChecked does not emit buttonClicked
         self._on_mode_changed()
         if pending_device is None:
             self.target_restore_complete.emit()

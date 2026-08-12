@@ -1,91 +1,24 @@
-"""build workflow - validate -> download -> extract -> create -> install -> configure -> finalize"""
+"""Eleven-stage build workflow from validation through optional flashing."""
 
 import logging
 import platform as _platform
 import subprocess
 import sys
-from collections.abc import Callable
-from dataclasses import dataclass, field
-from enum import Enum
 from pathlib import Path
 
 from emu68hatcher.builder.errors import BuildCancelledError, BuildError
-from emu68hatcher.builder.host.elevation import ElevationToken
+from emu68hatcher.builder.host.elevation import cleanup_elevation
+from emu68hatcher.builder.state import (
+    BuildLogCallback,
+    BuildProgressCallback,
+    BuildResult,
+    BuildStage,
+    BuildState,
+    CreatedImage,
+)
 from emu68hatcher.config.schema import BuildConfig
-from emu68hatcher.data.install_media import IdentifiedInstallMedia
 from emu68hatcher.data.package_resolver import Resolution
 from emu68hatcher.utils.logging import get_logger
-
-
-class BuildStage(str, Enum):
-    """build pipeline stage tag"""
-
-    INIT = "init"
-    VALIDATE = "validate"
-    DOWNLOAD = "download"
-    EXTRACT = "extract"
-    CREATE_IMAGE = "create_image"
-    INSTALL_WORKBENCH = "install_workbench"
-    INSTALL_PACKAGES = "install_packages"
-    CONFIGURE = "configure"
-    INSTALL_EXTRAS = "install_extras"
-    FINALIZE = "finalize"
-    FLASH = "flash"
-    COMPLETE = "complete"
-    FAILED = "failed"
-
-
-@dataclass
-class BuildState:
-    """live build state"""
-
-    stage: BuildStage = BuildStage.INIT
-    progress: float = 0.0
-    message: str = ""
-
-    # paths
-    work_dir: Path | None = None
-    image_path: Path | str | None = None  # .img file Path OR device string for DEVICE mode
-    # when set, the .img was built in the (non-TCC) work dir and is moved here after flashing
-    final_output_path: Path | None = None
-    staging_dir: Path | None = None
-    downloads_dir: Path | None = None
-    extracted_dir: Path | None = None
-    workbench_dir: Path | None = None
-
-    # set at validate when DEVICE mode or flash_target is configured
-    elevation: ElevationToken | None = None
-
-    # macos DA claim, held for the build to keep diskarbitrationd off during writes
-    disk_claim: object | None = None
-
-    # paths discovered during scan
-    resolved_rom_path: Path | None = None
-    resolved_rom_info: dict | None = None  # includes fat32_name for boot partition
-    resolved_install_media: list["IdentifiedInstallMedia"] = field(default_factory=list)
-
-    # package_name -> local path
-    downloaded_files: dict[str, Path] = field(default_factory=dict)
-    extracted_paths: dict[str, Path] = field(default_factory=dict)
-    required_artifacts: set[str] = field(default_factory=set)
-    required_boot_artifacts: set[str] = field(default_factory=set)
-    required_packages: set[str] = field(default_factory=set)
-    pfs3_handler_path: Path | None = None
-    ffs_handler_path: Path | None = None
-
-    # package selection resolved once (build-invariant) and reused across stages
-    resolution: Resolution | None = None
-
-    # user-supplied Roadshow archive resolution (set by validate, consumed by extract)
-    roadshow_archive_path: Path | None = None
-    roadshow_archive_kind: str | None = None  # outer | inner_full | dir_full | dir_inner
-
-    # user-supplied Picasso96 archive (set by validate, consumed by extract)
-    picasso96_archive_path: Path | None = None
-
-
-BuildProgressCallback = Callable[[BuildState], None]
-BuildLogCallback = Callable[[str, str], None]  # (stage_name, message)
 
 
 class BuildLogHandler(logging.Handler):
@@ -106,15 +39,6 @@ class BuildLogHandler(logging.Handler):
             self.handleError(record)
 
 
-@dataclass
-class BuildResult:
-    """final build result"""
-
-    success: bool
-    output_path: Path | str | None = None
-    error: str | None = None
-
-
 class BuildWorkflow:
     """run pipeline stages in sequence, update BuildState, fire progress callbacks"""
 
@@ -123,13 +47,12 @@ class BuildWorkflow:
         config: BuildConfig,
         progress_callback: BuildProgressCallback | None = None,
         log_callback: BuildLogCallback | None = None,
-        gui_mode: bool = False,
     ):
         self.config = config
         self.progress_callback = progress_callback
         self._log_callback = log_callback
-        self.gui_mode = gui_mode
         self.state = BuildState()
+        self._resolution: Resolution | None = None
         self.logger = get_logger()
         self._cancelled = False
 
@@ -273,12 +196,12 @@ class BuildWorkflow:
             log("platform: output: not configured")
         log("platform: === end build environment ===")
 
-    def _finalize_output_move(self) -> None:
+    def _finalize_output_move(self, image: CreatedImage) -> CreatedImage:
         """move a .img built in the work dir (macOS TCC case) to the user's chosen output path"""
-        final = self.state.final_output_path
-        src = self.state.image_path
+        final = image.final_output_path
+        src = image.image_path
         if final is None or src is None or src == final:
-            return
+            return image
         import shutil
 
         self._milestone(f"Moving image to {final}")
@@ -286,38 +209,14 @@ class BuildWorkflow:
         if final.exists():
             final.unlink()
         shutil.move(str(src), str(final))
-        self.state.image_path = final
         self.logger.info(f"Moved built image to {final}")
+        from dataclasses import replace
+
+        return replace(image, image_path=final, final_output_path=None)
 
     def build(self) -> BuildResult:
         """run the full pipeline synchronously"""
-        from emu68hatcher.builder.pipeline import (
-            stage_configure,
-            stage_create_image,
-            stage_download,
-            stage_extract,
-            stage_finalize,
-            stage_flash,
-            stage_install_extras,
-            stage_install_packages,
-            stage_install_workbench,
-            stage_setup_workspace,
-            stage_validate,
-        )
-
-        pipeline = [
-            stage_validate,
-            stage_setup_workspace,
-            stage_download,
-            stage_extract,
-            stage_create_image,
-            stage_install_workbench,
-            stage_install_packages,
-            stage_configure,
-            stage_install_extras,
-            stage_finalize,
-            stage_flash,
-        ]
+        from emu68hatcher.builder.stage_registry import PIPELINE_STAGES
 
         # GUI handler first: the buildlog probe below touches the output location, and its
         # breadcrumbs must reach the dialog if that goes wrong (console is invisible when frozen)
@@ -332,11 +231,13 @@ class BuildWorkflow:
                 self.logger.info(f"Build log: {buildlog_path}")
             self._log_platform_info()
 
-            for stage_func in pipeline:
-                stage_func(self)
+            phase = None
+            for definition in PIPELINE_STAGES:
+                phase = definition.function(self, phase)
                 self._check_cancelled()
 
-            self._finalize_output_move()
+            assert isinstance(phase, CreatedImage)
+            phase = self._finalize_output_move(phase)
             self._update_state(BuildStage.COMPLETE, 100.0)
             self._milestone("Build successful!")
             if buildlog_path:
@@ -382,11 +283,8 @@ class BuildWorkflow:
                     self.logger.exception("error releasing disk claim")
                 self.state.disk_claim = None
             self._bring_target_disk_online()
-            if self.state.elevation is not None and getattr(self.state.elevation, "helper", None):
-                try:
-                    self.state.elevation.helper.shutdown()
-                except Exception:
-                    self.logger.exception("error shutting down elevated helper")
+            cleanup_elevation(self.state.elevation)
+            self.state.elevation = None
             self.logger.logger.removeHandler(gui_log_handler)
             if buildlog_handler is not None:
                 self.logger.logger.removeHandler(buildlog_handler)

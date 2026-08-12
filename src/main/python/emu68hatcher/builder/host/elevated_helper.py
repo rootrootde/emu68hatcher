@@ -58,11 +58,11 @@ class ElevatedHelper:
         self.worker_script = Path(tempfile.mkstemp(prefix="emu68hatcher-worker-", suffix=".py")[1])
         self.worker_script.write_text(WORKER_SCRIPT)
 
-        from emu68hatcher.builder.host.elevation import _ps_quote
+        from emu68hatcher.builder.host._elevation_common import ps_quote
 
-        ps_args = ", ".join(_ps_quote(str(p)) for p in (self.worker_script, self.ipc_dir))
+        ps_args = ", ".join(ps_quote(str(p)) for p in (self.worker_script, self.ipc_dir))
         ps = (
-            f"$p = Start-Process -FilePath {_ps_quote(sys.executable)} "
+            f"$p = Start-Process -FilePath {ps_quote(sys.executable)} "
             f"-ArgumentList @({ps_args}) -Verb RunAs -PassThru -WindowStyle Hidden; "
             "if ($p) { exit 0 } else { exit 1 }"
         )

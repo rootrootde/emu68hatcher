@@ -290,7 +290,19 @@ class StartTab(QWidget):
         self._worker.tool_progress.connect(self._on_tool_progress)
         self._worker.tool_finished.connect(self._on_tool_finished)
         self._worker.download_finished.connect(self._on_download_finished)
+        self._worker.finished.connect(self._worker_finished)
         self._worker.start()
+
+    def _worker_finished(self) -> None:
+        self._worker = None
+
+    def shutdown_workers(self, timeout_ms: int = 500) -> bool:
+        worker = self._worker
+        if worker is None or not worker.isRunning():
+            return True
+        worker.requestInterruption()
+        worker.wait(timeout_ms)
+        return not worker.isRunning()
 
     @Slot(str)
     def _on_tool_started(self, tool_name: str):

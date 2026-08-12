@@ -40,6 +40,7 @@ class PackagesTab(QWidget):
         self.emu68_version = emu68_version
         self._selectables: list[tuple[str, Bundle | Package]] = []
         self._key_to_packages: dict[str, list[str]] = {}
+        self._bundle_member_states: dict[str, dict[str, bool]] = {}
         self._updating = False  # reentrancy guard for the mui mutual-exclusion handler
         self.setup_ui()
 
@@ -91,13 +92,14 @@ class PackagesTab(QWidget):
         # tree row keys: bundle.id for bundles, package.name for standalones
         self._selectables: list[tuple[str, Bundle | Package]] = []
         self._key_to_packages: dict[str, list[str]] = {}
+        self._bundle_member_states = {}
 
         # standalone packages (not in a bundle, not mandatory, not a network stack)
         for p in get_packages_for_version(self.kickstart_version, self.emu68_version):
             if not p.group or p.group in _HIDDEN_GROUPS:
                 continue
             if p.mandatory:
-                continue  # installed unconditionally by teh build pipeline
+                continue  # installed unconditionally by the build pipeline
             if p.bundle:
                 continue  # surfaced via its bundle
             if p.name in _NETWORK_STACK_PACKAGES:
@@ -114,6 +116,7 @@ class PackagesTab(QWidget):
             key = b.id if b.id not in self._key_to_packages else f"bundle:{b.id}"
             self._selectables.append((key, b))
             self._key_to_packages[key] = [m.name for m in members]
+            self._bundle_member_states[key] = {m.name: b.default for m in members}
 
         # build UI
         groups: dict[str, list[tuple[str, Bundle | Package]]] = {}
@@ -168,6 +171,13 @@ class PackagesTab(QWidget):
         """keep exactly one of mui38/mui5 checked (a radio built from two checkboxes)"""
         if self._updating or column != 0:
             return
+        key = next((key for key, widget in self.checkboxes.items() if widget is item), None)
+        if key in self._bundle_member_states:
+            state = item.checkState(0)
+            if state != Qt.CheckState.PartiallyChecked:
+                enabled = state == Qt.CheckState.Checked
+                self._bundle_member_states[key] = dict.fromkeys(self._key_to_packages[key], enabled)
+            return
         mui38 = self.checkboxes.get("mui38")
         mui5 = self.checkboxes.get("mui5")
         if item is not mui38 and item is not mui5:
@@ -217,36 +227,47 @@ class PackagesTab(QWidget):
         """tree selections; bundles expand to member names so persisted config stays flat"""
         result = []
         for key, widget in self.checkboxes.items():
+            if (
+                key in self._bundle_member_states
+                and widget.checkState(0) == Qt.CheckState.PartiallyChecked
+            ):
+                for pkg_name, enabled in self._bundle_member_states[key].items():
+                    result.append({"name": pkg_name, "enabled": enabled})
+                continue
             enabled = widget.checkState(0) == Qt.CheckState.Checked
             for pkg_name in self._key_to_packages.get(key, [key]):
                 result.append({"name": pkg_name, "enabled": enabled})
         return result
 
     def set_config(self, packages: list[PackageConfig]):
-        """populate from config; partial bundle state is intentionally collapsed to 'on'"""
+        """Populate the tree while retaining per-member bundle state."""
         pkg_enabled = {p.name: p.enabled for p in packages}
-
-        # reverse lookup: package name -> checkbox key
-        pkg_to_key: dict[str, str] = {}
-        for key, pkg_names in self._key_to_packages.items():
-            for pkg_name in pkg_names:
-                pkg_to_key[pkg_name] = key
-
-        # collapse to per-key state: any member enabled flips the whole bundle on
-        key_enabled: dict[str, bool] = {}
-        for pkg_name, enabled in pkg_enabled.items():
-            key = pkg_to_key.get(pkg_name)
-            if key is None:
-                continue
-            key_enabled[key] = key_enabled.get(key, False) or enabled
 
         # guard so applying the saved mui state doesn't trip the mutual-exclusion handler
         self._updating = True
         try:
-            for key, enabled in key_enabled.items():
-                if key in self.checkboxes:
-                    self.checkboxes[key].setCheckState(
-                        0, Qt.CheckState.Checked if enabled else Qt.CheckState.Unchecked
+            for key, widget in self.checkboxes.items():
+                names = self._key_to_packages.get(key, [key])
+                states = {name: pkg_enabled[name] for name in names if name in pkg_enabled}
+                if not states:
+                    continue
+                if key in self._bundle_member_states:
+                    retained = self._bundle_member_states[key]
+                    retained.update(states)
+                    values = set(retained.values())
+                    if len(values) > 1:
+                        widget.setCheckState(0, Qt.CheckState.PartiallyChecked)
+                    else:
+                        widget.setCheckState(
+                            0,
+                            Qt.CheckState.Checked if values.pop() else Qt.CheckState.Unchecked,
+                        )
+                else:
+                    widget.setCheckState(
+                        0,
+                        Qt.CheckState.Checked
+                        if next(iter(states.values()))
+                        else Qt.CheckState.Unchecked,
                     )
             # a config with neither mui recorded (or both off) falls back to mui38
             mui38 = self.checkboxes.get("mui38")

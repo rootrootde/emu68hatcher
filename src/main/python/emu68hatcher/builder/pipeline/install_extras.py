@@ -5,26 +5,22 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from emu68hatcher.builder.errors import BuildError
 from emu68hatcher.builder.staging.tree_copy import copy_contained_tree
-from emu68hatcher.builder.workflow import BuildStage
+from emu68hatcher.builder.state import BuildStage, CreatedImage
 
 if TYPE_CHECKING:
     from emu68hatcher.builder.workflow import BuildWorkflow
 
 
-def stage_install_extras(workflow: BuildWorkflow) -> None:
+def stage_install_extras(workflow: BuildWorkflow, image: CreatedImage) -> CreatedImage:
     """copy each amiga partitions extra_content_directory contents into staging/<device>/"""
-    if not workflow.state.staging_dir:
-        raise BuildError("Staging directory not set - setup stage may have failed")
-
     workflow._update_state(BuildStage.INSTALL_EXTRAS, 0.0)
     workflow._milestone("Mirroring per-partition extra content")
 
     if not workflow.config.partitions:
         workflow._update_state(progress=100.0)
         workflow._milestone("No partitions configured - nothing to mirror")
-        return
+        return image
 
     parts = [
         p
@@ -34,7 +30,7 @@ def stage_install_extras(workflow: BuildWorkflow) -> None:
     if not parts:
         workflow._update_state(progress=100.0)
         workflow._milestone("No per-partition extras configured")
-        return
+        return image
 
     total_files = 0
     for i, part in enumerate(parts):
@@ -48,7 +44,7 @@ def stage_install_extras(workflow: BuildWorkflow) -> None:
             )
             continue
 
-        dest = workflow.state.staging_dir / part.device
+        dest = image.workspace.staging_dir / part.device
         dest.mkdir(parents=True, exist_ok=True)
 
         # user content wins on collision (intentional - "put my files in the image")
@@ -71,3 +67,4 @@ def stage_install_extras(workflow: BuildWorkflow) -> None:
 
     workflow._update_state(progress=100.0)
     workflow._milestone(f"Extras mirrored ({total_files} files across {len(parts)} partition(s))")
+    return image

@@ -6,6 +6,49 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from emu68hatcher.config.display_models import CustomScreenMode, DisplayConfig
+from emu68hatcher.config.network_models import (
+    InterfaceIp,
+    IpMode,
+    NetworkSettings,
+    NetworkStack,
+    WifiConfig,
+)
+from emu68hatcher.config.partition_models import (
+    AmigaPartition,
+    Filesystem,
+    MBRPartition,
+    PartitionConfig,
+)
+
+__all__ = [
+    "AmigaPartition",
+    "BuildConfig",
+    "CustomScreenMode",
+    "DisplayConfig",
+    "Emu68Version",
+    "Filesystem",
+    "InstallMediaConfig",
+    "InterfaceIp",
+    "IpMode",
+    "KickstartConfig",
+    "KickstartVersion",
+    "MBRPartition",
+    "NetworkSettings",
+    "NetworkStack",
+    "OutputConfig",
+    "OutputType",
+    "PackageConfig",
+    "PartitionConfig",
+    "WifiConfig",
+]
+
+CURRENT_CONFIG_VERSION = "1.1.0"
+
+
+class _ConfigModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
 
 class KickstartVersion(str, Enum):
     """kickstart / workbench versions the schema knows"""
@@ -15,13 +58,6 @@ class KickstartVersion(str, Enum):
     V3_2_2_1 = "3.2.2.1"
     V3_2_3 = "3.2.3"
     V3_9 = "3.9"
-
-
-class Filesystem(str, Enum):
-    """supported amiga filesystems"""
-
-    PFS3 = "PFS3"
-    FFS = "FFS"
 
 
 class OutputType(str, Enum):
@@ -77,7 +113,7 @@ def _coerce_optional_path(v):
     return Path(v) if isinstance(v, str) else v
 
 
-class KickstartConfig(BaseModel):
+class KickstartConfig(_ConfigModel):
     """kickstart ROM config"""
 
     version: KickstartVersion = KickstartVersion.V3_1
@@ -97,7 +133,7 @@ class KickstartConfig(BaseModel):
         return _coerce_optional_path(v)
 
 
-class InstallMediaConfig(BaseModel):
+class InstallMediaConfig(_ConfigModel):
     """OS install media config"""
 
     directory: Path | None = Field(
@@ -111,226 +147,14 @@ class InstallMediaConfig(BaseModel):
         return _coerce_optional_path(v)
 
 
-class CustomScreenMode(BaseModel):
-    """custom HDMI mode -> config.txt CVT line"""
-
-    width: int = Field(ge=320, le=1920, default=640)
-    height: int = Field(ge=200, le=1200, default=480)
-    framerate: int = Field(ge=24, le=75, default=50)
-    # 1=4:3, 2=14:9, 3=16:9, 4=5:4, 5=16:10, 6=15:9 - matches RPi hdmi_cvt aspect field
-    aspect_ratio: int = Field(ge=1, le=6, default=3)
-    margins: bool = False
-    interlace: bool = False
-    reduced_blanking: bool = False
-
-    def to_cvt_string(self) -> str:
-        """RPi hdmi_cvt line: width height framerate aspect margins interlace reduced_blanking"""
-        return (
-            f"{self.width} {self.height} {self.framerate} "
-            f"{self.aspect_ratio} {int(self.margins)} "
-            f"{int(self.interlace)} {int(self.reduced_blanking)}"
-        )
-
-
-class DisplayConfig(BaseModel):
-    """display + screen mode"""
-
-    # row in data/reference/screen_modes.yaml, or "Custom"
-    hdmi_mode: str = "1280*720-50"
-    custom: CustomScreenMode | None = None
-
-    # optional path to a user-owned Picasso96 archive; when set, replaces the default Aminet version
-    picasso96_archive: Path | None = None
-
-    @field_validator("picasso96_archive", mode="before")
-    @classmethod
-    def _convert_picasso96_archive(cls, v):
-        return _coerce_optional_path(v)
-
-    @model_validator(mode="after")
-    def validate_custom_mode(self):
-        # catches hand-edited JSON that picks "Custom" without supplying fields
-        if self.hdmi_mode == "Custom" and self.custom is None:
-            raise ValueError("Custom HDMI mode selected but no custom settings provided")
-        return self
-
-
-class PackageConfig(BaseModel):
+class PackageConfig(_ConfigModel):
     """one package toggle"""
 
     name: str
     enabled: bool = True
 
 
-class AmigaPartition(BaseModel):
-    """amiga RDB partition inside an ID76 MBR partition"""
-
-    device: str = Field(pattern=r"^[A-Z]{2,3}\d+$", description="e.g., DH0, DH1, SDH0, SDH1")
-    # AmigaDOS volume names: 1..31 chars
-    volume: str = Field(min_length=1, max_length=31)
-    filesystem: Filesystem = Filesystem.PFS3
-    size: int = Field(gt=0, description="Size in bytes")
-    bootable: bool = False
-    priority: int = Field(ge=-128, le=127, default=0)
-    buffers: int = Field(ge=1, le=600, default=30)
-    max_transfer: int = Field(default=0x1FE00)
-    mask: int = Field(default=0x7FFFFFFE)
-    no_mount: bool = False
-    # optional: contents of this dir get mirrored into staging/<device>/ after packages
-    extra_content_directory: Path | None = None
-
-    @field_validator("extra_content_directory", mode="before")
-    @classmethod
-    def _convert_extra_content_directory(cls, v):
-        return _coerce_optional_path(v)
-
-
-class MBRPartition(BaseModel):
-    """MBR partition - FAT32 (boot) or ID76 (amiga)"""
-
-    type: Literal["fat32", "id76"]
-    name: str
-    size: int = Field(gt=0, description="Size in bytes")
-    # ID76 only
-    amiga_partitions: list[AmigaPartition] | None = None
-
-    @model_validator(mode="after")
-    def validate_amiga_partitions(self):
-        if self.type == "id76" and not self.amiga_partitions:
-            raise ValueError("ID76 partition must have at least one Amiga partition")
-        if self.type == "fat32" and self.amiga_partitions:
-            raise ValueError("FAT32 partition cannot have Amiga partitions")
-        return self
-
-
-class PartitionConfig(BaseModel):
-    """disk partition layout"""
-
-    disk_size: int = Field(gt=0, description="Total disk size in bytes")
-    layout: list[MBRPartition] = Field(min_length=1)
-
-    def iter_amiga_partitions(self):
-        """yield AmigaPartitions in declaration order"""
-        for mbr_part in self.layout:
-            if mbr_part.amiga_partitions:
-                yield from mbr_part.amiga_partitions
-
-    @property
-    def bootable_device(self) -> str | None:
-        """first bootable amiga partition's device, or None"""
-        for amiga_part in self.iter_amiga_partitions():
-            if amiga_part.bootable:
-                return amiga_part.device
-        return None
-
-    @property
-    def bootable_device_or_default(self) -> str:
-        """bootable device name, or the default boot device when none is marked"""
-        from emu68hatcher.config.defaults import DEFAULT_BOOT_DEVICE
-
-        return self.bootable_device or DEFAULT_BOOT_DEVICE
-
-    @model_validator(mode="after")
-    def validate_partition_sizes(self):
-        from emu68hatcher.config.defaults import (
-            CYLINDER_SIZE,
-            FFS_MAX_PARTITION_SIZE,
-            MAX_AMIGA_PARTITIONS,
-            MBR_OVERHEAD,
-            MBR_SECTOR_SIZE,
-            MIN_AMIGA_PARTITION_SIZE,
-            MIN_BOOT_PARTITION_SIZE,
-            PFS3_MAX_PARTITION_SIZE,
-            RDB_OVERHEAD,
-        )
-
-        self.layout = [MBRPartition.model_validate(part.model_dump()) for part in self.layout]
-        if len(self.layout) != 2 or [part.type for part in self.layout] != ["fat32", "id76"]:
-            raise ValueError("Partition layout must contain FAT32 followed by one ID76 container")
-
-        boot, id76 = self.layout
-        if boot.size < MIN_BOOT_PARTITION_SIZE:
-            raise ValueError(
-                f"Boot partition must be at least {MIN_BOOT_PARTITION_SIZE // (1024 * 1024)} MB"
-            )
-        if boot.size % MBR_SECTOR_SIZE:
-            raise ValueError("Boot partition size must be MBR sector aligned (512 bytes)")
-        if id76.size % MBR_SECTOR_SIZE:
-            raise ValueError("ID76 partition size must be MBR sector aligned (512 bytes)")
-
-        total = sum(p.size for p in self.layout)
-        if total + MBR_OVERHEAD > self.disk_size:
-            raise ValueError(
-                f"Total partition size ({total}) + overhead ({MBR_OVERHEAD}) "
-                f"exceeds disk size ({self.disk_size})"
-            )
-
-        all_devices: list[str] = []
-        all_volumes: list[str] = []
-        bootable_count = 0
-        for mbr in self.layout:
-            if mbr.type != "id76" or not mbr.amiga_partitions:
-                continue
-            usable = mbr.size - RDB_OVERHEAD
-            if len(mbr.amiga_partitions) > MAX_AMIGA_PARTITIONS:
-                raise ValueError(f"Maximum {MAX_AMIGA_PARTITIONS} Amiga partitions allowed")
-            inner_total = sum(p.size for p in mbr.amiga_partitions)
-            if inner_total > usable:
-                over = inner_total - usable
-                raise ValueError(
-                    f"Amiga partitions in {mbr.name!r} exceed RDB usable space by {over} bytes"
-                )
-            for p in mbr.amiga_partitions:
-                if p.size < MIN_AMIGA_PARTITION_SIZE:
-                    raise ValueError(
-                        f"{p.device}: size must be at least "
-                        f"{MIN_AMIGA_PARTITION_SIZE // (1024 * 1024)} MB"
-                    )
-                if p.size % CYLINDER_SIZE:
-                    raise ValueError(
-                        f"{p.device}: size must be cylinder aligned ({CYLINDER_SIZE} bytes)"
-                    )
-                if p.filesystem == Filesystem.PFS3 and p.size > PFS3_MAX_PARTITION_SIZE:
-                    raise ValueError(
-                        f"{p.device}: PFS3 partition cannot exceed "
-                        f"{PFS3_MAX_PARTITION_SIZE // (1024**3)} GB"
-                    )
-                if p.filesystem == Filesystem.FFS and p.size > FFS_MAX_PARTITION_SIZE:
-                    raise ValueError(
-                        f"{p.device}: FFS partition cannot exceed "
-                        f"{FFS_MAX_PARTITION_SIZE // (1024**3)} GB"
-                    )
-                all_devices.append(p.device.upper())
-                all_volumes.append(p.volume.lower())
-                if p.bootable:
-                    bootable_count += 1
-
-        if len(all_devices) != len(set(all_devices)):
-            raise ValueError("Amiga device names must be unique (case-insensitive)")
-        if len(all_volumes) != len(set(all_volumes)):
-            raise ValueError("Amiga volume names must be unique (case-insensitive)")
-        if all_devices and bootable_count == 0:
-            raise ValueError("Exactly one Amiga partition must be bootable")
-        if bootable_count > 1:
-            raise ValueError("Only one Amiga partition can be bootable")
-
-        return self
-
-    def _uses(self, fs: Filesystem) -> bool:
-        return any(p.filesystem == fs for p in self.iter_amiga_partitions())
-
-    @property
-    def uses_pfs3(self) -> bool:
-        """any amiga partition on PFS3?"""
-        return self._uses(Filesystem.PFS3)
-
-    @property
-    def uses_ffs(self) -> bool:
-        """any amiga partition on FFS?"""
-        return self._uses(Filesystem.FFS)
-
-
-class OutputConfig(BaseModel):
+class OutputConfig(_ConfigModel):
     """output config for the built image"""
 
     type: OutputType = OutputType.IMG
@@ -376,88 +200,18 @@ class OutputConfig(BaseModel):
         return self
 
 
-class NetworkStack(str, Enum):
-    """TCP/IP stack picker"""
-
-    ROADSHOW = "Roadshow"
-
-
-class WifiConfig(BaseModel):
-    """wifi creds - never written to disk; empty password means an open network"""
-
-    ssid: str = Field(min_length=1, max_length=32)
-    password: str = Field(default="", max_length=63)
-
-
-class IpMode(str, Enum):
-    """per-interface address assignment"""
-
-    DHCP = "dhcp"
-    STATIC = "static"
-
-
-def _ipv4_or_none(v) -> str | None:
-    """validate a dotted IPv4 string; empty/None pass through as None"""
-    if v is None:
-        return None
-    v = str(v).strip()
-    if not v:
-        return None
-    import ipaddress
-
-    ipaddress.IPv4Address(v)  # raises ValueError on garbage
-    return v
-
-
-class InterfaceIp(BaseModel):
-    """per-interface IPv4 settings for the Roadshow stack"""
-
-    mode: IpMode = IpMode.DHCP
-    address: str | None = None  # static only
-    netmask: str | None = None  # static only
-
-    @field_validator("address", "netmask", mode="before")
-    @classmethod
-    def _check_ipv4(cls, v):
-        return _ipv4_or_none(v)
-
-    @model_validator(mode="after")
-    def _require_static_fields(self):
-        if self.mode == IpMode.STATIC and (not self.address or not self.netmask):
-            raise ValueError("a static interface needs both an address and a netmask")
-        return self
-
-
-class NetworkSettings(BaseModel):
-    """per-interface IP plus global gateway/DNS (roadshow has one default route + resolver list)"""
-
-    ethernet: InterfaceIp = Field(default_factory=InterfaceIp)
-    wifi: InterfaceIp = Field(default_factory=InterfaceIp)
-    gateway: str | None = None  # global default route
-    dns_servers: list[str] = Field(default_factory=list)
-
-    @field_validator("gateway", mode="before")
-    @classmethod
-    def _check_gateway(cls, v):
-        return _ipv4_or_none(v)
-
-    @field_validator("dns_servers", mode="before")
-    @classmethod
-    def _check_dns(cls, v):
-        if not v:
-            return []
-        return [s for s in (_ipv4_or_none(x) for x in v) if s]
-
-
 ############################
 # main Build Configuration #
 ############################
 
 
-class BuildConfig(BaseModel):
+class BuildConfig(_ConfigModel):
     """full build config - JSON-serializable; drives the pipeline"""
 
-    version: str = Field(default="1.0.0", description="Config schema version")
+    version: Literal["1.1.0"] = Field(
+        default=CURRENT_CONFIG_VERSION,
+        description="Config schema version",
+    )
 
     # core settings
     kickstart: KickstartConfig = Field(default_factory=KickstartConfig)
@@ -539,9 +293,10 @@ class BuildConfig(BaseModel):
         return self
 
     model_config = ConfigDict(
+        extra="forbid",
         json_schema_extra={
             "example": {
-                "version": "1.0.0",
+                "version": CURRENT_CONFIG_VERSION,
                 "kickstart": {
                     "version": "3.1",
                     "rom_directory": "/path/to/roms/",
@@ -553,8 +308,8 @@ class BuildConfig(BaseModel):
                     "hdmi_mode": "1280*720-50",
                 },
                 "packages": [
-                    {"name": "WHDLoad", "enabled": True},
-                    {"name": "DirectoryOpus", "enabled": True},
+                    {"name": "whdload", "enabled": True},
+                    {"name": "dopus418", "enabled": True},
                 ],
                 "icon_set": "GlowIcons",
                 "partitions": {
@@ -587,5 +342,5 @@ class BuildConfig(BaseModel):
                 },
                 "output": {"type": "img", "path": "/home/user/amiga.img"},
             }
-        }
+        },
     )

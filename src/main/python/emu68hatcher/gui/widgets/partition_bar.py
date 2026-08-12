@@ -66,9 +66,7 @@ class PartitionBar(QWidget):
         self._sub_font = QFont()
         self._sub_font.setPointSize(10)
 
-    def set_data(
-        self, disk_size: int, boot_size: int, amiga_partitions, free_space: int, selected: int = -1
-    ):
+    def set_data(self, boot_size: int, amiga_partitions, free_space: int, selected: int = -1):
         self._amiga_partitions = list(amiga_partitions)
         self._free_space = free_space
         self._segments = []
@@ -121,54 +119,73 @@ class PartitionBar(QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
-
         total = sum(s[1] for s in self._segments)
         if total <= 0:
             painter.end()
             return
-
         w = self.width() - 2
         bar_top = self.STRIP_H + 1
         bar_h = self.height() - bar_top - 1
-
         self._rects = []
         self._borders = []
         self._children_rect = None
+        boot_w = self._draw_boot(painter, w, bar_top, bar_h, total)
+        if len(self._segments) == 1:
+            painter.end()
+            return
+        container_bytes, badge, band, children = self._draw_rdb_frame(
+            painter,
+            w,
+            bar_top,
+            bar_h,
+            boot_w,
+            total,
+        )
+        self._draw_rdb_children(painter, children, container_bytes)
+        self._rects.append((badge, "RDB header\n~1 MB\nnot to scale"))
+        self._rects.append(
+            (band, _tooltip("0x76 container", container_bytes, "Amiga RDB partition table"))
+        )
+        self._draw_handles(painter, children)
+        painter.end()
 
-        # tier 1: boot partition, then one 0x76 frame holding every amiga partition.
-        # both tiers share one byte scale - only the frame chrome costs pixels
+    def _draw_boot(self, painter, width: int, bar_top: int, bar_height: int, total: int) -> int:
         boot_label, boot_size, boot_sub, boot_color, _ = self._segments[0]
-        boot_w = w if len(self._segments) == 1 else max(2, int((boot_size / total) * w))
-        boot_rect = QRect(1, bar_top, boot_w, bar_h)
+        boot_width = width if len(self._segments) == 1 else max(2, int((boot_size / total) * width))
+        boot_rect = QRect(1, bar_top, boot_width, bar_height)
         self._rects.append((boot_rect, _tooltip(boot_label, boot_size, boot_sub)))
         painter.fillRect(boot_rect, QBrush(boot_color))
         painter.setPen(QPen(QColor("#222222"), 1))
         painter.drawRect(boot_rect)
         if not self._draw_segment_label(
-            painter, boot_rect, boot_w, boot_label, boot_size, boot_sub
+            painter, boot_rect, boot_width, boot_label, boot_size, boot_sub
         ):
-            # boot (~1.6% at defaults) never fits inline - label it in the strip above
             painter.setFont(self._sub_font)
             painter.setPen(FRAME_COLOR)
             painter.drawText(
-                QRect(1, 0, w, self.STRIP_H - 4),
+                QRect(1, 0, width, self.STRIP_H - 4),
                 Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
                 f"{boot_label} · {boot_sub} · {_format_size(boot_size)}",
             )
             painter.setPen(QPen(FRAME_COLOR, 2))
-            tick_x = 1 + boot_w // 2
+            tick_x = 1 + boot_width // 2
             painter.drawLine(tick_x, self.STRIP_H - 4, tick_x, bar_top)
+        return boot_width
 
-        if len(self._segments) == 1:
-            painter.end()
-            return
-
-        container_rect = QRect(1 + boot_w, bar_top, w - boot_w, bar_h)
+    def _draw_rdb_frame(
+        self,
+        painter,
+        width: int,
+        bar_top: int,
+        bar_height: int,
+        boot_width: int,
+        total: int,
+    ) -> tuple[int, QRect, QRect, QRect]:
+        boot_size = self._segments[0][1]
+        container_rect = QRect(1 + boot_width, bar_top, width - boot_width, bar_height)
         container_bytes = total - boot_size
-
         painter.setPen(QPen(FRAME_COLOR, 2))
         painter.drawRect(container_rect.adjusted(1, 1, -1, -1))
-
         band = QRect(
             container_rect.left() + 2,
             container_rect.top() + 2,
@@ -176,7 +193,6 @@ class PartitionBar(QWidget):
             self.BAND_H,
         )
         painter.fillRect(band, QBrush(BAND_BG))
-        # a badge, not a scaled strip - ~1 MB of RDB header is invisible at true scale
         badge = QRect(band.left() + 6, band.top() + 7, 10, 10)
         painter.fillRect(badge, QBrush(RDB_BADGE))
         painter.setPen(QPen(RDB_BADGE_BORDER, 1))
@@ -201,9 +217,10 @@ class PartitionBar(QWidget):
             container_rect.bottom() - band.bottom() - 2,
         )
         self._children_rect = children
-        # drag deltas are dx-based - derive the ratio from the row the borders live in
         self._bytes_per_pixel = container_bytes / children.width() if children.width() > 0 else 1.0
+        return container_bytes, badge, band, children
 
+    def _draw_rdb_children(self, painter, children: QRect, container_bytes: int) -> None:
         x = children.left()
         for seg_idx in range(1, len(self._segments)):
             label, size, sublabel, color, selected = self._segments[seg_idx]
@@ -230,31 +247,19 @@ class PartitionBar(QWidget):
             painter.drawRect(rect)
             drew = self._draw_segment_label(painter, rect, seg_w, label, size, sublabel)
             if not drew and not is_free and seg_w > 18:
-                # too thin for its name - show the matching table row number instead
                 painter.setFont(self._name_font)
                 painter.setPen(QColor("#FFFFFF"))
                 painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, str(seg_idx))
-
             x += seg_w
             if seg_idx < len(self._segments) - 1 and self._resizable_border(seg_idx):
                 self._borders.append((x, seg_idx, seg_idx + 1))
-
-        # a layout with no free segment still gets a handle on the outer edge -
-        # dragging it left shrinks the last partition and mints free space.
-        # the virtual right side (index past the segments) is treated as free
         last = self._segments[-1]
         if not (last[0] == "free" and last[2] == ""):
             self._borders.append(
                 (children.right() + 1, len(self._segments) - 1, len(self._segments))
             )
 
-        # badge and band go after the children so their indices fail the click guard
-        self._rects.append((badge, "RDB header\n~1 MB\nnot to scale"))
-        self._rects.append(
-            (band, _tooltip("0x76 container", container_bytes, "Amiga RDB partition table"))
-        )
-
-        # drag handles
+    def _draw_handles(self, painter, children: QRect) -> None:
         arrow = 6
         gap = 3
         mid_y = children.center().y()
@@ -285,8 +290,6 @@ class PartitionBar(QWidget):
                     )
                 )
 
-        painter.end()
-
     def _border_hit(self, pos) -> int:
         """border index near pos, children row only - strip and band never grab"""
         rc = self._children_rect
@@ -299,57 +302,50 @@ class PartitionBar(QWidget):
 
     def mouseMoveEvent(self, event):
         pos = event.position().toPoint() if hasattr(event, "position") else event.pos()
-
         if self._dragging:
-            dx = pos.x() - self._drag_start_x
-            delta_bytes = round_to_cylinder(int(dx * self._bytes_per_pixel))
-            if delta_bytes == 0:
-                return
-            _, left_seg, right_seg = self._borders[self._drag_border_idx]
-            # left_seg and right_seg are segment indices (0=boot, 1+=amiga, last=free)
-            left_amiga = left_seg - 1  # index into amiga_partitions
-            right_amiga = right_seg - 1
-
-            left_is_amiga = 0 <= left_amiga < len(self._amiga_partitions)
-            # an index past the segments is the virtual free side of the outer edge
-            right_is_free = right_seg >= len(self._segments) or (
-                right_seg == len(self._segments) - 1 and self._segments[right_seg][0] == "free"
-            )
-            right_is_amiga = right_seg < len(self._segments) and (
-                0 <= right_amiga < len(self._amiga_partitions)
-            )
-
-            if left_is_amiga and (right_is_amiga or right_is_free):
-                left_size = self._amiga_partitions[left_amiga].size
-                if right_is_amiga:
-                    right_size = self._amiga_partitions[right_amiga].size
-                else:
-                    right_size = self._free_space
-
-                new_left = left_size + delta_bytes
-                new_right = right_size - delta_bytes
-
-                min_size = round_to_cylinder(MIN_AMIGA_PARTITION_SIZE)
-                if right_is_free:
-                    # free space can go to 0
-                    if new_left < min_size or new_right < 0:
-                        return
-                else:
-                    if new_left < min_size or new_right < min_size:
-                        return
-
-                self._amiga_partitions[left_amiga].size = new_left
-                if right_is_amiga:
-                    self._amiga_partitions[right_amiga].size = new_right
-
-                self._drag_start_x = pos.x()
-                if self._on_resize_callback:
-                    self._on_resize_callback(
-                        left_amiga, new_left, right_amiga if right_is_amiga else -1, new_right
-                    )
+            self._drag_to(pos)
             return
+        self._update_hover(event, pos)
 
-        # not dragging - update cursor + tooltip
+    def _drag_to(self, pos) -> None:
+        delta_bytes = round_to_cylinder(int((pos.x() - self._drag_start_x) * self._bytes_per_pixel))
+        if delta_bytes == 0:
+            return
+        _, left_seg, right_seg = self._borders[self._drag_border_idx]
+        left_amiga = left_seg - 1
+        right_amiga = right_seg - 1
+        left_is_amiga = 0 <= left_amiga < len(self._amiga_partitions)
+        right_is_free = right_seg >= len(self._segments) or (
+            right_seg == len(self._segments) - 1 and self._segments[right_seg][0] == "free"
+        )
+        right_is_amiga = right_seg < len(self._segments) and (
+            0 <= right_amiga < len(self._amiga_partitions)
+        )
+        if not left_is_amiga or not (right_is_amiga or right_is_free):
+            return
+        left_size = self._amiga_partitions[left_amiga].size
+        right_size = (
+            self._amiga_partitions[right_amiga].size if right_is_amiga else self._free_space
+        )
+        new_left = left_size + delta_bytes
+        new_right = right_size - delta_bytes
+        minimum = round_to_cylinder(MIN_AMIGA_PARTITION_SIZE)
+        right_minimum = 0 if right_is_free else minimum
+        if new_left < minimum or new_right < right_minimum:
+            return
+        self._amiga_partitions[left_amiga].size = new_left
+        if right_is_amiga:
+            self._amiga_partitions[right_amiga].size = new_right
+        self._drag_start_x = pos.x()
+        if self._on_resize_callback:
+            self._on_resize_callback(
+                left_amiga,
+                new_left,
+                right_amiga if right_is_amiga else -1,
+                new_right,
+            )
+
+    def _update_hover(self, event, pos) -> None:
         bi = self._border_hit(pos)
         if bi >= 0:
             self.setCursor(Qt.CursorShape.SizeHorCursor)

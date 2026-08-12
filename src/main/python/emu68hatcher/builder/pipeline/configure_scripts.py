@@ -90,17 +90,22 @@ def configure_scripts(
         local_packages_dir = get_local_packages_dir()
         content_base = local_packages_dir / "System"
 
-        injection_count = apply_standard_injections(
+        injection_results = apply_standard_injections(
             staging_dir=boot_staging,
             content_base_path=content_base,
         )
+        failures = [result.error for result in injection_results if result.error]
+        if failures:
+            details = "; ".join(failures)
+            raise BuildError(f"Startup-Sequence update failed: {details}")
+        injection_count = sum(result.changed for result in injection_results)
         workflow.logger.info(f"Applied {injection_count} script injections to Startup-Sequence")
 
         verify_content = startup_path.read_text(encoding="iso-8859-1", errors="replace")
         if "FirstBoot" in verify_content and "RexxMast" in verify_content:
             workflow.logger.debug("Startup-Sequence injection verified OK")
         else:
-            workflow.logger.warning("Startup-Sequence may be missing required injections")
+            raise BuildError("Startup-Sequence is missing required FirstBoot or RexxMast setup")
     else:
         raise BuildError(
             "No Startup-Sequence found in staging. "

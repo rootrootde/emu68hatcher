@@ -6,7 +6,8 @@ from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal
 
-from emu68hatcher.builder.workflow import BuildState, BuildWorkflow
+from emu68hatcher.builder.state import BuildState
+from emu68hatcher.builder.workflow import BuildWorkflow
 from emu68hatcher.config.schema import BuildConfig
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,6 @@ class BuildWorker(QThread):
             self.config,
             progress_callback=progress_callback,
             log_callback=log_callback,
-            gui_mode=True,
         )
 
         with self._lock:
@@ -106,7 +106,10 @@ class ToolDownloadWorker(QThread):
             return
 
         failed: list[str] = []
-        for tool_name in pending:
+        for index, tool_name in enumerate(pending):
+            if self.isInterruptionRequested():
+                failed.extend(pending[index:])
+                break
             self.tool_started.emit(tool_name)
 
             # close over tool_name so the start tab can label the bar
@@ -134,6 +137,7 @@ class ROMScanWorker(QThread):
     """scan one or more directories for Kickstart ROMs"""
 
     scan_finished = Signal(list, bool)  # (found ROMs, truncated)
+    scan_error = Signal(str)
 
     def __init__(self, directories: Path | list[Path], parent=None):
         super().__init__(parent)
@@ -144,9 +148,16 @@ class ROMScanWorker(QThread):
         from emu68hatcher.data.rom_detection import scan_for_kickstart_roms
 
         try:
-            found_roms, truncated = scan_for_kickstart_roms(self.directories)
-        except Exception:
-            found_roms, truncated = [], False
+            found_roms, truncated = scan_for_kickstart_roms(
+                self.directories,
+                cancel_check=self.isInterruptionRequested,
+            )
+        except Exception as e:
+            logger.exception("ROM scan failed")
+            self.scan_error.emit(str(e) or type(e).__name__)
+            return
+        if self.isInterruptionRequested():
+            return
         self.scan_finished.emit(found_roms, truncated)
 
 
@@ -154,6 +165,7 @@ class ADFScanWorker(QThread):
     """scan one or more directories for Workbench ADFs"""
 
     scan_finished = Signal(list, bool)  # (found media, truncated)
+    scan_error = Signal(str)
 
     def __init__(self, directories: Path | list[Path], parent=None):
         super().__init__(parent)
@@ -164,9 +176,16 @@ class ADFScanWorker(QThread):
         from emu68hatcher.data.install_media import scan_install_media_by_hash
 
         try:
-            found_media, truncated = scan_install_media_by_hash(self.directories)
-        except Exception:
-            found_media, truncated = [], False
+            found_media, truncated = scan_install_media_by_hash(
+                self.directories,
+                cancel_check=self.isInterruptionRequested,
+            )
+        except Exception as e:
+            logger.exception("install media scan failed")
+            self.scan_error.emit(str(e) or type(e).__name__)
+            return
+        if self.isInterruptionRequested():
+            return
         self.scan_finished.emit(found_media, truncated)
 
 
@@ -174,12 +193,17 @@ class DiskListWorker(QThread):
     """enumerate removable disks off the GUI thread"""
 
     disks_loaded = Signal(list)  # list[DiskInfo]
+    load_error = Signal(str)
 
     def run(self):
         from emu68hatcher.builder.host.disk_enum import list_removable_disks
 
         try:
-            disks = list_removable_disks()
-        except Exception:
-            disks = []
+            disks = list_removable_disks(raise_on_error=True)
+        except Exception as e:
+            logger.exception("removable disk enumeration failed")
+            self.load_error.emit(str(e) or type(e).__name__)
+            return
+        if self.isInterruptionRequested():
+            return
         self.disks_loaded.emit(disks)

@@ -26,6 +26,169 @@ def _provides_of(pkg: Package) -> set[str]:
     return {pkg.name.lower(), *(t.lower() for t in pkg.provides)}
 
 
+@dataclass(frozen=True)
+class _ResolverContext:
+    packages: list[Package]
+    by_name: dict[str, Package]
+    providers: dict[str, list[str]]
+    mandatory: set[str]
+    requested: set[str]
+    disabled: set[str]
+
+    @classmethod
+    def create(
+        cls,
+        requested: set[str],
+        disabled: set[str],
+        kickstart_version: str,
+        emu68_version: str | None,
+    ) -> _ResolverContext:
+        packages = get_packages_for_version(kickstart_version, emu68_version)
+        mandatory = {
+            pkg.name.lower() for pkg in get_mandatory_packages(kickstart_version, emu68_version)
+        }
+        by_name = {pkg.name.lower(): pkg for pkg in packages}
+        providers: dict[str, list[str]] = {}
+        for pkg in packages:
+            for token in _provides_of(pkg):
+                providers.setdefault(token, []).append(pkg.name.lower())
+        return cls(packages, by_name, providers, mandatory, requested, disabled)
+
+    def pick_provider(
+        self,
+        token: str,
+        selected: set[str],
+        excluded: set[str],
+    ) -> str | None:
+        candidates = [name for name in self.providers.get(token, []) if name not in excluded]
+        if not candidates:
+            return None
+        for name in candidates:
+            if name in selected:
+                return name
+        preferences = (
+            lambda name: name in self.requested,
+            lambda name: name in self.mandatory,
+            lambda name: self.by_name[name].default,
+        )
+        for preference in preferences:
+            matches = [name for name in candidates if preference(name)]
+            if matches:
+                return sorted(matches)[0]
+        return sorted(candidates)[0]
+
+    def dependency_closure(
+        self,
+        excluded: set[str],
+    ) -> tuple[set[str], dict[str, set[str]], dict[str, list[str]]]:
+        selected: set[str] = set()
+        requirers: dict[str, set[str]] = {}
+        unsatisfiable: dict[str, list[str]] = {}
+        work = list((self.requested | self.mandatory) - excluded)
+        while work:
+            name = work.pop()
+            if name in selected or name in excluded or name not in self.by_name:
+                continue
+            selected.add(name)
+            package = self.by_name[name]
+            for requirement in package.requires:
+                token = requirement.lower()
+                provider = self.pick_provider(token, selected, excluded)
+                if provider is None:
+                    unsatisfiable.setdefault(token, []).append(name)
+                    continue
+                requirers.setdefault(provider, set()).add(name)
+                if provider not in selected:
+                    work.append(provider)
+            for recommendation in package.recommends:
+                token = recommendation.lower()
+                if token in self.disabled:
+                    continue
+                provider = self.pick_provider(token, selected, excluded | self.disabled)
+                if provider and provider not in selected:
+                    work.append(provider)
+        return selected, requirers, unsatisfiable
+
+    def conflict_components(self, selected: set[str]) -> list[set[str]]:
+        adjacency: dict[str, set[str]] = {name: set() for name in selected}
+        names = sorted(selected)
+        provided = {name: _provides_of(self.by_name[name]) for name in selected}
+        conflicts = {
+            name: {token.lower() for token in self.by_name[name].conflicts} for name in selected
+        }
+        for index, left in enumerate(names):
+            for right in names[index + 1 :]:
+                if conflicts[left] & provided[right] or conflicts[right] & provided[left]:
+                    adjacency[left].add(right)
+                    adjacency[right].add(left)
+        seen: set[str] = set()
+        components: list[set[str]] = []
+        for name in names:
+            if name in seen or not adjacency[name]:
+                continue
+            stack = [name]
+            component: set[str] = set()
+            while stack:
+                current = stack.pop()
+                if current in component:
+                    continue
+                component.add(current)
+                stack.extend(adjacency[current] - component)
+            seen |= component
+            components.append(component)
+        return components
+
+    def conflict_losers(self, selected: set[str]) -> tuple[set[str], dict[str, str]]:
+        excluded: set[str] = set()
+        dropped: dict[str, str] = {}
+        for component in self.conflict_components(selected):
+            provided = {name: _provides_of(self.by_name[name]) for name in component}
+            conflicts = {
+                name: {token.lower() for token in self.by_name[name].conflicts}
+                for name in component
+            }
+            mandatory = sorted(component & self.mandatory)
+            bad_pair = next(
+                (
+                    (left, right)
+                    for index, left in enumerate(mandatory)
+                    for right in mandatory[index + 1 :]
+                    if conflicts[left] & provided[right] or conflicts[right] & provided[left]
+                ),
+                None,
+            )
+            if bad_pair:
+                raise ValueError(
+                    f"mandatory packages {bad_pair[0]} and {bad_pair[1]} conflict and cannot "
+                    "coexist (fix their provides/conflicts in the yaml)"
+                )
+            priority = sorted(
+                component,
+                key=lambda name: (
+                    name not in self.mandatory,
+                    name not in self.requested,
+                    not self.by_name[name].default,
+                    name,
+                ),
+            )
+            kept: list[str] = []
+            for name in priority:
+                clash = next(
+                    (
+                        other
+                        for other in kept
+                        if conflicts[name] & provided[other] or conflicts[other] & provided[name]
+                    ),
+                    None,
+                )
+                if clash is None:
+                    kept.append(name)
+                else:
+                    excluded.add(name)
+                    dropped[name] = f"conflicts with {clash}"
+        return excluded, dropped
+
+
 def resolve(
     requested: set[str],
     deselected: set[str],
@@ -35,163 +198,37 @@ def resolve(
     order_hint: list[str] | None = None,
 ) -> Resolution:
     """resolve a user selection into a complete, conflict-free, ordered install set."""
-    # deselected suppresses recommends only; order_hint keeps independent packages
-    # in the caller's order (deps still install first)
     requested = {n.lower() for n in requested}
     deselected = {n.lower() for n in deselected}
-
-    packages = get_packages_for_version(kickstart_version, emu68_version)
-    mandatory = get_mandatory_packages(kickstart_version, emu68_version)
-
-    by_name: dict[str, Package] = {p.name.lower(): p for p in packages}
-    mandatory_names = {p.name.lower() for p in mandatory}
-
-    providers: dict[str, list[str]] = {}
-    for p in packages:
-        for tok in _provides_of(p):
-            providers.setdefault(tok, []).append(p.name.lower())
-
-    def pick_provider(token: str, selected: set[str], excluded: set[str]) -> str | None:
-        """pick a package to satisfy a token, preferring one already selected."""
-        cands = [c for c in providers.get(token, []) if c not in excluded]
-        if not cands:
-            return None
-        # already-selected provider wins (avoids redundant/competing installs)
-        for c in cands:
-            if c in selected:
-                return c
-        # then a directly-requested one, then mandatory, then default, then stable alphabetical
-        for pref in (
-            lambda c: c in requested,
-            lambda c: c in mandatory_names,
-            lambda c: by_name[c].default,
-        ):
-            hit = [c for c in cands if pref(c)]
-            if hit:
-                return sorted(hit)[0]
-        return sorted(cands)[0]
-
-    def closure(excluded: set[str]) -> tuple[set[str], dict[str, set[str]], dict[str, list[str]]]:
-        """transitive expansion over requires (hard) + recommends (soft)."""
-        selected: set[str] = set()
-        requirers: dict[str, set[str]] = {}
-        unsat: dict[str, list[str]] = {}
-        seeds = [n for n in (requested | mandatory_names) if n not in excluded]
-        work = list(seeds)
-        while work:
-            name = work.pop()
-            if name in selected or name in excluded or name not in by_name:
-                continue
-            selected.add(name)
-            pkg = by_name[name]
-            for req in pkg.requires:
-                prov = pick_provider(req.lower(), selected, excluded)
-                if prov is None:
-                    unsat.setdefault(req.lower(), []).append(name)
-                    continue
-                requirers.setdefault(prov, set()).add(name)
-                if prov not in selected:
-                    work.append(prov)
-            for rec in pkg.recommends:
-                tok = rec.lower()
-                if tok in deselected:
-                    continue
-                prov = pick_provider(tok, selected, excluded)
-                if prov and prov not in selected and prov not in deselected:
-                    work.append(prov)
-        return selected, requirers, unsat
-
-    def conflict_components(selected: set[str]) -> list[set[str]]:
-        """connected components of mutually-conflicting selected packages (size >= 2)."""
-        adj: dict[str, set[str]] = {n: set() for n in selected}
-        sel_list = sorted(selected)
-        prov_cache = {n: _provides_of(by_name[n]) for n in selected}
-        conf_cache = {n: {t.lower() for t in by_name[n].conflicts} for n in selected}
-        for i, x in enumerate(sel_list):
-            for y in sel_list[i + 1 :]:
-                if conf_cache[x] & prov_cache[y] or conf_cache[y] & prov_cache[x]:
-                    adj[x].add(y)
-                    adj[y].add(x)
-        seen: set[str] = set()
-        comps: list[set[str]] = []
-        for n in sel_list:
-            if n in seen or not adj[n]:
-                continue
-            stack, comp = [n], set()
-            while stack:
-                cur = stack.pop()
-                if cur in comp:
-                    continue
-                comp.add(cur)
-                stack.extend(adj[cur] - comp)
-            seen |= comp
-            comps.append(comp)
-        return comps
-
-    # fixpoint: exclude conflict losers, re-expand until stable
+    context = _ResolverContext.create(
+        requested,
+        deselected,
+        kickstart_version,
+        emu68_version,
+    )
     excluded: set[str] = set()
     dropped: dict[str, str] = {}
     selected: set[str] = set()
     requirers: dict[str, set[str]] = {}
-    unsat: dict[str, list[str]] = {}
+    unsatisfiable: dict[str, list[str]] = {}
 
-    for _ in range(len(packages) + 1):  # bounded; each pass excludes >=1 or stops
-        selected, requirers, unsat = closure(excluded)
-        new_excluded: set[str] = set()
-        for comp in conflict_components(selected):
-            prov_c = {n: _provides_of(by_name[n]) for n in comp}
-            conf_c = {n: {t.lower() for t in by_name[n].conflicts} for n in comp}
-            mand = sorted(comp & mandatory_names)
-            # two pairwise-conflicting mandatory packages can't coexist. check pairwise edges,
-            # not component membership, else compatible mandatory packages bridged by a third error.
-            bad = next(
-                (
-                    (x, y)
-                    for i, x in enumerate(mand)
-                    for y in mand[i + 1 :]
-                    if conf_c[x] & prov_c[y] or conf_c[y] & prov_c[x]
-                ),
-                None,
-            )
-            if bad:
-                raise ValueError(
-                    f"mandatory packages {bad[0]} and {bad[1]} conflict and cannot coexist "
-                    f"(fix their provides/conflicts in the yaml)"
-                )
-            # greedy maximal conflict-free subset: a conflict component isn't always a clique
-            # (a-b, b-c, a/c ok), so keep highest-priority members, drop only those clashing a kept one.
-            order = sorted(
-                comp,
-                key=lambda n: (
-                    n not in mandatory_names,
-                    n not in requested,
-                    not by_name[n].default,
-                    n,
-                ),
-            )
-            kept: list[str] = []
-            for n in order:
-                clash = next(
-                    (k for k in kept if conf_c[n] & prov_c[k] or conf_c[k] & prov_c[n]), None
-                )
-                if clash is not None:
-                    new_excluded.add(n)
-                    dropped[n] = f"conflicts with {clash}"
-                else:
-                    kept.append(n)
+    for _ in range(len(context.packages) + 1):
+        selected, requirers, unsatisfiable = context.dependency_closure(excluded)
+        new_excluded, new_dropped = context.conflict_losers(selected)
+        dropped.update(new_dropped)
         if not (new_excluded - excluded):
             break
         excluded |= new_excluded
     else:
         logger.warning("dependency resolver hit its iteration bound; selection may be incomplete")
 
-    install_order = _topological_order(selected, by_name, requirers, order_hint)
+    install_order = _topological_order(selected, context.by_name, requirers, order_hint)
 
     return Resolution(
         selected=selected,
         install_order=install_order,
         dropped=dropped,
-        unsatisfiable={k: sorted(set(v)) for k, v in unsat.items()},
+        unsatisfiable={key: sorted(set(value)) for key, value in unsatisfiable.items()},
     )
 
 

@@ -1,4 +1,4 @@
-"""YAML package loader - loads packages/*.yaml definitions adn adf_rules.yaml extraction rules"""
+"""YAML package and ADF-rule loader."""
 
 import logging
 from functools import cache
@@ -26,38 +26,48 @@ _BUNDLES_PATH = Path(__file__).parent / "reference" / "bundles.yaml"
 
 _adf_rules_cache: dict[str, list[ADFRule]] | None = None
 _packages_cache: list[Package] | None = None
+_package_index_cache: dict[str, Package] | None = None
 _bundles_cache: dict[str, Bundle] | None = None
 
 
-def load_package(yaml_path: Path) -> Package | None:
+def load_package(yaml_path: Path) -> Package:
     """load a single package from a YAML file"""
-    try:
-        with open(yaml_path, encoding="utf-8") as f:
-            data = yaml.safe_load(f)
-
-        if not data:
-            return None
-
-        return Package.model_validate(data)
-
-    except (yaml.YAMLError, ValidationError) as e:
-        logger.warning(f"Error loading {yaml_path}: {e}")
-        return None
+    with open(yaml_path, encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    if not data:
+        raise ValueError("empty package definition")
+    return Package.model_validate(data)
 
 
 def load_all_packages() -> list[Package]:
     """load all packages from the packages/ directory (cached, returns a copy)"""
-    global _packages_cache
+    global _package_index_cache, _packages_cache
 
     if _packages_cache is None:
         packages: list[Package] = []
+        origins: dict[str, Path] = {}
+        errors: list[str] = []
         if _PACKAGES_DIR.exists():
             for yaml_file in sorted(_PACKAGES_DIR.glob("*.yaml")):
-                pkg = load_package(yaml_file)
-                if pkg:
-                    packages.append(pkg)
+                try:
+                    pkg = load_package(yaml_file)
+                except (OSError, yaml.YAMLError, ValidationError, ValueError) as e:
+                    errors.append(f"{yaml_file.name}: {e}")
+                    continue
+                key = pkg.name.lower()
+                if key in origins:
+                    errors.append(
+                        f"{yaml_file.name}: duplicate package name {pkg.name!r}; "
+                        f"first defined in {origins[key].name}"
+                    )
+                    continue
+                origins[key] = yaml_file
+                packages.append(pkg)
+        if errors:
+            raise ValueError("invalid package files:\n  " + "\n  ".join(errors))
         _validate_dependency_graph(packages)  # fail fast on bad requires/conflicts/provides
         _packages_cache = packages
+        _package_index_cache = {pkg.name.lower(): pkg for pkg in packages}
 
     # return a copy so callers can't mutate the shared cache
     return list(_packages_cache)
@@ -121,14 +131,15 @@ def get_mandatory_packages(
 
 def get_package_by_name(name: str) -> Package | None:
     """get a specific package by name"""
-    for pkg in load_all_packages():
-        if pkg.name == name:
-            return pkg
-    return None
+    global _package_index_cache
+
+    if _package_index_cache is None:
+        load_all_packages()
+    return _package_index_cache.get(name.lower()) if _package_index_cache else None
 
 
 ###########
-# budnles #
+# bundles #
 ###########
 
 
@@ -272,7 +283,7 @@ def get_filtered_adf_rules(
                 # mandatory package - always include
                 filtered.append(rule)
             elif rule.package.lower() in enabled_packages:
-                # optional package taht user enabled
+                # optional package that user enabled
                 filtered.append(rule)
             # else: optional package not enabled, skip
         else:

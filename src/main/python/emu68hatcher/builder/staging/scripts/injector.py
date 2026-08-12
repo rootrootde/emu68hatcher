@@ -31,6 +31,20 @@ class ScriptInjection:
     name: str = ""  # comment marker name
 
 
+@dataclass(frozen=True)
+class InjectionResult:
+    matched: bool
+    changed: bool
+    error: str | None = None
+
+
+@dataclass(frozen=True)
+class _EditResult:
+    lines: list[str]
+    matched: bool
+    error: str | None = None
+
+
 def read_amiga_script(path: Path) -> list[str]:
     """read an Amiga script file (ISO-8859-1 decodes every byte, no fallback needed)"""
     with open(path, encoding="iso-8859-1") as f:
@@ -38,69 +52,109 @@ def read_amiga_script(path: Path) -> list[str]:
 
 
 def write_amiga_script(path: Path, lines: list[str]) -> None:
-    """write an Amiga script file wiht proper line endings"""
+    """Write an Amiga script with LF line endings."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", encoding="iso-8859-1", newline="\n") as f:
+    temp_path = path.with_name(f".{path.name}.tmp")
+    with open(temp_path, "w", encoding="iso-8859-1", newline="\n") as f:
         for line in lines:
             f.write(line + "\n")
+    temp_path.replace(path)
 
 
 def inject_script(
     target_path: Path,
     injection: ScriptInjection,
     content_base_path: Path | None = None,
-) -> bool:
-    """apply an injection to a script file"""
-    # read the original script
+) -> InjectionResult:
+    """apply one script edit"""
     if not target_path.exists():
-        # create empty file if it doesn't exist (like User-Startup)
         logger.info(f"Creating new script: {target_path}")
         original_lines = []
     else:
         original_lines = read_amiga_script(target_path)
 
-    # get content to inject
     if injection.content:
         content_lines = injection.content.splitlines()
     elif injection.content_file and content_base_path:
         content_path = content_base_path / injection.content_file
         if not content_path.exists():
-            logger.error(f"Content file not found: {content_path}")
-            return False
+            error = f"Content file not found: {content_path}"
+            logger.error(error)
+            return InjectionResult(False, False, error)
         content_lines = read_amiga_script(content_path)
     else:
         content_lines = []
 
-    # build the injection block with markers
     injection_block = _build_injection_block(content_lines, injection.name)
+    marker_error = _marker_state_error(original_lines, injection)
+    if marker_error:
+        logger.error(marker_error)
+        return InjectionResult(False, False, marker_error)
+    if _already_applied(original_lines, injection):
+        return InjectionResult(True, False)
 
-    # apply the injection
-    if injection.action == InjectionAction.ADD:
-        result_lines = _action_add(original_lines, injection_block)
-    elif injection.action == InjectionAction.INJECT_BEFORE:
-        result_lines = _action_inject_before(
-            original_lines, injection_block, injection.start_pattern
-        )
-    elif injection.action == InjectionAction.INJECT_AFTER:
-        result_lines = _action_inject_after(
-            original_lines, injection_block, injection.start_pattern
-        )
-    elif injection.action == InjectionAction.REMOVE:
-        result_lines = _action_remove(
-            original_lines, injection.start_pattern, injection.end_pattern, injection.name
-        )
-    else:
-        logger.error(f"Unknown injection action: {injection.action}")
-        return False
+    try:
+        if injection.action == InjectionAction.ADD:
+            edit = _action_add(original_lines, injection_block)
+        elif injection.action == InjectionAction.INJECT_BEFORE:
+            edit = _action_inject_before(original_lines, injection_block, injection.start_pattern)
+        elif injection.action == InjectionAction.INJECT_AFTER:
+            edit = _action_inject_after(original_lines, injection_block, injection.start_pattern)
+        elif injection.action == InjectionAction.REMOVE:
+            edit = _action_remove(
+                original_lines, injection.start_pattern, injection.end_pattern, injection.name
+            )
+        else:
+            edit = _EditResult(
+                original_lines,
+                False,
+                f"Unknown injection action: {injection.action}",
+            )
+    except re.error as e:
+        edit = _EditResult(original_lines, False, f"Invalid injection pattern: {e}")
 
-    # write the modified script
-    write_amiga_script(target_path, result_lines)
-    logger.info(f"Applied injection '{injection.name}' to {target_path}")
-    return True
+    if edit.error:
+        logger.error(edit.error)
+        return InjectionResult(edit.matched, False, edit.error)
+
+    changed = edit.lines != original_lines
+    if changed:
+        write_amiga_script(target_path, edit.lines)
+        logger.info(f"Applied injection '{injection.name}' to {target_path}")
+    return InjectionResult(edit.matched, changed)
+
+
+def _marker_lines(injection: ScriptInjection) -> tuple[str, str] | None:
+    if not injection.name or injection.action == InjectionAction.REMOVE:
+        return None
+    return (
+        f";{injection.name} - Added by Emu68 Hatcher - BEGIN",
+        f";{injection.name} - Added by Emu68 Hatcher - END",
+    )
+
+
+def _marker_state_error(original: list[str], injection: ScriptInjection) -> str | None:
+    markers = _marker_lines(injection)
+    if markers is None:
+        return None
+    begin, end = markers
+    if (begin in original) != (end in original):
+        return f"Incomplete existing marker block for {injection.name}"
+    return None
+
+
+def _already_applied(original: list[str], injection: ScriptInjection) -> bool:
+    markers = _marker_lines(injection)
+    if markers is not None:
+        return markers[0] in original and markers[1] in original
+    if injection.action == InjectionAction.REMOVE and injection.name:
+        marker = f";{injection.name} - Section Removed by Emu68 Hatcher"
+        return marker in original
+    return False
 
 
 def _build_injection_block(content_lines: list[str], name: str) -> list[str]:
-    """build injection block wiht comment markers"""
+    """build an injection block with comment markers"""
     block = []
 
     if name:
@@ -118,92 +172,55 @@ def _build_injection_block(content_lines: list[str], name: str) -> list[str]:
     return block
 
 
-def _action_add(original: list[str], block: list[str]) -> list[str]:
+def _action_add(original: list[str], block: list[str]) -> _EditResult:
     """append block to end of script"""
-    return original + block
+    return _EditResult(original + block, True)
 
 
-def _action_inject_before(original: list[str], block: list[str], pattern: str) -> list[str]:
+def _action_inject_before(
+    original: list[str], block: list[str], pattern: str | None
+) -> _EditResult:
     """insert block before first line matching pattern"""
     if not pattern:
-        logger.warning("InjectBefore requires start_pattern")
-        return original
-
-    result = []
-    inserted = False
+        return _EditResult(original, False, "InjectBefore requires start_pattern")
     regex = re.compile(pattern, re.IGNORECASE)
-
-    for line in original:
-        if not inserted and regex.search(line):
-            result.extend(block)
-            inserted = True
-        result.append(line)
-
-    if not inserted:
-        logger.warning(f"Pattern '{pattern}' not found, appending to end")
-        result.extend(block)
-
-    return result
+    index = next((i for i, line in enumerate(original) if regex.search(line)), None)
+    if index is None:
+        return _EditResult(original, False, f"Required pattern not found: {pattern}")
+    return _EditResult(original[:index] + block + original[index:], True)
 
 
-def _action_inject_after(original: list[str], block: list[str], pattern: str) -> list[str]:
+def _action_inject_after(original: list[str], block: list[str], pattern: str | None) -> _EditResult:
     """insert block after first line matching pattern"""
     if not pattern:
-        logger.warning("InjectAfter requires start_pattern")
-        return original
-
-    result = []
-    inserted = False
+        return _EditResult(original, False, "InjectAfter requires start_pattern")
     regex = re.compile(pattern, re.IGNORECASE)
-
-    for line in original:
-        result.append(line)
-        if not inserted and regex.search(line):
-            result.extend(block)
-            inserted = True
-
-    if not inserted:
-        logger.warning(f"Pattern '{pattern}' not found, appending to end")
-        result.extend(block)
-
-    return result
+    index = next((i for i, line in enumerate(original) if regex.search(line)), None)
+    if index is None:
+        return _EditResult(original, False, f"Required pattern not found: {pattern}")
+    insert_at = index + 1
+    return _EditResult(original[:insert_at] + block + original[insert_at:], True)
 
 
 def _action_remove(
-    original: list[str], start_pattern: str, end_pattern: str, name: str
-) -> list[str]:
+    original: list[str], start_pattern: str | None, end_pattern: str | None, name: str
+) -> _EditResult:
     """remove lines between start and end patterns"""
     if not start_pattern or not end_pattern:
-        logger.warning("Remove requires both start_pattern and end_pattern")
-        return original
-
-    result = []
-    removing = False
+        return _EditResult(original, False, "Remove requires both start_pattern and end_pattern")
     start_regex = re.compile(start_pattern, re.IGNORECASE)
     end_regex = re.compile(end_pattern, re.IGNORECASE)
-
-    for line in original:
-        if not removing and start_regex.search(line):
-            # if end pattern also matches this same line, treat as single-line removal
-            if end_regex.search(line):
-                result.append("")
-                result.append(f";{name} - Section Removed by Emu68 Hatcher")
-                result.append("")
-                continue
-            removing = True
-            result.append("")
-            result.append(f";{name} - Section Removed by Emu68 Hatcher")
-            result.append("")
-            continue
-
-        if removing and end_regex.search(line):
-            removing = False
-            continue
-
-        if not removing:
-            result.append(line)
-
-    return result
+    start = next((i for i, line in enumerate(original) if start_regex.search(line)), None)
+    if start is None:
+        return _EditResult(original, False)
+    end = next(
+        (i for i in range(start, len(original)) if end_regex.search(original[i])),
+        None,
+    )
+    if end is None:
+        return _EditResult(original, True, f"Remove end pattern not found: {end_pattern}")
+    marker = ["", f";{name} - Section Removed by Emu68 Hatcher", ""]
+    return _EditResult(original[:start] + marker + original[end + 1 :], True)
 
 
 # InjectAfter BindDrivers stacks LIFO; list reverse of exec order: UAEGFX, FirstBoot, iconlib, REXXMAST, RTC
@@ -239,7 +256,7 @@ STARTUP_SEQUENCE_INJECTIONS = [
         end_pattern=r"^SYS:System/RexxMast",
         name="Original RexxMast bare line (moved to after BindDrivers)",
     ),
-    # UAEGFX persistent monitor swap (runs 4th, furthest from anchor)
+    # UAEGFX persistent monitor swap (runs 5th, furthest from anchor)
     ScriptInjection(
         target_script="S/Startup-Sequence",
         action=InjectionAction.INJECT_AFTER,
@@ -247,7 +264,7 @@ STARTUP_SEQUENCE_INJECTIONS = [
         start_pattern=r"BindDrivers",
         name="UAEGFX Monitor Swap",
     ),
-    # main FirstBoot section (runs 3rd)
+    # main FirstBoot section (runs 4th)
     ScriptInjection(
         target_script="S/Startup-Sequence",
         action=InjectionAction.INJECT_AFTER,
@@ -255,7 +272,7 @@ STARTUP_SEQUENCE_INJECTIONS = [
         start_pattern=r"BindDrivers",
         name="FirstBoot Section",
     ),
-    # iconlib - RemLib icon.library for non-3.2 Kickstarts (runs 2nd)
+    # iconlib - RemLib icon.library for non-3.2 Kickstarts (runs 3rd)
     ScriptInjection(
         target_script="S/Startup-Sequence",
         action=InjectionAction.INJECT_AFTER,
@@ -300,14 +317,13 @@ STARTUP_SEQUENCE_INJECTIONS = [
 def apply_standard_injections(
     staging_dir: Path,
     content_base_path: Path,
-) -> int:
+) -> list[InjectionResult]:
     """apply the Startup-Sequence surgery injections to staged files"""
-    count = 0
+    results = []
     for injection in STARTUP_SEQUENCE_INJECTIONS:
         target = staging_dir / injection.target_script
-        if inject_script(target, injection, content_base_path):
-            count += 1
-    return count
+        results.append(inject_script(target, injection, content_base_path))
+    return results
 
 
 def apply_package_scripts(
@@ -334,6 +350,9 @@ def apply_package_scripts(
                 content=mod.content,
                 name=mod.name,
             )
-            if inject_script(staging_dir / mod.target, injection):
+            result = inject_script(staging_dir / mod.target, injection)
+            if result.error:
+                logger.warning("Package script %s failed: %s", mod.name, result.error)
+            if result.changed:
                 count += 1
     return count

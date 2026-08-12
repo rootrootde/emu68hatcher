@@ -600,34 +600,34 @@ Manual verification: compare screenshots of the partition bar and compare build 
 
 ## Execution order
 
-- [ ] P1 disk exclusion
-- [ ] P2 saved target and partition load order
-- [ ] P3 direct flash control
-- [ ] P4 required artifact status
-- [ ] P5 partition contract
-- [ ] P6 tree-copy cycles
-- [ ] P7 worker lifetime
-- [ ] P8 worker error reporting
-- [ ] P9 download body and cache origin
-- [ ] P10 transactional startup edits
-- [ ] P11 archive size ceiling
-- [ ] P12 package selection round-trip
-- [ ] P13 config assembly and version handling
-- [ ] P14 package catalogue identity
-- [ ] P15 disk-claim timeout
-- [ ] P16 temporary resource cleanup
-- [ ] P17 dead interfaces
-- [ ] P18 stale text and comments
-- [ ] P19 shared source resolver
-- [ ] P20 configuration split
-- [ ] P21 stage registry
-- [ ] P22 typed phase outputs
-- [ ] P23 elevation split
-- [ ] P24 disk enumeration split
-- [ ] P25 validation split
-- [ ] P26 preference split
-- [ ] P27 Workbench installation split
-- [ ] P28 Kickstart tab split
-- [ ] P29 partition editor model
-- [ ] P30 package resolver decomposition
-- [ ] P31 local procedure decomposition
+- [x] P1 disk exclusion
+- [x] P2 saved target and partition load order
+- [x] P3 direct flash control
+- [x] P4 required artifact status
+- [x] P5 partition contract
+- [x] P6 tree-copy cycles
+- [x] P7 worker lifetime
+- [x] P8 worker error reporting
+- [x] P9 download body and cache origin
+- [x] P10 transactional startup edits
+- [x] P11 archive size ceiling
+- [x] P12 package selection round-trip
+- [x] P13 config assembly and version handling
+- [x] P14 package catalogue identity
+- [x] P15 disk-claim timeout
+- [x] P16 temporary resource cleanup
+- [x] P17 dead interfaces
+- [x] P18 stale text and comments
+- [x] P19 shared source resolver
+- [x] P20 configuration split
+- [x] P21 stage registry
+- [x] P22 typed phase outputs
+- [x] P23 elevation split
+- [x] P24 disk enumeration split
+- [x] P25 validation split
+- [x] P26 preference split
+- [x] P27 Workbench installation split
+- [x] P28 Kickstart tab split
+- [x] P29 partition editor model
+- [x] P30 package resolver decomposition
+- [x] P31 local procedure decomposition

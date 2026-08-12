@@ -2,7 +2,7 @@
 
 import re
 
-from emu68hatcher.config.defaults import (
+from emu68hatcher.config.constants import (
     CYLINDER_SIZE,
     DEFAULT_BOOT_DEVICE,
     DEFAULT_WORK_DEVICE,
@@ -11,7 +11,7 @@ from emu68hatcher.config.defaults import (
     PFS3_MAX_PARTITION_SIZE,
     RDB_OVERHEAD,
 )
-from emu68hatcher.config.schema import (
+from emu68hatcher.config.partition_models import (
     AmigaPartition,
     Filesystem,
     MBRPartition,

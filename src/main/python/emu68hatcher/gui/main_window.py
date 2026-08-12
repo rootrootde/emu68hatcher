@@ -19,9 +19,8 @@ from emu68hatcher import __version__
 from emu68hatcher.config.defaults import create_default_config
 from emu68hatcher.config.loader import load_config, save_config
 from emu68hatcher.config.schema import (
-    CustomScreenMode,
-    OutputConfig,
-    PackageConfig,
+    CURRENT_CONFIG_VERSION,
+    BuildConfig,
 )
 from emu68hatcher.gui.dialogs import BuildProgressDialog
 from emu68hatcher.gui.tabs import (
@@ -115,6 +114,21 @@ class MainWindow(QMainWindow):
         # status bar
         self.statusBar().showMessage("Ready")
 
+    def closeEvent(self, event):
+        running = []
+        for label, tab in (
+            ("asset scans", self.kickstart_tab),
+            ("disk scan", self.output_tab),
+            ("tool download", self.start_tab),
+        ):
+            if not tab.shutdown_workers():
+                running.append(label)
+        if running:
+            self.statusBar().showMessage("Waiting for " + ", ".join(running))
+            event.ignore()
+            return
+        super().closeEvent(event)
+
     def open_config(self):
         path, _ = QFileDialog.getOpenFileName(
             self,
@@ -176,80 +190,73 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Error", f"Failed to save config: {e}")
 
     def collect_config(self):
-        """pull config from all tabs into self.config"""
+        """Validate a fresh config assembled from all tabs."""
         import logging
-
-        from emu68hatcher.config.schema import KickstartVersion
 
         logger = logging.getLogger("emu68hatcher")
 
         ks = self.kickstart_tab.get_config()
         logger.debug(f"Kickstart tab config: {ks}")
-        self.config.kickstart.version = KickstartVersion(ks["version"])
-        # legacy single-dir fields go away in favour of asset_directories
-        self.config.kickstart.rom_directory = None
-        self.config.install_media.directory = None
-
-        # asset_directories is the single source of truth - scanned for both ROMs and ADFs
         asset_dirs = ks.get("asset_directories", []) or []
-        self.config.asset_directories = [Path(p) for p in asset_dirs if str(p).strip()]
-        logger.debug(f"Asset directories: {self.config.asset_directories}")
+        asset_directories = [Path(p) for p in asset_dirs if str(p).strip()]
+        logger.debug(f"Asset directories: {asset_directories}")
 
         disp = self.emu68_tab.get_config()
         logger.debug(f"Emu68 tab returned: {disp}")
-
-        # set HDMI output mode
         hdmi_mode = disp.get("hdmi_mode", "1280*720-50")
-        self.config.display.hdmi_mode = hdmi_mode
-
-        # store custom HDMI resolution if applicable
+        custom = None
         if hdmi_mode == "Custom":
-            self.config.display.custom = CustomScreenMode(
-                width=disp["width"],
-                height=disp["height"],
-                framerate=disp.get("framerate", 60),
-                aspect_ratio=disp.get("aspect_ratio", 3),
-                margins=disp.get("margins", False),
-                interlace=disp.get("interlace", False),
-                reduced_blanking=disp.get("reduced_blanking", False),
-            )
-        else:
-            self.config.display.custom = None
+            custom = {
+                "width": disp["width"],
+                "height": disp["height"],
+                "framerate": disp.get("framerate", 60),
+                "aspect_ratio": disp.get("aspect_ratio", 3),
+                "margins": disp.get("margins", False),
+                "interlace": disp.get("interlace", False),
+                "reduced_blanking": disp.get("reduced_blanking", False),
+            }
 
-        # selected Emu68 release
-        self.config.emu68_version = self.emu68_tab.get_emu68_version()
-
-        # user-supplied Picasso96 full version (empty -> default free version)
-        self.config.display.picasso96_archive = self.emu68_tab.get_picasso96_archive()
-
-        # icon set (now on the Amiga Files tab)
-        self.config.icon_set = self.kickstart_tab.get_icon_set()
-
-        # tree carries mui; network tab the roadshow entry; amiga files tab the locale disks
         pkgs = (
             self.packages_tab.get_config()
             + self.network_tab.extra_package_entries()
             + self.kickstart_tab.get_locale_entries()
         )
-        self.config.packages = [PackageConfig(name=p["name"], enabled=p["enabled"]) for p in pkgs]
-        self.config.network_stack = self.network_tab.get_network_stack()
-        self.config.wifi = self.network_tab.get_wifi_config()
-        self.config.roadshow_archive = self.network_tab.get_roadshow_archive()
-        self.config.network = self.network_tab.get_network_settings()
-
         out = self.output_tab.get_config()
+        output = None
         if out.get("path"):
-            self.config.output = OutputConfig(
-                type=out.get("type", "img"),
-                path=Path(out["path"]),
-                sparse=out.get("sparse", True),
-                flash_target=out.get("flash_target"),
-            )
-        else:
-            # device / flash mode without a selected disk - clear stale config
-            self.config.output = None
+            output = {
+                "type": out.get("type", "img"),
+                "path": out["path"],
+                "sparse": out.get("sparse", True),
+                "flash_target": out.get("flash_target"),
+            }
 
-        self.config.partitions = self.partitions_tab.get_config()
+        wifi = self.network_tab.get_wifi_config()
+        network = self.network_tab.get_network_settings()
+        partitions = self.partitions_tab.get_config()
+        data = {
+            "version": CURRENT_CONFIG_VERSION,
+            "kickstart": {"version": ks["version"], "rom_directory": None},
+            "install_media": {"directory": None},
+            "asset_directories": asset_directories,
+            "display": {
+                "hdmi_mode": hdmi_mode,
+                "custom": custom,
+                "picasso96_archive": self.emu68_tab.get_picasso96_archive(),
+            },
+            "packages": pkgs,
+            "icon_set": self.kickstart_tab.get_icon_set(),
+            "partitions": partitions.model_dump(mode="python"),
+            "output": output,
+            "network_stack": self.network_tab.get_network_stack(),
+            "roadshow_archive": self.network_tab.get_roadshow_archive(),
+            "wifi": wifi.model_dump(mode="python") if wifi else None,
+            "network": network.model_dump(mode="python"),
+            "emu68_version": self.emu68_tab.get_emu68_version(),
+        }
+        config = BuildConfig.model_validate(data)
+        self.config = config
+        return config
 
     def build_image(self):
         try:
@@ -336,7 +343,7 @@ class MainWindow(QMainWindow):
         if reply != QMessageBox.StandardButton.Yes:
             return
 
-        # launch build dialog; lock the button so a double-click cant spawn a second worker
+        # launch build dialog; lock the button so a double-click cannot spawn a second worker
         self.build_btn.setEnabled(False)
         try:
             dialog = BuildProgressDialog(self.config, self)
