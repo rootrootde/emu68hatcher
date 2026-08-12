@@ -1,5 +1,7 @@
 """Output target validation and build-long resource acquisition."""
 
+from __future__ import annotations
+
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING
