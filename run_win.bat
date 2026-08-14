@@ -1,7 +1,12 @@
 @echo off
 rem launch emu68hatcher from this source checkout, using a windows-only venv
 rem (.venvwin) so a macos/linux .venv in the same dir stays untouched
-cd /d "%~dp0"
+pushd "%~dp0"
+if errorlevel 1 (
+    echo Could not open the source checkout.
+    pause
+    exit /b 1
+)
 
 rem a venv without pip is the leftover of a create that failed at the
 rem ensurepip step - rebuild it
@@ -18,8 +23,7 @@ if not exist ".venvwin\Scripts\python.exe" (
 
 if not exist ".venvwin\Scripts\python.exe" (
     echo Could not create .venvwin - is python installed?
-    pause
-    exit /b 1
+    goto :fail
 )
 
 if not exist ".venvwin\Scripts\emu68hatcher.exe" (
@@ -27,8 +31,7 @@ if not exist ".venvwin\Scripts\emu68hatcher.exe" (
     ".venvwin\Scripts\python.exe" -m pip install -e .
     if errorlevel 1 (
         echo pip install failed.
-        pause
-        exit /b 1
+        goto :fail
     )
 )
 
@@ -36,6 +39,13 @@ if not exist ".venvwin\Scripts\emu68hatcher.exe" (
 if errorlevel 1 (
     echo.
     echo emu68hatcher exited with an error.
-    pause
-    exit /b 1
+    goto :fail
 )
+
+popd
+exit /b 0
+
+:fail
+pause
+popd
+exit /b 1

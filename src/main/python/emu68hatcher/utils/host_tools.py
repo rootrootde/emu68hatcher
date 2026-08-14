@@ -145,10 +145,11 @@ def get_hst_imager_env() -> dict[str, str]:
 
 
 def localize_for_hst(path: Path, local_dir: Path) -> Path:
-    """return path, or a local copy when UNC-hosted - hst-imager resolves forward-slash UNC paths as 'Path not found'"""
-    if not path.drive.startswith("\\\\"):
+    """copy UNC-hosted inputs locally before calling hst-imager"""
+    source = path.absolute() if os.name == "nt" else path
+    if not source.drive.startswith("\\\\"):
         return path
-    return _copy_to_local(path, local_dir)
+    return _copy_to_local(source, local_dir)
 
 
 def _copy_to_local(path: Path, local_dir: Path) -> Path:

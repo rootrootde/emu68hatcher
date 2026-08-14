@@ -124,13 +124,23 @@ class AssetScanPanel(QWidget):
         for worker in tuple(self._workers):
             if worker.isRunning():
                 worker.requestInterruption()
+        configured_directories = self.directories
         directories = self.scan_directories
         if not directories:
             self._rom_rows = []
             self._whdload_rows = []
             self._adf_rows = []
             self._refresh_details_button()
-            self.rom_status.setText("Add at least one directory above to scan for ROMs and ADFs")
+            if configured_directories:
+                paths = "\n".join(str(path) for path in configured_directories)
+                self.rom_status.setText(
+                    f"Configured directory not available:\n{paths}\n"
+                    "Mount the drive or choose another directory, then rescan."
+                )
+            else:
+                self.rom_status.setText(
+                    "Add at least one directory above to scan for ROMs and ADFs"
+                )
             self.rom_status.setStyleSheet("color: gray;")
             self.whdload_status.clear()
             self.adf_status.clear()
