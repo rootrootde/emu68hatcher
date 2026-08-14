@@ -117,19 +117,18 @@ def _write_png_position(path: Path, x: int, y: int) -> bool:
     pos_entries = struct.pack(">II", _PNG_TAG_X, x) + struct.pack(">II", _PNG_TAG_Y, y)
     out = bytearray()
     pos = 0
-    # readers merge every icOn chunk, so the tags are stripped from all of
-    # them and appended once to the last (or before the last IEND if none)
-    last_icon = icons[-1][0] if icons else None
-    last_iend = max(off for off, _, ctype, _ in chunks if ctype == b"IEND")
+    # peterk icon.library reads metadata from the first image only
+    first_iend = min(off for off, _, ctype, _ in chunks if ctype == b"IEND")
+    first_icon = next((off for off, _, _ in icons if off < first_iend), None)
     for off, total, ctype, body in chunks:
         out += data[pos:off]  # signatures between images
 
         if ctype == b"icOn":
             body = b"".join(raw for tag, raw in parsed[off] if tag not in (_PNG_TAG_X, _PNG_TAG_Y))
-            if off == last_icon:
+            if off == first_icon:
                 body += pos_entries
             out += _png_chunk(ctype, body)
-        elif ctype == b"IEND" and off == last_iend and last_icon is None:
+        elif ctype == b"IEND" and off == first_iend and first_icon is None:
             out += _png_chunk(b"icOn", pos_entries)
             out += data[off : off + total]
         else:
