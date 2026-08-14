@@ -1,0 +1,18 @@
+name: miamidx_mui
+friendly_name: MiamiDX MUI
+group: System
+description: 'MUI interface modules for MiamiDX'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+download:
+  source: aminet
+  path: comm/tcp/MiamiDx10c-MUI.lha
+  hash: 885BF8CB83BBA1FE7A587110E7BF1922
+  filename: MiamiDx10c-MUI.lha
+install:
+- from: MiamiDx10_Install/MUI/*
+  to: Programs/Miami/Libs/

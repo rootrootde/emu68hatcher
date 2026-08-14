@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 class NetworkStack(str, Enum):
     ROADSHOW = "Roadshow"
+    MIAMIDX = "MiamiDX"
 
 
 class WifiConfig(BaseModel):

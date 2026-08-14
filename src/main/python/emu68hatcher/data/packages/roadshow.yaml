@@ -10,6 +10,14 @@ versions:
 - 3.2.3
 - '3.9'
 default: true
+requires:
+- genet_config
+- roadshow_config
+- wifipi_config
+provides:
+- tcpip_stack
+conflicts:
+- tcpip_stack
 download:
   source: local
   path: Roadshow-Demo-1.15.lha
@@ -66,7 +74,7 @@ scripts:
   content: |
     ;BEGIN Roadshow
     ; Network-Startup not auto-executed - Roadshow demo timer starts when
-    ; bsdsocket.library opens. Use "Go Online" from Tools menu instead.
+    ; bsdsocket.library opens. Use "Connect" from the Network menu instead.
     ;END Roadshow
 - name: Roadshow TCP/IP
   when_user_archive: true

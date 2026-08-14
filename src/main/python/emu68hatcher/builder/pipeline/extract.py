@@ -181,11 +181,11 @@ def _extract_local_archives(
         if not pkg.download.path:
             continue
         archive_path = local_packages_dir / pkg.download.path
-        if not archive_path.exists() or archive_path.suffix.lower() not in archive_extensions:
+        if not archive_path.exists():
             if pkg_name in downloaded.required_packages:
-                raise BuildError(
-                    f"Required local archive is missing for {pkg_name}: {archive_path}"
-                )
+                raise BuildError(f"Required local source is missing for {pkg_name}: {archive_path}")
+            continue
+        if archive_path.suffix.lower() not in archive_extensions:
             continue
         output_dir = downloaded.workspace.extracted_dir / pkg_name
         workflow._milestone(f"Extracting {pkg_name} (local)")

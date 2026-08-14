@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from emu68hatcher.config.schema import PackageConfig
+from emu68hatcher.config.schema import NetworkStack, PackageConfig
 from emu68hatcher.data.package_loader import (
     get_bundle_members,
     get_bundles_for_version,
@@ -21,7 +21,7 @@ from emu68hatcher.data.package_loader import (
 from emu68hatcher.data.package_schema import Bundle, Package
 
 # packages controlled by the network stack radio (Network tab), hidden from the tree
-_NETWORK_STACK_PACKAGES = {"roadshow"}
+_NETWORK_STACK_PACKAGES = {stack.value.lower() for stack in NetworkStack}
 
 # groups not shown in the tree: System is mandatory infra (mui handled specially);
 # Locale is the language grid on the Amiga Files tab

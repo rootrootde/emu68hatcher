@@ -239,6 +239,9 @@ class BuildConfig(_ConfigModel):
     # optional path to a user-owned Roadshow archive; when set, replaces the bundled demo
     roadshow_archive: Path | None = None
 
+    # optional MiamiDX registration keys (MIAMI.KEY1/2 or MIAMIDX.KEY)
+    miamidx_key_directory: Path | None = None
+
     # wifi creds - never serialized, never in repr
     wifi: WifiConfig | None = Field(default=None, exclude=True, repr=False)
 
@@ -260,9 +263,9 @@ class BuildConfig(_ConfigModel):
             return self.partitions.bootable_device_or_default
         return DEFAULT_BOOT_DEVICE
 
-    @field_validator("roadshow_archive", mode="before")
+    @field_validator("roadshow_archive", "miamidx_key_directory", mode="before")
     @classmethod
-    def _convert_roadshow_archive(cls, v):
+    def _convert_network_path(cls, v):
         return _coerce_optional_path(v)
 
     @field_validator("asset_directories", mode="before")

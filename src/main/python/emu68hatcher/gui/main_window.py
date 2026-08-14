@@ -154,6 +154,7 @@ class MainWindow(QMainWindow):
                 self.network_tab.set_network_stack(self.config.network_stack)
                 self.network_tab.set_wifi_config(self.config.wifi)
                 self.network_tab.set_roadshow_archive(self.config.roadshow_archive)
+                self.network_tab.set_miamidx_key_directory(self.config.miamidx_key_directory)
                 self.network_tab.set_network_settings(self.config.network)
                 self.packages_tab.set_config(self.config.packages)
                 self.kickstart_tab.set_locale(self.config.packages)
@@ -250,6 +251,7 @@ class MainWindow(QMainWindow):
             "output": output,
             "network_stack": self.network_tab.get_network_stack(),
             "roadshow_archive": self.network_tab.get_roadshow_archive(),
+            "miamidx_key_directory": self.network_tab.get_miamidx_key_directory(),
             "wifi": wifi.model_dump(mode="python") if wifi else None,
             "network": network.model_dump(mode="python"),
             "emu68_version": self.emu68_tab.get_emu68_version(),

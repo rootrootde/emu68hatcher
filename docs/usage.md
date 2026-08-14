@@ -12,7 +12,7 @@
 
 5. **Software tab - enable/disable optional packages.** Pick MUI 3.8 or 5.0, plus any applications and commodities you want. Mandatory system packages are always included and not shown here. The first build downloads everything (with caching, subsequent builds are faster).
 
-6. **Network tab - set up TCP/IP (optional).** Choose the network stack (Roadshow), or point at your own **Roadshow.lha** to install the full commercial version instead of the bundled demo. Enter WiFi credentials, and set each interface (ethernet / WiFi) to DHCP or a static IP + netmask, with a shared default gateway and DNS servers. These get written into the image so networking is ready on first boot.
+6. **Network tab - set up TCP/IP (optional).** Choose Roadshow or MiamiDX. Roadshow uses the bundled demo unless you select your own **Roadshow.lha**, and supports DHCP or static addresses, DNS, and a default gateway. MiamiDX installs its main and MUI archives from Aminet with DHCP profiles for genet, wifipi, and uaenet. You can also select a folder containing **MIAMI.KEY1**, **MIAMI.KEY2**, or **MIAMIDX.KEY**. Enter WiFi credentials for either stack. Networking starts from the **Connect WiFi** or **Connect Ethernet** Workbench tools; MiamiDX does not connect automatically at boot.
 
 7. **Output tab.** Pick how to deliver the build:
     - **Image file** - writes a regular **.img** file to disk. Sparse files are enabled by default, so a large image only uses as much disk space as the actual data.

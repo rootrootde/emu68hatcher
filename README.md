@@ -14,7 +14,7 @@ Runs on macOS, Linux and Windows.
 - Bootable Emu68 install for pistorm32-lite, pistorm, pistorm16
 - Workbench install from stock ADFs (3.1 / 3.2 / 3.2.2.1 / 3.2.3), or AmigaOS 3.9 from the original CD image
 - Customizable package set: MUI, WHDLoad+WHDLoadWrapper, IBrowse, HippoPlayer, ...
-- RTG (Picasso96), networking (Roadshow TCP/IP stack + wifipi/genet drivers), partition layout editor (PFS3 + FFS) - user-supplied full versions of Roadshow and Picasso96 supported
+- RTG (Picasso96), networking (Roadshow or MiamiDX + wifipi/genet drivers), partition layout editor (PFS3 + FFS) - user-supplied full versions of Roadshow and Picasso96 supported
 - SD card flashing (direct, or write the **.img** to a card after the build), sparse **.img** by default
 - Build configs as JSON (save / load)
 
@@ -65,6 +65,7 @@ Bundled / downloaded at build time:
 
 - [WHDLoad](http://whdload.de/)
 - [Roadshow Demo](https://www.amigashop.org/product_info.php?cPath=2_34&products_id=200&language=de) bundled with permission from A. Magerl (APC&TCP)
+- [MiamiDX 1.0c](https://aminet.net/package/comm/tcp/MiamiDx10cmain) downloaded from Aminet when selected
 - [7-Zip](https://github.com/ip7z/7zip) (GNU LGPL) - downloaded at install time, License.txt copied alongside the binary
 - [Poseidon USB stack](https://wiki.icomp.de/wiki/RapidRoad) by Chris Hodges - downloaded from the iComp wiki at build time when USB support is selected
 - Aminet packages (MUI, HippoPlayer, IBrowse, akDatatypes, Picasso96, ...) - downloaded from [aminet.net](https://aminet.net) at build time; each ships its own readme with license

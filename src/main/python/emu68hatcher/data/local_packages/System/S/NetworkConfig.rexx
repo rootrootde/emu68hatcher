@@ -4,7 +4,7 @@
  * menu: WiFi/Ethernet/Offline actions plus a Settings submenu for WiFi
  * credentials, per-interface static IP / DHCP, DNS, and the boot toggle.
  *
- * Invoked by 'rx s:NetworkConfig.rexx' - from the Tools menu or from
+ * Invoked by 'rx s:NetworkConfig.rexx' - from the Network menu or from
  * SYS:Utilities/Network Config's double-click launcher.
  */
 

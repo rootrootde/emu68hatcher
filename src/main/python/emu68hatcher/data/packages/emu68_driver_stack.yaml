@@ -17,9 +17,7 @@ download:
   tag: v2.0.0
   filename: emu68-drivers-2.0.0.lha
   hash: A1298F0178AF7807F8CEE0231733BEA8
-# Storage/ variants (SANA-II genet 3.14, xhci 5.3) instead of the DEVS/ defaults,
-# which need the bundled lwip bsdsocket or Poseidon 6.x - this build pairs Roadshow
-# with classic Poseidon 4.x. the bundled bsdsocket + net tools stay out
+# selectable Amiga stacks need the SANA-II genet and Poseidon 4.x xhci variants in Storage/
 install:
 - from: LIBS/gic400.library
   to: Libs/

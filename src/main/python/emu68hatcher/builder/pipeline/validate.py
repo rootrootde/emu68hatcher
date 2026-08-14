@@ -12,6 +12,7 @@ from emu68hatcher.builder.pipeline.validate_archives import (
 )
 from emu68hatcher.builder.pipeline.validate_output import validate_output_target
 from emu68hatcher.builder.state import BuildStage, ValidatedInputs
+from emu68hatcher.config.schema import NetworkStack
 from emu68hatcher.data.install_media import (
     check_install_media_complete,
     get_required_install_media,
@@ -36,7 +37,12 @@ def stage_validate(workflow: BuildWorkflow, _previous=None) -> ValidatedInputs:
     _check_optional_package_adfs(workflow, found_media, kickstart_version)
 
     validate_output_target(workflow)
-    roadshow_path, roadshow_kind = validate_roadshow_archive(workflow.config.roadshow_archive)
+    roadshow_archive = (
+        workflow.config.roadshow_archive
+        if workflow.config.network_stack == NetworkStack.ROADSHOW
+        else None
+    )
+    roadshow_path, roadshow_kind = validate_roadshow_archive(roadshow_archive)
     picasso96_path = validate_picasso96_archive(workflow.config.display.picasso96_archive)
     if roadshow_path:
         workflow.logger.info(f"Roadshow archive accepted ({roadshow_kind}): {roadshow_path}")

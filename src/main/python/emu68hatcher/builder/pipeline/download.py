@@ -249,7 +249,8 @@ def _download_packages(
     download_names = package_names
     if workspace.validated.picasso96_archive_path is not None:
         download_names = [name for name in package_names if name != "picasso96"]
-    mandatory = downloadable_mandatory_names(kickstart_version, emu68_version)
+    mandatory = set(downloadable_mandatory_names(kickstart_version, emu68_version))
+    mandatory.update(_required_network_packages(workflow, resolution))
     artifacts.required_artifacts.update(mandatory)
     workflow.logger.info(f"Total packages to process: {len(package_names)}")
     if not package_names:
@@ -283,6 +284,39 @@ def _download_packages(
             )
 
 
+def _required_network_packages(
+    workflow: BuildWorkflow,
+    resolution: Resolution,
+) -> set[str]:
+    if workflow.config.network_stack is None:
+        return set()
+
+    from emu68hatcher.data.package_loader import get_package_by_name
+
+    order = resolution.install_order
+    providers: dict[str, str] = {}
+    for name in order:
+        package = get_package_by_name(name)
+        if package is None:
+            continue
+        providers[name] = name
+        providers.update({token.lower(): name for token in package.provides})
+
+    required = {workflow.config.network_stack.value.lower()}
+    pending = list(required)
+    while pending:
+        name = pending.pop()
+        package = get_package_by_name(name)
+        if package is None:
+            continue
+        for requirement in package.requires:
+            provider = providers.get(requirement.lower())
+            if provider is not None and provider not in required:
+                required.add(provider)
+                pending.append(provider)
+    return required
+
+
 def stage_download(workflow: BuildWorkflow, workspace: Workspace) -> DownloadedArtifacts:
     """download network resources and record the required inputs."""
     workflow._update_state(BuildStage.DOWNLOAD, 0.0)
@@ -290,9 +324,8 @@ def stage_download(workflow: BuildWorkflow, workspace: Workspace) -> DownloadedA
 
     manager = DownloadManager(
         work_dir=workspace.downloads_dir,
-        max_retries=3,
+        max_retries=5,
         timeout=120.0,
-        # bail out early on flaky mirrors / dead DNS instead of waiting for socket timeout
         cancel_callback=lambda: workflow._cancelled,
     )
 
@@ -304,11 +337,13 @@ def stage_download(workflow: BuildWorkflow, workspace: Workspace) -> DownloadedA
         workflow.config.kickstart.version.value,
         workflow.config.emu68_version.value,
     )
+    required_packages = {
+        package.name for package in mandatory_packages if package.name in resolution.selected
+    }
+    required_packages.update(_required_network_packages(workflow, resolution))
     artifacts = DownloadedArtifacts(
         workspace=workspace,
-        required_packages={
-            package.name for package in mandatory_packages if package.name in resolution.selected
-        },
+        required_packages=required_packages,
     )
 
     pfs3_handler = _download_pfs3aio_if_needed(workflow, manager, artifacts)
