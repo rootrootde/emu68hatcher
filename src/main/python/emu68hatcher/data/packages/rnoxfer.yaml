@@ -9,14 +9,12 @@ versions:
 - 3.2.3
 - '3.9'
 default: false
-# MUI app; needs codesets + guigfx/render; AmiSSL is already mandatory. its icon wants a
-# 32768 stack, so the menu entry launches it via WBRun (workbench mode)
+# MUI app; needs codesets + guigfx/render. AmiSSL is already mandatory.
 requires:
 - mui
 - codesets
 - guigfx
 - render
-- wbrun
 download:
   source: aminet
   path: comm/tcp/RNOXfer_68k.lha
@@ -44,5 +42,5 @@ install:
 menu_entry:
   title: RNOXfer
   path: Programs/RNOXfer/RNOXfer
-  submenu: Network
+  menu: Network
   wb_launch: true

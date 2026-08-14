@@ -33,7 +33,13 @@ def stage_configure(workflow: BuildWorkflow, image: CreatedImage) -> CreatedImag
     all_packages = _collect_enabled_packages(workflow)
 
     # phase 1: Script configuration (0-40%)
-    configure_scripts(workflow, boot_staging, s_dir, all_packages)
+    configure_scripts(
+        workflow,
+        boot_staging,
+        s_dir,
+        all_packages,
+        image.extracted.extracted_paths,
+    )
 
     # relocate stock OS files per enabled packages (e.g. commodity -> WBStartup)
     moved = apply_relocations(workflow, boot_staging, all_packages)

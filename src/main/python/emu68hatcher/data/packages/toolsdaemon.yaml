@@ -1,0 +1,29 @@
+name: toolsdaemon
+friendly_name: ToolsDaemon 2.2
+group: System
+description: 'Workbench menus and preferences editor'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+requires:
+- reqtools
+download:
+  source: aminet
+  path: util/boot/ToolsDaemon21a.lha
+  hash: ac84352f58beb2f564722b87c431dc20
+  filename: ToolsDaemon21a.lha
+install:
+- from: ToolsDaemon/ToolsDaemon
+  to: WBStartup/
+- from: ToolsDaemon/ToolsDaemon.info
+  to: WBStartup/
+- from: ToolsDaemon/ToolsDaemon-handler
+  to: L/
+- from: ToolsDaemon/ToolsPrefs
+  to: Prefs/
+- from: ToolsDaemon/ToolsPrefs.info
+  to: Prefs/

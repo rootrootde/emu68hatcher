@@ -13,7 +13,6 @@ download:
   path: util/cli/WBRun_fix.lha
   hash: 88BA6BCF9106930B33ACC5DBD94A9A26
   filename: WBRun_fix.lha
-# pulled in by tools-menu entries with wb_launch (WBRun needs parm.library beside it)
 install:
 - from: WBRun/WBRun
   to: C/

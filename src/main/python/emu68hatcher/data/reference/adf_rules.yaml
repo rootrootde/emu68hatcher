@@ -540,21 +540,9 @@
   to: WBStartup/
   sequence: 1
   package: os_install
-- &id052
-  adf: Storage3_2
-  from: WBStartup/MenuTools
-  to: WBStartup/
-  sequence: 1
-  package: os_install
 - &id053
   adf: Storage3_2
   from: WBStartup/AutoArrangeIcons.info
-  to: WBStartup/
-  sequence: 1
-  package: os_install
-- &id054
-  adf: Storage3_2
-  from: WBStartup/MenuTools.info
   to: WBStartup/
   sequence: 1
   package: os_install
@@ -699,9 +687,7 @@
 - *id049
 - *id050
 - *id051
-- *id052
 - *id053
-- *id054
 - *id055
 - *id056
 - *id057
@@ -1000,9 +986,7 @@
 - *id049
 - *id050
 - *id051
-- *id052
 - *id053
-- *id054
 - *id055
 - *id056
 - *id057

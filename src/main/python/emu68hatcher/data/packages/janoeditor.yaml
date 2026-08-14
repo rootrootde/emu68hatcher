@@ -17,3 +17,9 @@ download:
 install:
 - from: Jano_v*/Jano*
   to: Programs/JanoEditor/
+menu_entry:
+  title: JanoEditor
+  path: Programs/JanoEditor/JanoEditor
+  menu: Apps
+  wb_launch: true
+  selected_icons: true

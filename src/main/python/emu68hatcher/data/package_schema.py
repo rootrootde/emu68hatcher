@@ -74,12 +74,13 @@ class RelocateRule(BaseModel):
 
 
 class MenuEntry(BaseModel):
-    """Tools-menu launcher for an installed app (WB 3.2.x only)"""
+    """ToolsDaemon launcher for an installed app."""
 
-    title: str  # label shown in the Workbench Tools menu
+    title: str  # label shown in the Workbench menu
     path: str  # executable path relative to SYS:, e.g. "Programs/IBrowse/IBrowse"
-    submenu: str | None = None  # group under a Tools submenu of this name (None = top level)
-    wb_launch: bool = False  # launch via WBRun (workbench mode), not CLI run
+    menu: str = "Apps"  # Workbench menu title
+    wb_launch: bool = False  # launch in Workbench mode instead of from the CLI
+    selected_icons: bool = False  # append [] so ToolsDaemon passes selected icons
 
 
 class ScriptModification(BaseModel):
@@ -134,7 +135,7 @@ class Package(BaseModel):
     # script modifications
     scripts: list[ScriptModification] = Field(default_factory=list)
 
-    # optional Workbench Tools-menu launcher (injected on WB 3.2.x only)
+    # optional ToolsDaemon launcher
     menu_entry: MenuEntry | None = None
 
     @field_validator("requires", "recommends", "conflicts", "provides")
