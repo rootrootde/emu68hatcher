@@ -9,6 +9,9 @@ versions:
 - 3.2.3
 - '3.9'
 mandatory: true
+requires:
+- additem
+- wbrun
 download:
   source: aminet
   path: text/edit/JanoEditor.lha
@@ -20,6 +23,6 @@ install:
 menu_entry:
   title: JanoEditor
   path: Programs/JanoEditor/JanoEditor
-  menu: Apps
+  menu: Tools
   wb_launch: true
   selected_icons: true

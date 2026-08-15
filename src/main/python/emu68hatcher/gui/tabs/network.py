@@ -111,7 +111,6 @@ class NetworkTab(QWidget):
         miamidx_row.setContentsMargins(0, 0, 0, 0)
         miamidx_row.setSpacing(6)
         miamidx_row.addWidget(self.radio_miamidx)
-        miamidx_row.addWidget(QLabel("(Aminet release, requires MUI)"))
         miamidx_row.addStretch()
         net_layout.addLayout(miamidx_row)
 

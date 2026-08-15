@@ -1,0 +1,20 @@
+name: additem
+friendly_name: AddItem 2.1
+group: System
+description: 'native Workbench Tools menu entries'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+download:
+  source: aminet
+  path: util/wb/additem.lha
+  hash: e4f43fa5389554083445fd5325799e78
+  filename: additem.lha
+install:
+- from: AddItem/AddItem
+  to: WBStartup/
+- from: AddItem/AddItem.info
+  to: WBStartup/

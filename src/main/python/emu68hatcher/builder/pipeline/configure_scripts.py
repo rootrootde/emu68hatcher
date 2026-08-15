@@ -1,4 +1,4 @@
-"""configure startup scripts and ToolsDaemon menus"""
+"""configure startup scripts and Workbench menus"""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from emu68hatcher.builder.errors import BuildError
+from emu68hatcher.builder.staging.files import read_info_tooltypes, write_info_tooltypes
 from emu68hatcher.builder.staging.scripts.generator import generate_shell_startup
 from emu68hatcher.builder.staging.scripts.injector import (
     apply_package_scripts,
@@ -19,6 +20,11 @@ from emu68hatcher.data.package_loader import get_local_packages_dir, get_package
 
 if TYPE_CHECKING:
     from emu68hatcher.builder.workflow import BuildWorkflow
+
+_MENU_INDENT = "        "
+# lower priorities keep ToolsPrefs before AddItem after AutoArrangeIcons (0)
+_TOOLSDAEMON_STARTPRI = -1
+_ADDITEM_STARTPRI = -2
 
 
 @dataclass(frozen=True)
@@ -157,8 +163,10 @@ def _collect_app_entries(all_packages: list[str]) -> list[_MenuLauncher]:
     entries: list[_MenuLauncher] = []
     for name in all_packages:
         pkg = get_package_by_name(name)
-        if pkg and pkg.menu_entry:
-            me = pkg.menu_entry
+        if not pkg:
+            continue
+        menu_entries = ([pkg.menu_entry] if pkg.menu_entry else []) + pkg.menu_entries
+        for me in menu_entries:
             command = f"SYS:{me.path}" if me.wb_launch else f"Run >NIL: SYS:{me.path}"
             entries.append(
                 _MenuLauncher(
@@ -233,18 +241,19 @@ def _prefs_entries(all_packages: list[str], p96_modern: bool) -> list[_MenuLaunc
 
 
 def _append_launcher(lines: list[str], entry: _MenuLauncher, keyword: str = "ITEM") -> None:
-    lines.append(f"\t{keyword} {entry.title}")
+    lines.append(f"{_MENU_INDENT}{keyword} {entry.title}")
     selected = " []" if entry.selected_icons else ""
     if entry.wb_launch:
-        lines.append(f"\t(WB) {entry.command}{selected}")
+        lines.append(f"{_MENU_INDENT}(WB) {entry.command}{selected}")
     else:
-        lines.append(f"\t(CLI) 8192 {entry.command}{selected}")
+        lines.append(f"{_MENU_INDENT}(CLI) 8192 {entry.command}{selected}")
 
 
 def _build_toolsdaemon_menu(
     network_stack: NetworkStack | None,
     all_packages: list[str],
     p96_modern: bool = False,
+    kickstart_version: str | None = None,
 ) -> list[str]:
     """Build the complete ToolsDaemon.menu file."""
     network_actions = _network_entries(network_stack)
@@ -254,13 +263,15 @@ def _build_toolsdaemon_menu(
         package_menus.setdefault(entry.menu, []).append(entry)
 
     lines: list[str] = []
+    package_menus.pop("Tools", None)
+
     network_apps = package_menus.pop("Network", [])
     if network_actions or network_apps:
         lines.append("TITLE Network")
         for entry in network_actions:
             _append_launcher(lines, entry)
         if network_actions and network_apps:
-            lines.append("\tITEMBAR")
+            lines.append(f"{_MENU_INDENT}ITEMBAR")
         for entry in network_apps:
             _append_launcher(lines, entry)
 
@@ -275,18 +286,21 @@ def _build_toolsdaemon_menu(
     for entry in system_apps:
         _append_launcher(lines, entry)
     if system_apps:
-        lines.append("\tITEMBAR")
+        lines.append(f"{_MENU_INDENT}ITEMBAR")
 
-    lines.append("\tITEM Prefs")
+    lines.append(f"{_MENU_INDENT}ITEM Prefs")
     for entry in _prefs_entries(all_packages, p96_modern):
         _append_launcher(lines, entry, keyword="SUB")
-    lines.append("\tSUBBAR")
+    lines.append(f"{_MENU_INDENT}SUBBAR")
+    open_prefs = (
+        "C:WBRun SYS:Prefs" if kickstart_version == "3.9" else "SYS:Rexxc/rx >NIL: S:Win SYS:Prefs"
+    )
     _append_launcher(
         lines,
-        _MenuLauncher("System", "Open Prefs", "SYS:Rexxc/rx >NIL: S:Win SYS:Prefs"),
+        _MenuLauncher("System", "Open Prefs", open_prefs),
         keyword="SUB",
     )
-    lines.append("\tITEMBAR")
+    lines.append(f"{_MENU_INDENT}ITEMBAR")
     _append_launcher(lines, _MenuLauncher("System", "Reboot", "C:Reboot"))
 
     for menu in sorted(package_menus, key=str.lower):
@@ -298,6 +312,61 @@ def _build_toolsdaemon_menu(
     return lines
 
 
+def _configure_native_tools_menu(
+    boot_staging: Path,
+    s_dir: Path,
+    all_packages: list[str],
+) -> int:
+    """add package launchers to Workbench's native Tools menu."""
+    entries = sorted(
+        (entry for entry in _collect_app_entries(all_packages) if entry.menu == "Tools"),
+        key=lambda entry: entry.title.lower(),
+    )
+    if not entries:
+        return 0
+
+    info_path = boot_staging / "WBStartup" / "AddItem.info"
+    if not info_path.is_file():
+        raise BuildError("Native Tools menu entries require WBStartup/AddItem.info")
+
+    tooltypes = [
+        "DONOTWAIT",
+        f"STARTPRI={_ADDITEM_STARTPRI}",
+        "ADDITEM=----------------, ,NIL:",
+    ]
+    helper_dir = s_dir / "AppMenu"
+    for index, entry in enumerate(entries, start=1):
+        if "," in entry.title:
+            raise BuildError(f"Tools menu title contains a comma: {entry.title}")
+
+        launch = f"C:WBRun {entry.command}" if entry.wb_launch else entry.command
+        if entry.selected_icons:
+            helper_name = f"Tool{index}.rexx"
+            selected_launch = (
+                f"Run >NIL: <NIL: {entry.command}" if entry.wb_launch else entry.command
+            )
+            write_amiga_script(
+                helper_dir / helper_name,
+                [
+                    "OPTIONS RESULTS",
+                    "PARSE ARG target",
+                    f"launch = '{launch}'",
+                    "IF target ~= 'SYS:' THEN "
+                    f"launch = '{selected_launch}' || ' \"' || target || '\"'",
+                    "ADDRESS COMMAND launch",
+                    "EXIT RC",
+                ],
+            )
+            launch = f'SYS:Rexxc/rx >NIL: S:AppMenu/{helper_name} "%s"'
+
+        if "," in launch:
+            raise BuildError(f"Tools menu command contains a comma: {entry.title}")
+        tooltypes.append(f"ADDITEM={entry.title},{launch},NIL:")
+
+    write_info_tooltypes(info_path, tooltypes)
+    return len(entries)
+
+
 def _configure_toolsdaemon(
     workflow: BuildWorkflow,
     boot_staging: Path,
@@ -305,14 +374,31 @@ def _configure_toolsdaemon(
     all_packages: list[str],
     extracted_paths: dict[str, Path],
 ) -> None:
-    """Patch ToolsDaemon and replace the native MenuTools source."""
+    """configure custom menus and native Tools entries."""
     workflow._milestone("Installing ToolsDaemon 2.2 menus")
     patched = patch_toolsdaemon(boot_staging, extracted_paths)
     workflow.logger.info(f"Patched ToolsDaemon 2.2 files: {', '.join(patched)}")
 
+    toolsdaemon_info = boot_staging / "WBStartup" / "ToolsDaemon.info"
+    tooltypes = [
+        entry
+        for entry in read_info_tooltypes(toolsdaemon_info)
+        if not entry.upper().startswith(("STARTPRI=", "WAIT="))
+    ]
+    write_info_tooltypes(
+        toolsdaemon_info,
+        [*tooltypes, f"STARTPRI={_TOOLSDAEMON_STARTPRI}", "WAIT=1"],
+    )
+
     p96_modern = workflow.config.display.picasso96_archive is not None
-    lines = _build_toolsdaemon_menu(workflow.config.network_stack, all_packages, p96_modern)
+    lines = _build_toolsdaemon_menu(
+        workflow.config.network_stack,
+        all_packages,
+        p96_modern,
+        workflow.config.kickstart.version.value,
+    )
     write_amiga_script(s_dir / "ToolsDaemon.menu", lines)
+    native_tools = _configure_native_tools_menu(boot_staging, s_dir, all_packages)
 
     removed = 0
     for relative_path in (
@@ -326,5 +412,6 @@ def _configure_toolsdaemon(
             path.unlink()
             removed += 1
     workflow.logger.info(
-        f"Generated S:ToolsDaemon.menu ({len(lines)} lines); removed {removed} native MenuTools files"
+        f"Generated S:ToolsDaemon.menu ({len(lines)} lines), {native_tools} native Tools entries; "
+        f"removed {removed} native MenuTools files"
     )
