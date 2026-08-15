@@ -60,6 +60,7 @@ class InstallRule(BaseModel):
     recursive: bool = False
     rename: str | None = None  # rename file on install
     stack: int | None = None  # patch a .info icon's do_StackSize (workbench launch stack)
+    xor_byte: int | None = Field(default=None, alias="xor", ge=0, le=255)
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -74,13 +75,13 @@ class RelocateRule(BaseModel):
 
 
 class MenuEntry(BaseModel):
-    """ToolsDaemon launcher for an installed app."""
+    """workbench menu launcher for an installed app."""
 
     title: str  # label shown in the Workbench menu
     path: str  # executable path relative to SYS:, e.g. "Programs/IBrowse/IBrowse"
     menu: str = "Apps"  # Workbench menu title
     wb_launch: bool = False  # launch in Workbench mode instead of from the CLI
-    selected_icons: bool = False  # append [] so ToolsDaemon passes selected icons
+    selected_icons: bool = False  # pass selected Workbench icons to the launcher
 
 
 class ScriptModification(BaseModel):
@@ -135,8 +136,9 @@ class Package(BaseModel):
     # script modifications
     scripts: list[ScriptModification] = Field(default_factory=list)
 
-    # optional ToolsDaemon launcher
+    # optional Workbench menu launchers
     menu_entry: MenuEntry | None = None
+    menu_entries: list[MenuEntry] = Field(default_factory=list)
 
     @field_validator("requires", "recommends", "conflicts", "provides")
     @classmethod

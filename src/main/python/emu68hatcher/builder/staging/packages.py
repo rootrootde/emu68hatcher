@@ -212,7 +212,13 @@ class PackageInstaller:
                 dest_dir,
                 rule.rename or str(Path(*keep)),
             )
-            installed += self._copy_item(source_item, destination, rule.stack, merge_dirs=True)
+            installed += self._copy_item(
+                source_item,
+                destination,
+                rule.stack,
+                rule.xor_byte,
+                merge_dirs=True,
+            )
         return installed
 
     def _install_exact(
@@ -228,16 +234,30 @@ class PackageInstaller:
         if not source.exists():
             return 0
         destination = resolve_staging_path(dest_dir, rule.rename or source.name)
-        return self._copy_item(source, destination, rule.stack, merge_dirs=rule.recursive)
+        return self._copy_item(
+            source,
+            destination,
+            rule.stack,
+            rule.xor_byte,
+            merge_dirs=rule.recursive,
+        )
 
     @staticmethod
-    def _copy_item(source: Path, destination: Path, stack: int | None, merge_dirs: bool) -> int:
+    def _copy_item(
+        source: Path,
+        destination: Path,
+        stack: int | None,
+        xor_byte: int | None,
+        merge_dirs: bool,
+    ) -> int:
         if not source.is_file() and not source.is_dir():
             return 0
         destination.parent.mkdir(parents=True, exist_ok=True)
         if source.is_dir() and merge_dirs:
             return _merge_tree(source, destination)
         shutil.copy2(source, destination)
+        if xor_byte is not None:
+            destination.write_bytes(bytes(value ^ xor_byte for value in destination.read_bytes()))
         if stack:
             _set_icon_stack(destination, stack)
         return 1
