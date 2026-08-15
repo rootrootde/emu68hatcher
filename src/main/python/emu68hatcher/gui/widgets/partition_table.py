@@ -19,6 +19,7 @@ COL_VOLUME = 1
 COL_SIZE = 2
 COL_FS = 3
 COL_BOOTABLE = 4
+MIN_VISIBLE_ROWS = 2
 
 
 class PartitionTable(QTableWidget):
@@ -58,6 +59,16 @@ class PartitionTable(QTableWidget):
                 self.setCellWidget(row, COL_BOOTABLE, self._bootable_widget(row, partition))
         finally:
             self._rendering = False
+        self._update_minimum_height()
+
+    def _update_minimum_height(self) -> None:
+        row_heights = [self.rowHeight(row) for row in range(min(self.rowCount(), MIN_VISIBLE_ROWS))]
+        row_heights.extend(
+            [self.verticalHeader().defaultSectionSize()] * (MIN_VISIBLE_ROWS - len(row_heights))
+        )
+        header_height = self.horizontalHeader().sizeHint().height()
+        content_height = header_height + sum(row_heights) + 2 * self.frameWidth()
+        self.setMinimumHeight(max(content_height, self.minimumSizeHint().height()))
 
     def selected_row(self) -> int:
         rows = self.selectionModel().selectedRows() if self.selectionModel() else []
