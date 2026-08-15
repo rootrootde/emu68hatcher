@@ -223,7 +223,7 @@ def _action_remove(
     return _EditResult(original[:start] + marker + original[end + 1 :], True)
 
 
-# InjectAfter BindDrivers stacks LIFO; list reverse of exec order: UAEGFX, FirstBoot, iconlib, REXXMAST, RTC
+# InjectAfter BindDrivers stacks LIFO; list reverse of exec order: UAEGFX, FirstBoot, REXXMAST, RTC
 STARTUP_SEQUENCE_INJECTIONS = [
     # ROM CheckInstall block is kept intact (matches the reference imager). its
     # LoadModule steps soft-kick the patched graphics/intuition modules from L:
@@ -256,6 +256,14 @@ STARTUP_SEQUENCE_INJECTIONS = [
         end_pattern=r"^SYS:System/RexxMast",
         name="Original RexxMast bare line (moved to after BindDrivers)",
     ),
+    # RemLib must run before SetPatch can load the replacement icon.library.
+    ScriptInjection(
+        target_script="S/Startup-Sequence",
+        action=InjectionAction.INJECT_BEFORE,
+        content_file="S/Startup-Sequence_Iconlib",
+        start_pattern=r"^(?:C:)?SetPatch(?:\s|$)",
+        name="Iconlib",
+    ),
     # UAEGFX persistent monitor swap (runs 5th, furthest from anchor)
     ScriptInjection(
         target_script="S/Startup-Sequence",
@@ -271,14 +279,6 @@ STARTUP_SEQUENCE_INJECTIONS = [
         content_file="S/Startup-Sequence_FirstBoot",
         start_pattern=r"BindDrivers",
         name="FirstBoot Section",
-    ),
-    # iconlib - RemLib icon.library for non-3.2 Kickstarts (runs 3rd)
-    ScriptInjection(
-        target_script="S/Startup-Sequence",
-        action=InjectionAction.INJECT_AFTER,
-        content_file="S/Startup-Sequence_Iconlib",
-        start_pattern=r"BindDrivers",
-        name="Iconlib",
     ),
     # RexxMast - start ARexx interpreter (runs 2nd)
     ScriptInjection(

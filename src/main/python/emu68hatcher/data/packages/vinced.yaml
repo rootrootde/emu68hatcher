@@ -15,7 +15,48 @@ download:
   hash: CD5C624A0E5C10E211E9E189175F9D31
   filename: Vinced.lha
 install:
+- from: ViNCEd/LIBS/vnc.library
+  to: Libs/
+- from: ViNCEd/C/SetVNC.coded
+  to: C/
+  rename: SetVNC
+  xor: 84
+- from: ViNCEd/DEVS/DOSDrivers/*
+  to: Devs/DOSDrivers/
+- from: ViNCEd/Shell_VNC.info
+  to: System/
+  rename: Shell.info
+- from: ViNCEd/S/*
+  to: S/
+- from: ViNCEd/Prefs/SetVNC.info
+  to: Prefs/
+- from: ViNCEd/Prefs/Env-Archive/XTerm.Prefs
+  to: Prefs/Env-Archive/
+  rename: ViNCEd.Prefs
+- from: ViNCEd/Guides/ViNCEd.guide
+  to: Locale/Help/
+- from: ViNCEd/Guides/ViNCEd.guide.info
+  to: Locale/Help/
+- from: ViNCEd/LOCALE/Catalogs/*
+  to: Locale/Catalogs/
+- from: ViNCEd/Extras/StringSnip
+  to: C/
+- from: ViNCEd/Extras/TrueMultiAssigns
+  to: C/
 - from: ViNCEd/Extras/Fonts/topaz6.font
   to: Fonts/
 - from: ViNCEd/Extras/Fonts/topaz6/8e
   to: Fonts/topaz6/
+scripts:
+- name: ViNCEd
+  content: |
+    Assign >NIL: Guides: LOCALE:Help
+    SetEnv VNCGuide.path "LOCALE:Help/ViNCEd.guide"
+    C:TrueMultiAssigns
+    C:StringSnip >NIL: INSTALL
+    C:SetVNC Quiet Mount Override as CON:
+menu_entry:
+  title: Shell
+  path: System/Shell
+  menu: System
+  wb_launch: true
