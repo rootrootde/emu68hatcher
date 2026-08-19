@@ -8,13 +8,16 @@
 - **a SD card**, 4 GB minimum, 32+ GB recommended
 - **a Kickstart ROM** + **Workbench ADF floppy images** (3.1 / 3.2 / 3.2.2.1 / 3.2.3 - pick one), or the **AmigaOS 3.9 CD image** (**.iso**) with a Kickstart 3.1 ROM:
 
-| Workbench | Kickstart (A1200) |
+| Workbench | ROM used by automatic selection |
 |---|---|
-| 3.1 | 40.068 (or Cloanto 45.064 / 45.066 from Amiga Forever) |
-| 3.2 | 47.96 |
-| 3.2.2.1 | 47.111 |
-| 3.2.3 | 47.115 |
-| 3.9 (CD **.iso**) | 40.068 (3.1 ROM - the BoingBag soft ROM update loads at boot) |
+| 3.1 | A1200 40.068 (or Cloanto 45.064 / 45.066 from Amiga Forever) |
+| 3.2 | A1200 47.96 |
+| 3.2.2.1 | A1200 47.111 |
+| 3.2.3 | A1200 47.115 |
+| 3.9 (CD **.iso**) | A1200 40.068 (the BoingBag soft ROM update loads at boot) |
+
+!!! note "Why is an A1200 ROM selected?"
+    Automatic ROM selection follows Emu68 Imager, the original basis for this project, and prefers a matching A1200 ROM when one is available. This does not limit the image to an A1200: this setup has also been confirmed to run on an A600 with PiStorm/Emu68. Manual boot ROM selection is not available yet.
 
 ## Pick your OS
 

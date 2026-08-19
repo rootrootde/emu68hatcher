@@ -11,7 +11,7 @@ Runs on macOS, Linux and Windows.
 - AmigaOS 3.9 install from the original CD image (**.iso**) - BoingBag 1+2 (including the soft ROM update) download automatically; boots on a Kickstart 3.1 ROM
 - Customizable package set: MUI, WHDLoad+WHDLoadWrapper, IBrowse, HippoPlayer, ...
 - RTG via Picasso96 (free Aminet version bundled; point at your own **Picasso96.lha** to install the commercial 3.x version)
-- Network support: Roadshow or MiamiDX, wifipi (wifi) + genet (ethernet) drivers, and Workbench connect tools. Roadshow supports DHCP or static IP, DNS, and a default gateway. MiamiDX uses included DHCP profiles.
+- Network support: Roadshow, MiamiDX, or AmiTCP_NG, with wifipi (wifi), genet (ethernet), and Workbench connect tools. Roadshow and AmiTCP_NG support DHCP or static IP, DNS, and a default gateway. MiamiDX uses included DHCP profiles.
 - Partition layout editor (PFS3 + FFS), optional per-partition "extra content" directory to pre-load Work / Data volumes (WHDLoad games, backups, ...)
 - Build configs as JSON (save / load)
 - Build to **.img** file (sparse by default), flash to SD card after build, or write straight to SD card
@@ -21,6 +21,7 @@ Runs on macOS, Linux and Windows.
 **Still in an early stage** - Only actively tested on my A1200 + pistorm32-lite + CM4 / on macOS. If you run it on different hardware or OS, let me know on the [Discord](https://discord.com/invite/ApTbasXJPE) or open a [GitHub issue](https://github.com/rootrootde/emu68hatcher/issues) - even just "it worked" is useful.
 
 - **mostly tested on 3.2(.3)** - expect more potential issues with 3.1
+- Boot ROM selection follows Emu68 Imager and prefers a matching A1200 ROM when available. This setup has also been confirmed on an A600, but manual ROM selection is not available yet.
 
 ## Support + Feedback
 

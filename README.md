@@ -14,7 +14,7 @@ Runs on macOS, Linux and Windows.
 - Bootable Emu68 install for pistorm32-lite, pistorm, pistorm16
 - Workbench install from stock ADFs (3.1 / 3.2 / 3.2.2.1 / 3.2.3), or AmigaOS 3.9 from the original CD image
 - Customizable package set: MUI, WHDLoad+WHDLoadWrapper, IBrowse, HippoPlayer, ...
-- RTG (Picasso96), networking (Roadshow or MiamiDX + wifipi/genet drivers), partition layout editor (PFS3 + FFS) - user-supplied full versions of Roadshow and Picasso96 supported
+- RTG (Picasso96), networking (Roadshow, MiamiDX, or AmiTCP_NG + wifipi/genet drivers), partition layout editor (PFS3 + FFS) - user-supplied full versions of Roadshow and Picasso96 supported
 - SD card flashing (direct, or write the **.img** to a card after the build), sparse **.img** by default
 - Build configs as JSON (save / load)
 
