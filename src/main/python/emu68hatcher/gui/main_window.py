@@ -26,9 +26,9 @@ from emu68hatcher.config.schema import (
     BuildConfig,
 )
 from emu68hatcher.data.rom_detection import identify_kickstart
-from emu68hatcher.gui.dialogs import BootFilesPreviewDialog, BuildProgressDialog
+from emu68hatcher.gui.dialogs import BuildProgressDialog
 from emu68hatcher.gui.tabs import (
-    BootFilesTab,
+    DisplayTab,
     Emu68Tab,
     KickstartTab,
     NetworkTab,
@@ -68,9 +68,8 @@ class MainWindow(QMainWindow):
         self.emu68_tab = Emu68Tab()
         self.tabs.addTab(self.emu68_tab, "Emu68")
 
-        self.boot_files_tab = BootFilesTab(self.emu68_tab.get_emu68_version())
-        self.boot_files_tab.set_rtg_mode_enabled(self.emu68_tab.has_rtg_workbench_mode())
-        self.tabs.addTab(self.boot_files_tab, "Boot Files")
+        self.display_tab = DisplayTab()
+        self.tabs.addTab(self.display_tab, "Display")
 
         # kickstart + emu68 both gate packages (the resolver filters on both);
         # seed them here so the initial tree is built once, already filtered
@@ -85,15 +84,15 @@ class MainWindow(QMainWindow):
 
         self.kickstart_tab.version_changed.connect(self.packages_tab.set_kickstart_version)
         self.emu68_tab.emu68_version_changed.connect(self.packages_tab.set_emu68_version)
-        self.emu68_tab.emu68_version_changed.connect(self.boot_files_tab.set_emu68_version)
-        self.emu68_tab.workbench_mode_changed.connect(self.boot_files_tab.set_rtg_mode_enabled)
-        self.boot_files_tab.preview_requested.connect(self._show_boot_files_preview)
+        self.emu68_tab.settings_changed.connect(self._refresh_boot_files_preview)
+        self.display_tab.settings_changed.connect(self._refresh_boot_files_preview)
 
         self.output_tab = OutputTab()
         self.tabs.addTab(self.output_tab, "Output")
 
         self.partitions_tab = PartitionsTab()
         self.tabs.addTab(self.partitions_tab, "Partitions")
+        self.tabs.currentChanged.connect(self._on_tab_changed)
 
         # output mode + selected disk drives partition sizing in DEVICE/flash modes
         self.output_tab.target_size_changed.connect(self.partitions_tab.set_auto_disk_size)
@@ -125,6 +124,7 @@ class MainWindow(QMainWindow):
 
         # status bar
         self.statusBar().showMessage("Ready")
+        self._refresh_boot_files_preview()
 
     def closeEvent(self, event):
         running = []
@@ -157,10 +157,11 @@ class MainWindow(QMainWindow):
                     self.config.install_media,
                     asset_directories=list(self.config.asset_directories),
                 )
-                self.emu68_tab.set_config(self.config.display)
-                self.emu68_tab.set_picasso96_archive(self.config.display.picasso96_archive)
+                self.display_tab.set_config(self.config.display)
+                self.display_tab.set_picasso96_archive(self.config.display.picasso96_archive)
                 self.emu68_tab.set_emu68_version(self.config.emu68_version)
-                self.boot_files_tab.set_settings(self.config.emu68_boot)
+                self.emu68_tab.set_settings(self.config.emu68_boot)
+                self.display_tab.set_emu68_boot_settings(self.config.emu68_boot)
                 self.packages_tab.set_kickstart_version(self.config.kickstart.version.value)
                 # set_config above already repopulated the icon list for the loaded version
                 self.kickstart_tab.set_icon_set(self.config.icon_set)
@@ -214,7 +215,7 @@ class MainWindow(QMainWindow):
         return "kick.rom"
 
     def _render_boot_files_preview(self) -> dict[str, str]:
-        display = self.emu68_tab.get_config()
+        display = self.display_tab.get_config()
         screen_mode = display.get("hdmi_mode") or "1280*720-50"
         custom_cvt = ""
         if screen_mode == "Custom":
@@ -228,7 +229,7 @@ class MainWindow(QMainWindow):
                 reduced_blanking=display["reduced_blanking"],
             ).to_cvt_string()
 
-        boot_settings = Emu68BootSettings.model_validate(self.boot_files_tab.get_settings())
+        boot_settings = self._collect_emu68_boot_settings()
         usb_otg = any(
             package["name"] == "poseidon" and package["enabled"]
             for package in self.packages_tab.get_config()
@@ -242,17 +243,22 @@ class MainWindow(QMainWindow):
             boot_settings=boot_settings,
         )
 
-    def _show_boot_files_preview(self):
+    def _collect_emu68_boot_settings(self) -> Emu68BootSettings:
+        settings = self.emu68_tab.get_settings()
+        settings["config_txt"].update(self.display_tab.get_emu68_boot_settings())
+        return Emu68BootSettings.model_validate(settings)
+
+    def _refresh_boot_files_preview(self):
         try:
             files = self._render_boot_files_preview()
         except Exception as error:
-            QMessageBox.warning(
-                self,
-                "Preview Error",
-                f"Could not generate the boot-file preview:\n{error}",
-            )
+            self.emu68_tab.set_preview_error(f"Preview unavailable:\n{error}")
             return
-        BootFilesPreviewDialog(files, self).exec()
+        self.emu68_tab.set_preview_files(files)
+
+    def _on_tab_changed(self, index: int):
+        if self.tabs.widget(index) is self.emu68_tab:
+            self._refresh_boot_files_preview()
 
     def collect_config(self):
         """Validate a fresh config assembled from all tabs."""
@@ -266,8 +272,8 @@ class MainWindow(QMainWindow):
         asset_directories = [Path(p) for p in asset_dirs if str(p).strip()]
         logger.debug(f"Asset directories: {asset_directories}")
 
-        disp = self.emu68_tab.get_config()
-        logger.debug(f"Emu68 tab returned: {disp}")
+        disp = self.display_tab.get_config()
+        logger.debug(f"Display tab returned: {disp}")
         hdmi_mode = disp.get("hdmi_mode", "1280*720-50")
         custom = None
         if hdmi_mode == "Custom":
@@ -308,7 +314,7 @@ class MainWindow(QMainWindow):
                 "hdmi_mode": hdmi_mode,
                 "custom": custom,
                 "workbench_mode": disp.get("workbench_mode", "videocore_1280x720"),
-                "picasso96_archive": self.emu68_tab.get_picasso96_archive(),
+                "picasso96_archive": self.display_tab.get_picasso96_archive(),
             },
             "packages": pkgs,
             "icon_set": self.kickstart_tab.get_icon_set(),
@@ -320,7 +326,7 @@ class MainWindow(QMainWindow):
             "wifi": wifi.model_dump(mode="python") if wifi else None,
             "network": network.model_dump(mode="python"),
             "emu68_version": self.emu68_tab.get_emu68_version(),
-            "emu68_boot": self.boot_files_tab.get_settings(),
+            "emu68_boot": self._collect_emu68_boot_settings().model_dump(mode="python"),
         }
         config = BuildConfig.model_validate(data)
         self.config = config

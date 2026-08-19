@@ -134,45 +134,30 @@ disable_overscan={{ mode.disable_overscan }}
 {% endfor %}
 {% endif %}
 
-# PiStorm model detection
-
-# Resets any previous hardware filter before GPIO detection.
+# PiStorm model detection: GPIO inputs with pull-ups
 [all]
-# Configures GPIO 0 through 27 as inputs for board detection.
 gpio=0-27=ip
-# Enables pull-up resistors on the board-detection GPIO pins.
 gpio=0-27=pu
 
-# Applies the stealth boot settings while keyboard reset holds GPIO 4 low.
+# Stealth boot while keyboard reset holds GPIO 4 low
 [gpio4=0]
-# Loads the PiStorm32-lite Emu68 kernel.
 kernel={{ kernel_modern }}
-# Loads the stealth firmware instead of the Kickstart ROM.
 initramfs ps32lite-stealth-firmware.gz
 
-# Resets the GPIO filter before PiStorm32-lite detection.
+# PiStorm32-lite
 [all]
-# Applies the following settings to PiStorm32-lite hardware.
 [gpio24=0]
-# Loads the PiStorm32-lite Emu68 kernel.
 kernel={{ kernel_modern }}
-# Loads the selected Kickstart ROM.
 initramfs {{ rom_filename }}
 
-# Resets the GPIO filter before PiStorm16 detection.
+# PiStorm16
 [all]
-# Applies the following settings to PiStorm16 hardware.
 [gpio24=1]
-# Loads the PiStorm16 Emu68 kernel.
 kernel={{ kernel_pistorm16 }}
-# Loads the selected Kickstart ROM.
 initramfs {{ rom_filename }}
 
-# Resets the GPIO filter before classic PiStorm detection.
+# Classic PiStorm
 [all]
-# Applies the following settings to classic PiStorm hardware.
 [gpio17=0]
-# Loads the classic PiStorm Emu68 kernel.
 kernel={{ kernel_classic }}
-# Loads the selected Kickstart ROM.
 initramfs {{ rom_filename }}

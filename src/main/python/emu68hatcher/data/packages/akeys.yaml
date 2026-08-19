@@ -1,7 +1,7 @@
 name: akeys
 friendly_name: AKeys
 group: Commodities
-description: 'remap the amiga and caps-lock keys; runs from WBStartup'
+description: 'swap/remap Amiga Keys, enable/disable CapsLock'
 versions:
 - '3.1'
 - '3.2'
