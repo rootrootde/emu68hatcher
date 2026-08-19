@@ -272,6 +272,13 @@ STARTUP_SEQUENCE_INJECTIONS = [
         start_pattern=r"BindDrivers",
         name="UAEGFX Monitor Swap",
     ),
+    ScriptInjection(
+        target_script="S/Startup-Sequence",
+        action=InjectionAction.INJECT_AFTER,
+        content_file="S/Startup-Sequence_UAE_ScreenMode",
+        start_pattern=r"^(?:C:)?IPrefs(?:\s|$)",
+        name="UAE ScreenMode Fallback",
+    ),
     # main FirstBoot section (runs 4th)
     ScriptInjection(
         target_script="S/Startup-Sequence",

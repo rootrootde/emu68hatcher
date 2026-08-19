@@ -5,7 +5,9 @@ import logging
 from emu68hatcher.builder.host._elevation_common import (
     ElevationDenied,
     ElevationToken,
+    refresh_sudo_timestamp,
     run_elevated,
+    stop_sudo_keepalive,
     wrap_for_elevation,
 )
 from emu68hatcher.utils.platform import OperatingSystem, get_platform_info, is_root
@@ -15,6 +17,7 @@ __all__ = [
     "ElevationToken",
     "acquire_elevation",
     "cleanup_elevation",
+    "refresh_elevation",
     "run_elevated",
     "wrap_for_elevation",
 ]
@@ -25,6 +28,7 @@ logger = logging.getLogger(__name__)
 def cleanup_elevation(token: ElevationToken | None) -> None:
     if token is None:
         return
+    stop_sudo_keepalive(token)
     if token.helper is not None:
         try:
             token.helper.shutdown()
@@ -37,6 +41,10 @@ def cleanup_elevation(token: ElevationToken | None) -> None:
 
         remove_askpass(token.askpass_path)
         token.askpass_path = None
+
+
+def refresh_elevation(token: ElevationToken | None) -> bool:
+    return refresh_sudo_timestamp(token)
 
 
 def acquire_elevation() -> ElevationToken:

@@ -24,7 +24,9 @@ scripts:
 - name: HID2AMI Mouse Wheel
   content: |
     ;BEGIN HID2AMI
-    If Exists C:HID2AmiDriver
-      Run <>NIL: C:HID2AmiDriver
+    If $System EQ "PiStorm"
+      If Exists C:HID2AmiDriver
+        Run <>NIL: C:HID2AmiDriver
+      EndIf
     EndIf
     ;END HID2AMI

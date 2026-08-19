@@ -1,4 +1,4 @@
-"""Emu68 tab - boot config: Emu68 release + HDMI output mode + Picasso96 RTG archive"""
+"""Emu68 release, display mode, and Picasso96 settings."""
 
 from pathlib import Path
 
@@ -6,17 +6,23 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
     QRadioButton,
+    QScrollArea,
     QSpinBox,
     QVBoxLayout,
     QWidget,
 )
 
+from emu68hatcher.config.display_models import (
+    WORKBENCH_RTG_MODES,
+    WorkbenchScreenMode,
+)
 from emu68hatcher.config.schema import (
     DisplayConfig,
     Emu68Version,
@@ -54,6 +60,7 @@ class Emu68Tab(QWidget):
     """Pi-side boot configuration: Emu68 release + HDMI output mode + custom resolution"""
 
     emu68_version_changed = Signal(str)
+    workbench_mode_changed = Signal(bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -87,7 +94,16 @@ class Emu68Tab(QWidget):
             ]
 
     def setup_ui(self):
-        layout = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        content = QWidget()
+        scroll.setWidget(content)
+        outer.addWidget(scroll)
+
+        layout = QVBoxLayout(content)
 
         # Emu68 release picker (radios)
         release_group = QGroupBox("Emu68 release")
@@ -184,6 +200,27 @@ class Emu68Tab(QWidget):
 
         layout.addWidget(hdmi_group)
 
+        workbench_group = QGroupBox("Workbench Screen Mode")
+        workbench_layout = QVBoxLayout(workbench_group)
+        workbench_row = QHBoxLayout()
+        workbench_row.addWidget(QLabel("Display Mode:"))
+        self.workbench_mode_combo = QComboBox()
+        self.workbench_mode_combo.currentIndexChanged.connect(self._on_workbench_mode_changed)
+        workbench_row.addWidget(self.workbench_mode_combo)
+        workbench_row.addStretch()
+        workbench_layout.addLayout(workbench_row)
+        self.workbench_mode_note = QLabel(
+            "VideoCore modes are written to ScreenMode.prefs during the build. "
+            "Native mode keeps the ScreenMode setup window on first boot."
+        )
+        self.workbench_mode_note.setWordWrap(True)
+        workbench_layout.addWidget(self.workbench_mode_note)
+        layout.addWidget(workbench_group)
+
+        self.hdmi_width_spin.valueChanged.connect(self._rebuild_workbench_modes)
+        self.hdmi_height_spin.valueChanged.connect(self._rebuild_workbench_modes)
+        self._rebuild_workbench_modes()
+
         # Picasso96 RTG - optional user-supplied full version (default: free Aminet version)
         p96_group = QGroupBox("Picasso96 RTG")
         p96_layout = QVBoxLayout(p96_group)
@@ -212,6 +249,50 @@ class Emu68Tab(QWidget):
         """show/hide custom resolution controls based on selection"""
         mode_name = self.hdmi_mode_combo.currentData()
         self.custom_res_widget.setVisible(mode_name == "Custom")
+        self._rebuild_workbench_modes()
+
+    def _hdmi_bounds(self) -> tuple[int, int] | None:
+        mode_name = self.hdmi_mode_combo.currentData()
+        if mode_name == "Custom":
+            return self.hdmi_width_spin.value(), self.hdmi_height_spin.value()
+        size = str(mode_name).split("-", 1)[0]
+        try:
+            width, height = size.split("*", 1)
+            return int(width), int(height)
+        except ValueError:
+            return None
+
+    def _rebuild_workbench_modes(self, _value=None):
+        if not hasattr(self, "workbench_mode_combo"):
+            return
+        selected = self.workbench_mode_combo.currentData()
+        if selected is None:
+            selected = WorkbenchScreenMode.VIDEOCORE_1280X720.value
+        bounds = self._hdmi_bounds()
+
+        self.workbench_mode_combo.blockSignals(True)
+        self.workbench_mode_combo.clear()
+        self.workbench_mode_combo.addItem(
+            "Native Amiga mode (choose on first boot)",
+            WorkbenchScreenMode.NATIVE.value,
+        )
+        for mode in WORKBENCH_RTG_MODES:
+            if bounds and (mode.width > bounds[0] or mode.height > bounds[1]):
+                continue
+            self.workbench_mode_combo.addItem(mode.label, mode.mode.value)
+
+        index = self.workbench_mode_combo.findData(selected)
+        if index < 0:
+            index = self.workbench_mode_combo.count() - 1
+        self.workbench_mode_combo.setCurrentIndex(max(index, 0))
+        self.workbench_mode_combo.blockSignals(False)
+        self._on_workbench_mode_changed()
+
+    def _on_workbench_mode_changed(self, _index=None):
+        self.workbench_mode_changed.emit(self.has_rtg_workbench_mode())
+
+    def has_rtg_workbench_mode(self) -> bool:
+        return self.workbench_mode_combo.currentData() != WorkbenchScreenMode.NATIVE.value
 
     def get_emu68_version(self) -> Emu68Version:
         """which Emu68 release radio is checked"""
@@ -274,6 +355,7 @@ class Emu68Tab(QWidget):
         hdmi_mode_name = self.hdmi_mode_combo.currentData() or "1280*720-50"
         return {
             "hdmi_mode": hdmi_mode_name,
+            "workbench_mode": self.workbench_mode_combo.currentData(),
             "width": self.hdmi_width_spin.value(),
             "height": self.hdmi_height_spin.value(),
             "framerate": self.hdmi_hz_spin.value(),
@@ -295,3 +377,6 @@ class Emu68Tab(QWidget):
             select_combo_by_data(self.hdmi_margins_combo, config.custom.margins)
             select_combo_by_data(self.hdmi_interlace_combo, config.custom.interlace)
             select_combo_by_data(self.hdmi_rb_combo, config.custom.reduced_blanking)
+        self._rebuild_workbench_modes()
+        select_combo_by_data(self.workbench_mode_combo, config.workbench_mode.value)
+        self._on_workbench_mode_changed()

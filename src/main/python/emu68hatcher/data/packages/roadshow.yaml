@@ -12,7 +12,8 @@ versions:
 default: true
 requires:
 - genet_config
-- roadshow_config
+- network_config
+- roadshow_tuning
 - wifipi_config
 provides:
 - tcpip_stack

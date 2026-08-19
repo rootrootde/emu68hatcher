@@ -157,6 +157,7 @@ def _generate_boot_config(
         rom_filename=rom_filename,
         emu68_version=workflow.config.emu68_version.value,
         usb_otg="poseidon" in selected,
+        boot_settings=workflow.config.emu68_boot,
     )
     workflow.logger.info(
         f"Generated config.txt (HDMI mode: {screen_mode}, ROM: {rom_filename}) and cmdline.txt"

@@ -182,7 +182,7 @@ def _collect_app_entries(all_packages: list[str]) -> list[_MenuLauncher]:
 
 def _network_entries(network_stack: NetworkStack | None) -> list[_MenuLauncher]:
     entries: list[_MenuLauncher] = []
-    if network_stack == NetworkStack.ROADSHOW:
+    if network_stack in (NetworkStack.ROADSHOW, NetworkStack.AMITCP_NG):
         entries.extend(
             (
                 _MenuLauncher("Network", "Config", _menu_cmd("NetworkConfig")),
@@ -342,17 +342,17 @@ def _configure_native_tools_menu(
         launch = f"C:WBRun {entry.command}" if entry.wb_launch else entry.command
         if entry.selected_icons:
             helper_name = f"Tool{index}.rexx"
-            selected_launch = (
-                f"Run >NIL: <NIL: {entry.command}" if entry.wb_launch else entry.command
-            )
             write_amiga_script(
                 helper_dir / helper_name,
                 [
+                    "/* Workbench Tools launcher */",
                     "OPTIONS RESULTS",
-                    "PARSE ARG target",
+                    "PARSE ARG commandline",
+                    "commandline = STRIP(commandline, 'B')",
+                    "IF LEFT(commandline, 1) = '\"' THEN PARSE VAR commandline '\"' target '\"'",
+                    "ELSE PARSE VAR commandline target .",
                     f"launch = '{launch}'",
-                    "IF target ~= 'SYS:' THEN "
-                    f"launch = '{selected_launch}' || ' \"' || target || '\"'",
+                    "IF target ~= 'SYS:' THEN launch = launch || ' \"' || target || '\"'",
                     "ADDRESS COMMAND launch",
                     "EXIT RC",
                 ],

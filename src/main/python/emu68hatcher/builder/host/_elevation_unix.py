@@ -11,6 +11,7 @@ from emu68hatcher.builder.host._elevation_common import (
     ElevationDenied,
     ElevationToken,
     run_sudo_validate,
+    start_sudo_keepalive,
 )
 from emu68hatcher.utils.platform import OperatingSystem
 
@@ -72,7 +73,9 @@ def acquire_macos() -> ElevationToken:
             remove_askpass(askpass)
             detail = getattr(error, "stderr", None) or getattr(error, "stdout", None) or error
             raise ElevationDenied(f"admin prompt cancelled or denied: {detail}") from error
-        return ElevationToken(OperatingSystem.MACOS, "sudo", askpass_path=askpass)
+        token = ElevationToken(OperatingSystem.MACOS, "sudo", askpass_path=askpass)
+        start_sudo_keepalive(token)
+        return token
 
     from emu68hatcher.builder.host.elevated_helper import ElevatedHelper
 
@@ -92,14 +95,18 @@ def acquire_linux() -> ElevationToken:
         askpass = _write_askpass(_LINUX_ASKPASS_SCRIPT)
         try:
             run_sudo_validate(askpass)
-            return ElevationToken(OperatingSystem.LINUX, "sudo", askpass_path=askpass)
+            token = ElevationToken(OperatingSystem.LINUX, "sudo", askpass_path=askpass)
+            start_sudo_keepalive(token)
+            return token
         except (subprocess.CalledProcessError, subprocess.SubprocessError, OSError) as error:
             logger.info(f"sudo -A unavailable ({error}); trying pkexec")
             remove_askpass(askpass)
     if have_tty and shutil.which("sudo"):
         try:
             subprocess.run(["sudo", "-v"], check=True, timeout=120)
-            return ElevationToken(OperatingSystem.LINUX, "sudo")
+            token = ElevationToken(OperatingSystem.LINUX, "sudo")
+            start_sudo_keepalive(token)
+            return token
         except (subprocess.CalledProcessError, subprocess.SubprocessError, OSError) as error:
             logger.info(f"sudo unavailable ({error}); trying pkexec")
     if shutil.which("pkexec"):

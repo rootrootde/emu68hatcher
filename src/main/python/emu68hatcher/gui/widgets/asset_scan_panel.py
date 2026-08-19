@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QPushButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -43,6 +44,7 @@ class AssetScanPanel(QWidget):
         self.dir_list = QListWidget()
         self.dir_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
         self.dir_list.setMinimumHeight(80)
+        self.dir_list.setMaximumHeight(120)
         directory_layout.addWidget(self.dir_list)
         buttons = QHBoxLayout()
         self.add_button = QPushButton("Add...")
@@ -55,6 +57,10 @@ class AssetScanPanel(QWidget):
             buttons.addWidget(button)
         buttons.addStretch()
         directory_layout.addLayout(buttons)
+        directory_group.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Maximum,
+        )
         layout.addWidget(directory_group)
 
         detected_group = QGroupBox("Detected Files")
@@ -78,7 +84,7 @@ class AssetScanPanel(QWidget):
         self.details_button.clicked.connect(self._show_details)
         self.details_layout.addWidget(self.details_button)
         detected_layout.addLayout(self.details_layout)
-        layout.addWidget(detected_group)
+        layout.addWidget(detected_group, 1)
 
     @property
     def directories(self) -> list[Path]:

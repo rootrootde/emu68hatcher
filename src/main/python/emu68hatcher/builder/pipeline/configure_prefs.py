@@ -14,7 +14,12 @@ from emu68hatcher.builder.pipeline.configure_network import (
     configure_network,
     generate_wireless_prefs,
 )
+from emu68hatcher.builder.staging.files import resolve_source_path
 from emu68hatcher.builder.state import CreatedImage
+from emu68hatcher.config.display_models import (
+    WORKBENCH_RTG_MODE_BY_NAME,
+    WorkbenchScreenMode,
+)
 from emu68hatcher.utils.paths import ensure_dir
 
 if TYPE_CHECKING:
@@ -30,12 +35,27 @@ def configure_preferences(
     prefs_dir: Path,
     env_archive: Path,
 ) -> None:
-    from emu68hatcher.builder.staging.prefs import install_default_prefs
+    from emu68hatcher.builder.staging.prefs import (
+        configure_workbench_screen_mode,
+        install_default_prefs,
+    )
 
     workflow._update_state(progress=70.0)
     workflow._milestone("Configuring Amiga preferences")
     install_default_prefs(prefs_dir)
     workflow.logger.info("Configured Amiga preferences (wbpattern + env vars)")
+
+    workbench_mode = workflow.config.display.workbench_mode
+    if workbench_mode != WorkbenchScreenMode.NATIVE:
+        mode = WORKBENCH_RTG_MODE_BY_NAME[workbench_mode]
+        configure_workbench_screen_mode(prefs_dir, mode)
+        for relative in ("WBStartup/FirstBootWB", "WBStartup/FirstBootWB.info"):
+            wizard_file = resolve_source_path(boot_staging, relative)
+            if wizard_file and wizard_file.is_file():
+                wizard_file.unlink()
+        workflow.logger.info(
+            f"Configured Workbench for VideoCore {mode.width}x{mode.height}, 32-bit BGRA"
+        )
 
     if workflow.config.wifi:
         workflow._update_state(progress=80.0)

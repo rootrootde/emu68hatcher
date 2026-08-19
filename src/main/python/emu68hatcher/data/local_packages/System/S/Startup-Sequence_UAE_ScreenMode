@@ -1,0 +1,7 @@
+FailAt 21
+IF $System EQ "UAE"
+	IF EXISTS SYS:Prefs/Env-Archive/Sys/ScreenMode.prefs.Native
+		SYS:Prefs/ScreenMode FROM SYS:Prefs/Env-Archive/Sys/ScreenMode.prefs.Native USE >NIL:
+	ENDIF
+ENDIF
+FailAt 10

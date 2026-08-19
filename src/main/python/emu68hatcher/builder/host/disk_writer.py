@@ -12,7 +12,11 @@ from pathlib import Path
 
 from emu68hatcher.builder.errors import BuildCancelledError, BuildError
 from emu68hatcher.builder.host._flash_process import run_local_flash
-from emu68hatcher.builder.host.elevation import ElevationToken, wrap_for_elevation
+from emu68hatcher.builder.host.elevation import (
+    ElevationToken,
+    refresh_elevation,
+    wrap_for_elevation,
+)
 from emu68hatcher.utils.host_tools import find_hst_imager
 
 logger = logging.getLogger(__name__)
@@ -123,6 +127,8 @@ def flash_image_to_disk(
             progress_callback(100.0, "Flash complete")
         return
 
+    if not refresh_elevation(elevation):
+        raise BuildError("admin access could not be renewed before flashing")
     cmd = wrap_for_elevation(args, elevation)
 
     logger.info(f"flash: $ {shlex.join(cmd)}")

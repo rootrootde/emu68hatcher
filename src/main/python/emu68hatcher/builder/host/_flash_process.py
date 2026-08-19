@@ -10,6 +10,7 @@ import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 
 from emu68hatcher.utils.host_tools import get_hst_imager_env
 
@@ -22,17 +23,26 @@ class FlashProcessResult:
     stop_failed: bool = False
 
 
-def _stop(proc: subprocess.Popen) -> bool:
+def _stop(proc: subprocess.Popen, isolated_group: bool) -> bool:
     try:
         if os.name == "nt":
             proc.terminate()
-        else:
+        elif isolated_group:
             os.killpg(proc.pid, signal.SIGTERM)
+        else:
+            proc.terminate()
         proc.wait(timeout=5)
         return True
     except (OSError, ProcessLookupError):
         return proc.poll() is not None
     except subprocess.TimeoutExpired:
+        if os.name != "nt" and not isolated_group:
+            try:
+                proc.send_signal(signal.SIGHUP)
+                proc.wait(timeout=5)
+                return True
+            except (OSError, subprocess.TimeoutExpired):
+                return proc.poll() is not None
         try:
             if os.name == "nt":
                 proc.kill()
@@ -52,6 +62,8 @@ def run_local_flash(
     on_line: Callable[[str], None],
 ) -> FlashProcessResult:
     """run a flash command while polling cancel and timeout"""
+    # macos sudo timestamps are tty-bound; setsid makes a fresh sudo -n fail
+    isolated_group = os.name != "nt" and Path(cmd[0]).name != "sudo"
     proc = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -61,7 +73,7 @@ def run_local_flash(
         errors="replace",
         bufsize=1,
         env=get_hst_imager_env(),
-        start_new_session=os.name != "nt",
+        start_new_session=isolated_group,
         creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0),
     )
     assert proc.stdout is not None
@@ -91,7 +103,7 @@ def run_local_flash(
             pass
 
         if cancel_check and cancel_check():
-            stopped = _stop(proc)
+            stopped = _stop(proc, isolated_group)
             reader.join(timeout=1)
             return FlashProcessResult(
                 proc.returncode if proc.returncode is not None else -1,
@@ -100,7 +112,7 @@ def run_local_flash(
             )
 
         if deadline is not None and time.monotonic() >= deadline:
-            stopped = _stop(proc)
+            stopped = _stop(proc, isolated_group)
             reader.join(timeout=1)
             return FlashProcessResult(
                 proc.returncode if proc.returncode is not None else -1,

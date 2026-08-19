@@ -35,6 +35,14 @@ def stage_validate(workflow: BuildWorkflow, _previous=None) -> ValidatedInputs:
     rom_path, rom_info = _resolve_rom(workflow, existing_dirs, kickstart_version)
     found_media = _resolve_media(workflow, existing_dirs, kickstart_version)
     _check_optional_package_adfs(workflow, found_media, kickstart_version)
+    if workflow.config.network_stack == NetworkStack.MIAMIDX:
+        from emu68hatcher.builder.pipeline.configure_network import (
+            validate_miamidx_key_directory,
+        )
+
+        keys = validate_miamidx_key_directory(workflow.config.miamidx_key_directory)
+        if keys:
+            workflow.logger.info("MiamiDX registration keys accepted")
 
     validate_output_target(workflow)
     roadshow_archive = (

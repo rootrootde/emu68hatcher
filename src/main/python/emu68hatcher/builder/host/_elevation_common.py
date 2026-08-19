@@ -7,7 +7,7 @@ import subprocess
 import threading
 import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from emu68hatcher.utils.host_tools import get_hst_imager_env
@@ -27,6 +27,8 @@ class ElevationToken:
     method: str
     helper: object | None = None
     askpass_path: Path | None = None
+    sudo_keepalive_stop: threading.Event | None = field(default=None, repr=False)
+    sudo_keepalive_thread: threading.Thread | None = field(default=None, repr=False)
 
 
 def ps_quote(value: str) -> str:
@@ -94,13 +96,65 @@ def run_sudo_validate(askpass: Path) -> None:
     )
 
 
-def _refresh_sudo_timestamp(token: ElevationToken) -> None:
-    if token.method != "sudo" or token.askpass_path is None:
-        return
+def refresh_sudo_timestamp(token: ElevationToken | None) -> bool:
+    if token is None or token.method != "sudo":
+        return True
     try:
-        run_sudo_validate(token.askpass_path)
+        if token.askpass_path is not None:
+            run_sudo_validate(token.askpass_path)
+        else:
+            subprocess.run(
+                ["sudo", "-n", "-v"],
+                check=True,
+                timeout=30,
+                capture_output=True,
+                text=True,
+            )
     except (subprocess.CalledProcessError, subprocess.SubprocessError, OSError) as error:
-        logger.warning(f"sudo timestamp refresh failed: {error}")
+        detail = getattr(error, "stderr", None) or getattr(error, "stdout", None) or error
+        logger.warning(f"sudo timestamp refresh failed: {detail}")
+        return False
+    return True
+
+
+def start_sudo_keepalive(token: ElevationToken) -> None:
+    if token.method != "sudo" or token.sudo_keepalive_thread is not None:
+        return
+
+    stop = threading.Event()
+
+    def keepalive() -> None:
+        while not stop.wait(60.0):
+            try:
+                result = subprocess.run(
+                    ["sudo", "-n", "-v"],
+                    timeout=30,
+                    capture_output=True,
+                    text=True,
+                )
+            except (subprocess.SubprocessError, OSError) as error:
+                logger.warning(f"sudo keepalive stopped: {error}")
+                return
+            if result.returncode != 0:
+                detail = result.stderr.strip() or result.stdout.strip() or f"rc={result.returncode}"
+                logger.warning(f"sudo keepalive stopped: {detail}")
+                return
+
+    thread = threading.Thread(target=keepalive, name="sudo-keepalive", daemon=True)
+    token.sudo_keepalive_stop = stop
+    token.sudo_keepalive_thread = thread
+    thread.start()
+
+
+def stop_sudo_keepalive(token: ElevationToken) -> None:
+    stop = token.sudo_keepalive_stop
+    thread = token.sudo_keepalive_thread
+    token.sudo_keepalive_stop = None
+    token.sudo_keepalive_thread = None
+    if stop is not None:
+        stop.set()
+    if thread is not None:
+        thread.join(timeout=2)
 
 
 @dataclass
@@ -126,7 +180,7 @@ def run_elevated(
     if token is not None and token.method.endswith("-helper") and token.helper is not None:
         return token.helper.run(cmd, timeout=timeout, cancel_check=cancel_check, on_line=on_line)
     if token is not None:
-        _refresh_sudo_timestamp(token)
+        refresh_sudo_timestamp(token)
     wrapped = wrap_for_elevation(cmd, token)
     if cancel_check is not None:
         return _run_cancellable(wrapped, timeout, encoding, errors, cancel_check, on_line)

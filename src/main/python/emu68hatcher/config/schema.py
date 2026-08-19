@@ -6,7 +6,22 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from emu68hatcher.config.display_models import CustomScreenMode, DisplayConfig
+from emu68hatcher.config.boot_models import (
+    AntennaMode,
+    BusTestMode,
+    CmdlineTxtSettings,
+    ConfigTxtSettings,
+    Emu68BootSettings,
+    FloppySwap,
+    FramethrowerScaling,
+    ReleaseToggle,
+    Unit0Mode,
+)
+from emu68hatcher.config.display_models import (
+    CustomScreenMode,
+    DisplayConfig,
+    WorkbenchScreenMode,
+)
 from emu68hatcher.config.network_models import (
     InterfaceIp,
     IpMode,
@@ -23,11 +38,18 @@ from emu68hatcher.config.partition_models import (
 
 __all__ = [
     "AmigaPartition",
+    "AntennaMode",
     "BuildConfig",
+    "BusTestMode",
+    "CmdlineTxtSettings",
+    "ConfigTxtSettings",
     "CustomScreenMode",
     "DisplayConfig",
+    "Emu68BootSettings",
     "Emu68Version",
     "Filesystem",
+    "FloppySwap",
+    "FramethrowerScaling",
     "InstallMediaConfig",
     "InterfaceIp",
     "IpMode",
@@ -40,7 +62,10 @@ __all__ = [
     "OutputType",
     "PackageConfig",
     "PartitionConfig",
+    "ReleaseToggle",
+    "Unit0Mode",
     "WifiConfig",
+    "WorkbenchScreenMode",
 ]
 
 CURRENT_CONFIG_VERSION = "1.1.0"
@@ -239,7 +264,7 @@ class BuildConfig(_ConfigModel):
     # optional path to a user-owned Roadshow archive; when set, replaces the bundled demo
     roadshow_archive: Path | None = None
 
-    # optional MiamiDX registration keys (MIAMI.KEY1/2 or MIAMIDX.KEY)
+    # optional folder containing MIAMI.KEY1, MIAMI.KEY2, and MIAMIDX.KEY
     miamidx_key_directory: Path | None = None
 
     # wifi creds - never serialized, never in repr
@@ -253,6 +278,7 @@ class BuildConfig(_ConfigModel):
         default=Emu68Version.V1_0_7,
         description="upstream Emu68 release to bundle on the boot partition",
     )
+    emu68_boot: Emu68BootSettings = Field(default_factory=Emu68BootSettings)
 
     @property
     def boot_device(self) -> str:
@@ -295,6 +321,15 @@ class BuildConfig(_ConfigModel):
             self.asset_directories = merged
         return self
 
+    @model_validator(mode="after")
+    def _check_framethrower_screen_mode(self):
+        if (
+            self.emu68_boot.config_txt.framethrower
+            and self.display.workbench_mode == WorkbenchScreenMode.NATIVE
+        ):
+            raise ValueError("Framethrower requires a VideoCore Workbench screen mode")
+        return self
+
     model_config = ConfigDict(
         extra="forbid",
         json_schema_extra={
@@ -309,6 +344,7 @@ class BuildConfig(_ConfigModel):
                 },
                 "display": {
                     "hdmi_mode": "1280*720-50",
+                    "workbench_mode": "videocore_1280x720",
                 },
                 "packages": [
                     {"name": "whdload", "enabled": True},

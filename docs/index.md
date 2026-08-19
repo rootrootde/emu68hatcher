@@ -20,7 +20,6 @@ Runs on macOS, Linux and Windows.
 
 **Still in an early stage** - Only actively tested on my A1200 + pistorm32-lite + CM4 / on macOS. If you run it on different hardware or OS, let me know on the [Discord](https://discord.com/invite/ApTbasXJPE) or open a [GitHub issue](https://github.com/rootrootde/emu68hatcher/issues) - even just "it worked" is useful.
 
-- **No framethrower / unicam configuration yet**
 - **mostly tested on 3.2(.3)** - expect more potential issues with 3.1
 
 ## Support + Feedback

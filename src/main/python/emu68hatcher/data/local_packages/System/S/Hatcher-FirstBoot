@@ -63,13 +63,17 @@ IF $HATCHERFIRSTBOOT EQ "TRUE"
    C:Echo "Step 4/4: Regional settings"
    C:Echo ""
 
-   ; restore cmdline.txt backup (PiStorm only)
+   ; remove one-time boot diagnostics (PiStorm only)
    IF NOT $SYSTEM EQ "UAE"
       C:Assign >NIL: EXISTS EMU68BOOT:
       IF NOT WARN
          IF EXISTS EMU68BOOT:cmdlineBAK.txt
             C:Delete EMU68BOOT:cmdline.txt QUIET
             C:Rename FROM EMU68BOOT:cmdlineBAK.txt TO EMU68BOOT:cmdline.txt
+         ENDIF
+         IF EXISTS EMU68BOOT:configBAK.txt
+            C:Delete EMU68BOOT:config.txt QUIET
+            C:Rename FROM EMU68BOOT:configBAK.txt TO EMU68BOOT:config.txt
          ENDIF
       ENDIF
    ENDIF
@@ -99,7 +103,11 @@ IF $HATCHERFIRSTBOOT EQ "TRUE"
 
    C:Echo ""
    C:Echo "Setup will now reboot to apply changes."
-   C:Echo "One more brief setup step after reboot (display settings)."
+   IF EXISTS SYS:WBStartup/FirstBootWB
+      C:Echo "One more brief setup step after reboot (display settings)."
+   ELSE
+      C:Echo "The selected Workbench screen mode will be applied after reboot."
+   ENDIF
    C:Echo ""
    C:Ask "Press RETURN to reboot..."
    C:DiskChange SDH0:

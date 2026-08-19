@@ -93,10 +93,10 @@ class PartitionsTab(QWidget):
         self.part_table.itemSelectionChanged.connect(self._on_selection_changed)
         self.partition_bar.partition_clicked.connect(self.part_table.selectRow)
         amiga_layout.addWidget(self.part_table)
+        amiga_layout.addSpacing(12)
 
         # buttons
         btn_layout = QHBoxLayout()
-        btn_layout.setContentsMargins(0, 6, 0, 0)
         self.add_btn = QPushButton("Add Partition")
         self.add_btn.clicked.connect(self._on_add_partition)
         btn_layout.addWidget(self.add_btn)
