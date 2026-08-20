@@ -46,6 +46,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.config = create_default_config()
         self.setup_ui()
+        self.resize(1400, 800)
 
     def setup_ui(self):
         self.setWindowTitle(f"Emu68 Hatcher {__version__}")

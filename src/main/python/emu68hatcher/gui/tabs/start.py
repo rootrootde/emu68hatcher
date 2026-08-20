@@ -3,7 +3,7 @@
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import QSize, Qt, Slot
 from PySide6.QtGui import QIcon, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
@@ -22,15 +22,19 @@ from PySide6.QtWidgets import (
 
 def _render_icon(path: Path, size: int) -> QPixmap:
     """render an svg/png/icns to a square QPixmap of the given size"""
+    screen = QApplication.primaryScreen()
+    pixel_ratio = screen.devicePixelRatio() if screen is not None else 1.0
+    pixel_size = max(size, round(size * pixel_ratio))
     if path.suffix.lower() == ".svg":
         renderer = QSvgRenderer(str(path))
-        pixmap = QPixmap(size, size)
+        pixmap = QPixmap(pixel_size, pixel_size)
         pixmap.fill(Qt.GlobalColor.transparent)
         painter = QPainter(pixmap)
         renderer.render(painter)
         painter.end()
+        pixmap.setDevicePixelRatio(pixel_ratio)
         return pixmap
-    return QIcon(str(path)).pixmap(size, size)
+    return QIcon(str(path)).pixmap(QSize(size, size), pixel_ratio)
 
 
 def _find_app_icon() -> Path | None:
@@ -75,6 +79,7 @@ class StartTab(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 24, 24, 24)
         layout.setSpacing(16)
+        layout.addStretch()
 
         # welcome header: app icon + title/subtitle stacked to its right
         header = QHBoxLayout()
@@ -83,9 +88,9 @@ class StartTab(QWidget):
         icon_path = _find_app_icon()
         if icon_path is not None:
             icon_label = QLabel()
-            icon_label.setPixmap(_render_icon(icon_path, 96))
-            icon_label.setFixedSize(96, 96)
-            icon_label.setAlignment(Qt.AlignmentFlag.AlignTop)
+            icon_label.setPixmap(_render_icon(icon_path, 128))
+            icon_label.setFixedSize(128, 128)
+            icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             header.addWidget(icon_label)
 
         text_col = QVBoxLayout()

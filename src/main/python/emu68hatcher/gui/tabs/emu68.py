@@ -43,6 +43,7 @@ class Emu68Tab(QWidget):
     ):
         super().__init__(parent)
         self.emu68_version = emu68_version
+        self._splitter_initialised = False
         self.setup_ui()
 
     def setup_ui(self):
@@ -128,9 +129,9 @@ class Emu68Tab(QWidget):
 
         self.splitter.addWidget(settings_pane)
         self.splitter.addWidget(preview_pane)
-        self.splitter.setStretchFactor(0, 5)
-        self.splitter.setStretchFactor(1, 6)
-        self.splitter.setSizes([520, 620])
+        self.splitter.setStretchFactor(0, 1)
+        self.splitter.setStretchFactor(1, 1)
+        self.splitter.setSizes([1, 1])
         layout.addWidget(self.splitter)
 
         self._settings_change_timer = QTimer(self)
@@ -143,6 +144,18 @@ class Emu68Tab(QWidget):
         self._sync_storage_timing_from_details()
         self.set_emu68_version(self.emu68_version)
         self._update_custom_fields()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if self._splitter_initialised:
+            return
+        self._splitter_initialised = True
+        QTimer.singleShot(0, self._set_initial_splitter_sizes)
+
+    def _set_initial_splitter_sizes(self):
+        width = max(0, self.splitter.width() - self.splitter.handleWidth())
+        left = width // 2
+        self.splitter.setSizes([left, width - left])
 
     def _form_layout(self, parent: QWidget, label_group: str | None = None) -> QFormLayout:
         form = QFormLayout(parent)

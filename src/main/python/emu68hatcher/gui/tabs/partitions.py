@@ -93,10 +93,10 @@ class PartitionsTab(QWidget):
         self.part_table.itemSelectionChanged.connect(self._on_selection_changed)
         self.partition_bar.partition_clicked.connect(self.part_table.selectRow)
         amiga_layout.addWidget(self.part_table)
-        amiga_layout.addSpacing(12)
 
-        # buttons
-        btn_layout = QHBoxLayout()
+        button_row = QWidget()
+        btn_layout = QHBoxLayout(button_row)
+        btn_layout.setContentsMargins(0, 16, 0, 0)
         self.add_btn = QPushButton("Add Partition")
         self.add_btn.clicked.connect(self._on_add_partition)
         btn_layout.addWidget(self.add_btn)
@@ -110,7 +110,7 @@ class PartitionsTab(QWidget):
         btn_layout.addWidget(self.reset_btn)
 
         btn_layout.addStretch()
-        amiga_layout.addLayout(btn_layout)
+        amiga_layout.addWidget(button_row)
 
         # per-partition detail panel: selected row -> extra content directory picker
         self._extras_box = QWidget()
