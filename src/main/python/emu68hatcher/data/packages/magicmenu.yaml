@@ -2,7 +2,7 @@ name: magicmenu
 friendly_name: MagicMenu
 bundle: magicmenu
 group: Commodities
-description: 'intuition menu enhancer 3.0 - pop-up, sticky and transparent menus'
+description: 'intuition menu enhancer 3.1 - pop-up, sticky and transparent menus'
 versions:
 - '3.1'
 - '3.2'
@@ -14,13 +14,14 @@ versions:
 requires:
 - mui
 download:
-  source: aminet
-  path: util/wb/MagicMenu_3.lha
-  hash: 52A0D8F225A155FEF960374CBD2C4179
-  filename: MagicMenu_3.lha
+  source: github
+  repo: AmiKit/MagicMenu
+  tag: v3.1
+  hash: 4539081FCE7789F11374B07F99915AE1
+  filename: MagicMenu_3.1.lha
 # the archive mirrors the destinations (WBStartup/, Prefs/, Catalogs/); the
 # install script only adds the icon-set choice and the LOCALE: copies.
-# DualPNG icons (the 3.0 default set): PowerIcons-style plain PNG files -
+# DualPNG icons (the 3.1 default set): PowerIcons-style plain PNG files -
 # rendered by PeterK's icon.library (mandatory iconlib package), positioned
 # by icon_grid's icOn-chunk writer. their tooltypes carry DONOTWAIT +
 # CX_POPUP=NO like before, but STARTPRI=0 where the old MagicWB icon used
