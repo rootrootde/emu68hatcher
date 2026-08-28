@@ -1,0 +1,65 @@
+{
+  "payload": {
+    "schema_version": 1,
+    "revision": 1787947779,
+    "hatcher": {
+      "version": "0.9.0",
+      "release_url": "https://github.com/rootrootde/emu68hatcher/releases/tag/v0.9.0",
+      "artifacts": {
+        "linux-arm64": {
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v0.9.0/emu68hatcher-0.9.0-linux-arm64.deb",
+          "filename": "emu68hatcher-0.9.0-linux-arm64.deb",
+          "sha256": "bee211543dbcc9a9acfe2b0fa5f4dec815e01cc67526f10f45acdb9732b62af9",
+          "size": 67916932
+        },
+        "linux-x64": {
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v0.9.0/emu68hatcher-0.9.0-linux-x64.deb",
+          "filename": "emu68hatcher-0.9.0-linux-x64.deb",
+          "sha256": "c2ca3451441ebaaa67c85bd8bddabaa03e1d6ece3bc07e8722c79d8955160deb",
+          "size": 71845548
+        },
+        "macos-arm64": {
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v0.9.0/emu68hatcher-0.9.0-macos-arm64.dmg",
+          "filename": "emu68hatcher-0.9.0-macos-arm64.dmg",
+          "sha256": "7b737602f7aa14e1a5e0bb8fd5946053466f6738fcdd3b81c0fce0ea83c785b3",
+          "size": 32647799
+        },
+        "macos-x64": {
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v0.9.0/emu68hatcher-0.9.0-macos-x64.dmg",
+          "filename": "emu68hatcher-0.9.0-macos-x64.dmg",
+          "sha256": "f7fde183b4c48e90fe86840b4395dcbbf86c335ecec4fecd8439f8609a73e436",
+          "size": 36492576
+        },
+        "windows-arm64": {
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v0.9.0/emu68hatcher-0.9.0-windows-arm64.exe",
+          "filename": "emu68hatcher-0.9.0-windows-arm64.exe",
+          "sha256": "1d0216ba87131df780fb753af240940bbc75723dc30998c8b4c93273e9464a6c",
+          "size": 37733463
+        },
+        "windows-x64": {
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v0.9.0/emu68hatcher-0.9.0-windows-x64.exe",
+          "filename": "emu68hatcher-0.9.0-windows-x64.exe",
+          "sha256": "1f86e2faa0337f6446a58ea8ec7ac155415e420efeb505d80b878b6aa1db669b",
+          "size": 47652916
+        }
+      }
+    },
+    "packages": {
+      "magicmenu": {
+        "source": "github",
+        "path": null,
+        "url": null,
+        "backup_url": null,
+        "repo": "AmiKit/MagicMenu",
+        "tag": "v3.1",
+        "hash": "4539081FCE7789F11374B07F99915AE1",
+        "filename": "MagicMenu_3.1.lha"
+      }
+    }
+  },
+  "signature": {
+    "algorithm": "ed25519",
+    "key_id": "updates-2026",
+    "value": "ei1NNhKSFhiaDsoISc0H+48XaWxA0tWM0VD5OA0q9oBNz0NVOq5m+NtSNn92Bw2S6bMuM4CjAGlpX3Bw4CpaAA=="
+  }
+}
