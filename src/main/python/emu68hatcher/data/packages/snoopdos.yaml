@@ -20,4 +20,4 @@ install:
 menu_entry:
   title: SnoopDOS
   path: Programs/SnoopDOS/SnoopDos
-  submenu: System
+  menu: System

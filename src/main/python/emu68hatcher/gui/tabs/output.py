@@ -1,6 +1,7 @@
 """output tab - image file, image+flash, or direct-to-SD"""
 
 from pathlib import Path
+from time import monotonic
 
 from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtWidgets import (
@@ -29,11 +30,17 @@ class OutputTab(QWidget):
     # multi-GB values on a 32-bit signed int signal
     target_size_changed = Signal(object, str)
     target_size_cleared = Signal()
+    target_restore_complete = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._disks: list = []
         self._disk_worker: DiskListWorker | None = None
+        self._disk_workers: set[DiskListWorker] = set()
+        self._disk_generation = 0
+        self._pending_device: str | None = None
+        self._restore_in_progress = False
+        self._last_emitted_device: str | None = None
         self.setup_ui()
         # disk list populates lazily - first refresh on tab show is fine
 
@@ -94,7 +101,7 @@ class OutputTab(QWidget):
         disk_row.addWidget(QLabel("Disk:"))
         self.disk_combo = QComboBox()
         self.disk_combo.setMinimumWidth(380)
-        self.disk_combo.currentIndexChanged.connect(self._emit_target_size)
+        self.disk_combo.currentIndexChanged.connect(self._on_disk_selected)
         disk_row.addWidget(self.disk_combo, 1)
         self.refresh_btn = QPushButton("Refresh")
         self.refresh_btn.clicked.connect(self.refresh_disks)
@@ -127,7 +134,11 @@ class OutputTab(QWidget):
             self.refresh_disks()
             self._emit_target_size()
         else:
+            self._last_emitted_device = None
             self.target_size_cleared.emit()
+
+    def _on_disk_selected(self):
+        self._emit_target_size()
 
     def _browse_output(self):
         current = self.output_path.text().strip()
@@ -137,15 +148,19 @@ class OutputTab(QWidget):
             "Select Output Location",
             start,
             "Disk Images (*.img);;All Files (*)",
-            options=QFileDialog.Option.DontUseNativeDialog,
         )
         if path:
             self.output_path.setText(path)
 
     def refresh_disks(self):
         """spawn DiskListWorker, fill combo on result"""
-        if self._disk_worker is not None and self._disk_worker.isRunning():
-            return  # already in flight
+        self._disk_generation += 1
+        generation = self._disk_generation
+        for worker in tuple(self._disk_workers):
+            if worker.isRunning():
+                worker.requestInterruption()
+        if self._pending_device is None:
+            self._pending_device = self.disk_combo.currentData()
         # block signals: clear() flips the index and would emit a stale
         # target_size_changed(0, "") before the new list lands
         self.disk_combo.blockSignals(True)
@@ -153,12 +168,52 @@ class OutputTab(QWidget):
         self.disk_combo.addItem("Scanning…", None)
         self.disk_combo.blockSignals(False)
         self._disk_worker = DiskListWorker(self)
-        self._disk_worker.disks_loaded.connect(self._on_disks_loaded)
-        self._disk_worker.start()
+        worker = self._disk_worker
+        self._disk_workers.add(worker)
+        worker.disks_loaded.connect(lambda disks, g=generation: self._accept_disks(g, disks))
+        worker.load_error.connect(lambda message, g=generation: self._accept_disk_error(g, message))
+        worker.finished.connect(lambda w=worker: self._disk_worker_finished(w))
+        worker.start()
+
+    def _disk_worker_finished(self, worker: DiskListWorker) -> None:
+        self._disk_workers.discard(worker)
+        if worker is self._disk_worker:
+            self._disk_worker = None
+
+    def _accept_disks(self, generation: int, disks: list) -> None:
+        if generation == self._disk_generation:
+            self._on_disks_loaded(disks)
+
+    def _accept_disk_error(self, generation: int, message: str) -> None:
+        if generation != self._disk_generation:
+            return
+        restoring = self._restore_in_progress
+        self._pending_device = None
+        self._restore_in_progress = False
+        self._disks = []
+        self.disk_combo.blockSignals(True)
+        self.disk_combo.clear()
+        self.disk_combo.addItem(f"(disk scan failed: {message})", None)
+        self.disk_combo.blockSignals(False)
+        self._emit_target_size(force=True)
+        if restoring:
+            self.target_restore_complete.emit()
+
+    def shutdown_workers(self, timeout_ms: int = 500) -> bool:
+        workers = tuple(worker for worker in self._disk_workers if worker.isRunning())
+        for worker in workers:
+            worker.requestInterruption()
+        deadline = monotonic() + timeout_ms / 1000
+        for worker in workers:
+            remaining = max(0, int((deadline - monotonic()) * 1000))
+            worker.wait(remaining)
+        return not any(worker.isRunning() for worker in workers)
 
     @Slot(list)
     def _on_disks_loaded(self, disks: list):
         self._disks = disks
+        desired = self._pending_device
+        restoring = self._restore_in_progress
         self.disk_combo.blockSignals(True)
         self.disk_combo.clear()
         if not disks:
@@ -166,20 +221,32 @@ class OutputTab(QWidget):
                 "(no removable disks found - insert an SD card and refresh)", None
             )
         else:
+            self.disk_combo.addItem("(select a disk)", None)
             for d in disks:
                 self.disk_combo.addItem(d.display_label, d.device)
+            if desired:
+                index = self.disk_combo.findData(desired)
+                self.disk_combo.setCurrentIndex(index if index >= 0 else 0)
         self.disk_combo.blockSignals(False)
-        self._emit_target_size()
+        self._pending_device = None
+        self._restore_in_progress = False
+        self._emit_target_size(force=restoring)
+        if restoring:
+            self.target_restore_complete.emit()
 
-    def _emit_target_size(self):
+    def _emit_target_size(self, *, force: bool = False):
         """DEVICE or IMG+flash: push the picked card's size so partitions can auto-size"""
         if not (self.mode_device.isChecked() or self.mode_img_flash.isChecked()):
             return
         device = self.disk_combo.currentData()
         info = next((d for d in self._disks if d.device == device), None)
         if info is None:
+            self._last_emitted_device = None
             self.target_size_cleared.emit()
             return
+        if not force and device == self._last_emitted_device:
+            return
+        self._last_emitted_device = device
         self.target_size_changed.emit(info.size_bytes, info.display_label)
 
     # ------------------------------------------------------------------ config IO
@@ -200,13 +267,17 @@ class OutputTab(QWidget):
             "flash_target": flash_target,
         }
 
-    def set_config(self, config: OutputConfig | None):
+    def set_config(self, config: OutputConfig | None) -> bool:
         if config is None:
-            return
+            self.target_restore_complete.emit()
+            return False
+        pending_device: str | None = None
         if config.type == OutputType.DEVICE:
             self.mode_device.setChecked(True)
+            pending_device = str(config.path)
         elif config.flash_target:
             self.mode_img_flash.setChecked(True)
+            pending_device = config.flash_target
             if config.path:
                 self.output_path.setText(str(config.path))
             self.sparse_cb.setChecked(config.sparse)
@@ -215,5 +286,10 @@ class OutputTab(QWidget):
             if config.path:
                 self.output_path.setText(str(config.path))
             self.sparse_cb.setChecked(config.sparse)
-        # programmatic setChecked doesnt fire buttonClicked; call the handler directly
+        self._pending_device = pending_device
+        self._restore_in_progress = pending_device is not None
+        # setChecked does not emit buttonClicked
         self._on_mode_changed()
+        if pending_device is None:
+            self.target_restore_complete.emit()
+        return pending_device is not None

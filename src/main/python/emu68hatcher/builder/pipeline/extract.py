@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from emu68hatcher.builder.errors import BuildError
 from emu68hatcher.builder.host.archive import extract_archive
-from emu68hatcher.builder.workflow import BuildStage
+from emu68hatcher.builder.state import BuildStage, DownloadedArtifacts, ExtractedArtifacts
 
 if TYPE_CHECKING:
     from emu68hatcher.builder.workflow import BuildWorkflow
@@ -23,15 +23,24 @@ def _extract_progress(workflow: BuildWorkflow, label: str):
     return cb
 
 
-def stage_extract(workflow: BuildWorkflow) -> None:
+def stage_extract(
+    workflow: BuildWorkflow,
+    downloaded: DownloadedArtifacts,
+) -> ExtractedArtifacts:
     """extract downloaded archives"""
     workflow._update_state(BuildStage.EXTRACT, 0.0)
     workflow._milestone("Extracting archives")
-    _extract_downloaded(workflow)
-    _extract_local_archives(workflow)
+    extracted_paths = dict(downloaded.extracted_paths)
+    _extract_downloaded(workflow, downloaded, extracted_paths)
+    _extract_local_archives(workflow, downloaded, extracted_paths)
+    return ExtractedArtifacts(downloaded=downloaded, extracted_paths=extracted_paths)
 
 
-def _extract_downloaded(workflow: BuildWorkflow) -> None:
+def _extract_downloaded(
+    workflow: BuildWorkflow,
+    downloaded: DownloadedArtifacts,
+    extracted_paths: dict[str, Path],
+) -> None:
     """extract archives pulled by the download stage into extracted_dir"""
     import re
 
@@ -41,24 +50,30 @@ def _extract_downloaded(workflow: BuildWorkflow) -> None:
     # safe package names - no slashes, dots-only, or empties (used as path components)
     _safe_pkg = re.compile(r"^[\w][\w.+-]*$")
 
-    if not workflow.state.downloaded_files:
+    if not downloaded.downloaded_files:
         workflow._update_state(progress=100.0)
         workflow._milestone("No archives to extract")
         return
 
-    total = len(workflow.state.downloaded_files)
+    total = len(downloaded.downloaded_files)
     completed = 0
     extracted_count = 0
 
-    for package_name, archive_path in workflow.state.downloaded_files.items():
+    for package_name, archive_path in downloaded.downloaded_files.items():
         workflow._check_cancelled()
         if not _safe_pkg.match(package_name):
             raise BuildError(f"refusing unsafe package name from YAML: {package_name!r}")
 
         # mirror download-manager extractions into extracted_dir (symlink, copy on windows w/o privilege)
-        if package_name in workflow.state.extracted_paths:
-            dm_path = workflow.state.extracted_paths[package_name]
-            std_path = workflow.state.extracted_dir / package_name
+        if package_name in extracted_paths:
+            dm_path = extracted_paths[package_name]
+            if not dm_path.exists():
+                if package_name in downloaded.required_artifacts:
+                    raise BuildError(f"Required artifact {package_name} was not extracted")
+                workflow.logger.warning(f"Extracted path is missing for {package_name}: {dm_path}")
+                completed += 1
+                continue
+            std_path = downloaded.workspace.extracted_dir / package_name
             if dm_path.is_dir() and dm_path != std_path and not std_path.exists():
                 std_path.parent.mkdir(parents=True, exist_ok=True)
                 try:
@@ -74,14 +89,14 @@ def _extract_downloaded(workflow: BuildWorkflow) -> None:
         workflow._update_state(progress=(completed / total) * 80)
         workflow._milestone(f"Extracting {package_name}")
 
-        output_dir = workflow.state.extracted_dir / package_name
+        output_dir = downloaded.workspace.extracted_dir / package_name
 
         if archive_path.suffix.lower() not in archive_extensions:
             # raw binary, not an archive - just copy it through
             output_dir.mkdir(parents=True, exist_ok=True)
             dest_file = output_dir / archive_path.name
             shutil.copy2(archive_path, dest_file)
-            workflow.state.extracted_paths[package_name] = output_dir
+            extracted_paths[package_name] = output_dir
             extracted_count += 1
             workflow.logger.info(f"Copied raw file {package_name}: {archive_path.name}")
             completed += 1
@@ -92,13 +107,16 @@ def _extract_downloaded(workflow: BuildWorkflow) -> None:
         )
 
         if result.success:
-            workflow.state.extracted_paths[package_name] = result.output_dir
+            extracted_paths[package_name] = result.output_dir
             extracted_count += 1
             workflow.logger.info(
                 f"Extracted {package_name}: {result.files_extracted} files to {result.output_dir}"
             )
         else:
-            workflow.logger.warning(f"Failed to extract {package_name}: {result.error}")
+            message = f"Failed to extract {package_name}: {result.error}"
+            if package_name in downloaded.required_artifacts:
+                raise BuildError(message)
+            workflow.logger.warning(message)
 
         completed += 1
 
@@ -106,7 +124,11 @@ def _extract_downloaded(workflow: BuildWorkflow) -> None:
     workflow._milestone(f"Extracted {extracted_count} of {total} downloaded packages")
 
 
-def _extract_local_archives(workflow: BuildWorkflow) -> None:
+def _extract_local_archives(
+    workflow: BuildWorkflow,
+    downloaded: DownloadedArtifacts,
+    extracted_paths: dict[str, Path],
+) -> None:
     """extract bundled local-source package archives the download stage skipped"""
     from emu68hatcher.builder.host.archive import ARCHIVE_EXTENSIONS
     from emu68hatcher.builder.pipeline._selection import get_resolution
@@ -126,51 +148,62 @@ def _extract_local_archives(workflow: BuildWorkflow) -> None:
 
     # picasso96 uses a user-supplied archive when configured, overriding the aminet download
     if (
-        workflow.state.picasso96_archive_path is not None
+        downloaded.workspace.validated.picasso96_archive_path is not None
         and "picasso96" in all_package_names
-        and "picasso96" not in workflow.state.extracted_paths
+        and "picasso96" not in extracted_paths
     ):
-        p96_out = workflow.state.extracted_dir / "picasso96"
+        p96_out = downloaded.workspace.extracted_dir / "picasso96"
         workflow._milestone("Extracting Picasso96 (user archive)")
-        if _stage_user_picasso96(workflow, p96_out):
-            workflow.state.extracted_paths["picasso96"] = p96_out
+        if _stage_user_picasso96(workflow, downloaded, p96_out):
+            extracted_paths["picasso96"] = p96_out
             local_extracted += 1
+        elif "picasso96" in downloaded.required_packages:
+            raise BuildError("Failed to extract required Picasso96 archive")
 
     for pkg_name in all_package_names:
-        if pkg_name in workflow.state.extracted_paths:
+        if pkg_name in extracted_paths:
             continue  # already extracted from download
         pkg = get_package_by_name(pkg_name)
         if not pkg or not pkg.download or pkg.download.source != SourceType.LOCAL:
             continue
 
         # roadshow gets a user-supplied archive when configured; everything else uses the bundled file
-        if pkg_name == "roadshow" and workflow.state.roadshow_archive_path is not None:
-            output_dir = workflow.state.extracted_dir / pkg_name
+        if pkg_name == "roadshow" and downloaded.workspace.validated.roadshow_archive_path:
+            output_dir = downloaded.workspace.extracted_dir / pkg_name
             workflow._milestone("Extracting Roadshow (user archive)")
-            if _stage_user_roadshow(workflow, output_dir):
-                workflow.state.extracted_paths[pkg_name] = output_dir
+            if _stage_user_roadshow(workflow, downloaded, output_dir):
+                extracted_paths[pkg_name] = output_dir
                 local_extracted += 1
+            elif pkg_name in downloaded.required_packages:
+                raise BuildError(f"Failed to extract required {pkg_name} archive")
             continue
 
         if not pkg.download.path:
             continue
         archive_path = local_packages_dir / pkg.download.path
-        if not archive_path.exists() or archive_path.suffix.lower() not in archive_extensions:
+        if not archive_path.exists():
+            if pkg_name in downloaded.required_packages:
+                raise BuildError(f"Required local source is missing for {pkg_name}: {archive_path}")
             continue
-        output_dir = workflow.state.extracted_dir / pkg_name
+        if archive_path.suffix.lower() not in archive_extensions:
+            continue
+        output_dir = downloaded.workspace.extracted_dir / pkg_name
         workflow._milestone(f"Extracting {pkg_name} (local)")
 
         result = extract_archive(
             archive_path, output_dir, progress_callback=_extract_progress(workflow, pkg_name)
         )
         if result.success:
-            workflow.state.extracted_paths[pkg_name] = output_dir
+            extracted_paths[pkg_name] = output_dir
             local_extracted += 1
             workflow.logger.info(
                 f"Extracted local archive {pkg_name}: {result.files_extracted} files"
             )
         else:
-            workflow.logger.warning(f"Failed to extract local archive {pkg_name}: {result.error}")
+            message = f"Failed to extract local archive {pkg_name}: {result.error}"
+            if pkg_name in downloaded.required_packages:
+                raise BuildError(message)
+            workflow.logger.warning(message)
 
     workflow._update_state(progress=100.0)
     workflow._milestone(
@@ -178,9 +211,13 @@ def _extract_local_archives(workflow: BuildWorkflow) -> None:
     )
 
 
-def _stage_user_picasso96(workflow: BuildWorkflow, output_dir: Path) -> bool:
+def _stage_user_picasso96(
+    workflow: BuildWorkflow,
+    downloaded: DownloadedArtifacts,
+    output_dir: Path,
+) -> bool:
     """extract the user's Picasso96 .lha into output_dir; returns True on success"""
-    src = workflow.state.picasso96_archive_path
+    src = downloaded.workspace.validated.picasso96_archive_path
     if src is None:
         return False
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -194,10 +231,13 @@ def _stage_user_picasso96(workflow: BuildWorkflow, output_dir: Path) -> bool:
     return True
 
 
-def _stage_user_roadshow(workflow: BuildWorkflow, output_dir: Path) -> bool:
-    """populate output_dir from workflow.state.roadshow_archive_path per its detected layout (outer/inner_full/dir_full/dir_inner)"""
-    src = workflow.state.roadshow_archive_path
-    kind = workflow.state.roadshow_archive_kind
+def _stage_user_roadshow(
+    workflow: BuildWorkflow,
+    downloaded: DownloadedArtifacts,
+    output_dir: Path,
+) -> bool:
+    src = downloaded.workspace.validated.roadshow_archive_path
+    kind = downloaded.workspace.validated.roadshow_archive_kind
     if src is None or kind is None:
         return False
 

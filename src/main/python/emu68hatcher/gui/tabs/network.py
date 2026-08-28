@@ -82,9 +82,12 @@ class NetworkTab(QWidget):
         net_layout = QVBoxLayout(net_group)
         self.radio_none = QRadioButton("None")
         self.radio_roadshow = QRadioButton("Roadshow")
+        self.radio_miamidx = QRadioButton("MiamiDX")
+        self.radio_amitcp_ng = QRadioButton("AmiTCP_NG")
         self.radio_roadshow.setChecked(True)
         self.radio_none.setToolTip("No network stack - no online connectivity")
         self.radio_roadshow.setToolTip("Roadshow demo - free TCP/IP stack with PiStorm support")
+        self.radio_miamidx.setToolTip("Miami Deluxe 1.0c with GENET and WifiPi profiles")
         net_layout.addWidget(self.radio_none)
 
         self.radio_roadshow.setAttribute(Qt.WidgetAttribute.WA_LayoutUsesWidgetRect, True)
@@ -105,6 +108,20 @@ class NetworkTab(QWidget):
         roadshow_row.addStretch()
         net_layout.addLayout(roadshow_row)
 
+        miamidx_row = QHBoxLayout()
+        miamidx_row.setContentsMargins(0, 0, 0, 0)
+        miamidx_row.setSpacing(6)
+        miamidx_row.addWidget(self.radio_miamidx)
+        miamidx_row.addStretch()
+        net_layout.addLayout(miamidx_row)
+
+        amitcp_ng_row = QHBoxLayout()
+        amitcp_ng_row.setContentsMargins(0, 0, 0, 0)
+        amitcp_ng_row.setSpacing(6)
+        amitcp_ng_row.addWidget(self.radio_amitcp_ng)
+        amitcp_ng_row.addStretch()
+        net_layout.addLayout(amitcp_ng_row)
+
         # full-version archive picker: empty -> bundled demo
         self._roadshow_full_box = QWidget()
         full_layout = QHBoxLayout(self._roadshow_full_box)
@@ -122,20 +139,47 @@ class NetworkTab(QWidget):
         clear_btn.clicked.connect(self._clear_roadshow_archive)
         full_layout.addWidget(clear_btn)
         net_layout.addWidget(self._roadshow_full_box)
+
+        self._miamidx_keys_box = QWidget()
+        keys_layout = QHBoxLayout(self._miamidx_keys_box)
+        keys_layout.setContentsMargins(20, 0, 0, 0)
+        keys_layout.setSpacing(6)
+        keys_layout.addWidget(QLabel("Registration keys folder:"))
+        self.miamidx_key_directory_edit = QLineEdit()
+        self.miamidx_key_directory_edit.setPlaceholderText(
+            "optional: folder containing all three MiamiDX key files"
+        )
+        self.miamidx_key_directory_edit.setReadOnly(True)
+        keys_layout.addWidget(self.miamidx_key_directory_edit, 1)
+        keys_browse_btn = QPushButton("Browse...")
+        keys_browse_btn.clicked.connect(self._browse_miamidx_key_directory)
+        keys_layout.addWidget(keys_browse_btn)
+        keys_clear_btn = QPushButton("Clear")
+        keys_clear_btn.clicked.connect(self.miamidx_key_directory_edit.clear)
+        keys_layout.addWidget(keys_clear_btn)
+        net_layout.addWidget(self._miamidx_keys_box)
+
+        self._miamidx_note = QLabel(
+            "MiamiDX uses bundled DHCP profiles. Registration requires all three key files. "
+            "Change IP and DNS settings in MiamiDX."
+        )
+        self._miamidx_note.setWordWrap(True)
+        net_layout.addWidget(self._miamidx_note)
         layout.addWidget(net_group)
 
-        # all four groups are siblings in the main layout so they share one consistent gap
-        # (hidden together when no stack is selected). these are meaningful only with a stack.
-        self._iface_groups = [
-            self._build_ethernet_group(),
-            self._build_wifi_group(),
-            self._build_routing_group(),
-        ]
+        # sibling groups share the same gap and can be hidden per stack
+        self._ethernet_group = self._build_ethernet_group()
+        self._wifi_group = self._build_wifi_group()
+        self._routing_group = self._build_routing_group()
+        self._iface_groups = [self._ethernet_group, self._wifi_group, self._routing_group]
         for g in self._iface_groups:
             layout.addWidget(g)
         layout.addStretch()
 
         self.radio_none.toggled.connect(self._update_net_visibility)
+        self.radio_roadshow.toggled.connect(self._update_net_visibility)
+        self.radio_amitcp_ng.toggled.connect(self._update_net_visibility)
+        self.radio_miamidx.toggled.connect(self._update_net_visibility)
         self._update_net_visibility()
         self._update_static_visible()  # hide the IP rows - both interfaces default to DHCP
 
@@ -178,6 +222,7 @@ class NetworkTab(QWidget):
         mode_row.addWidget(self.wifi_static)
         mode_row.addStretch()
         form.addRow(_flabel("Address:"), mode_row)
+        self._wifi_mode_row = mode_row
         self.wifi_addr = _ip_field("192.168.1.51")
         self.wifi_mask = _ip_field("255.255.255.0")
         form.addRow(_flabel("IP:"), self.wifi_addr)
@@ -199,33 +244,53 @@ class NetworkTab(QWidget):
         return group
 
     def _update_net_visibility(self):
-        on = not self.radio_none.isChecked()
-        self._roadshow_full_box.setVisible(on)
-        for g in self._iface_groups:
-            g.setVisible(on)
+        roadshow = self.radio_roadshow.isChecked()
+        amitcp_ng = self.radio_amitcp_ng.isChecked()
+        miamidx = self.radio_miamidx.isChecked()
+        self._roadshow_full_box.setVisible(roadshow)
+        self._miamidx_keys_box.setVisible(miamidx)
+        self._miamidx_note.setVisible(miamidx)
+        self._ethernet_group.setVisible(roadshow or amitcp_ng)
+        self._wifi_group.setVisible(roadshow or amitcp_ng or miamidx)
+        self._routing_group.setVisible(roadshow or amitcp_ng)
+        self._update_static_visible()
 
     def _update_static_visible(self):
         eth_on = self.eth_static.isChecked()
         self._eth_form.setRowVisible(self.eth_addr, eth_on)
         self._eth_form.setRowVisible(self.eth_mask, eth_on)
-        wifi_on = self.wifi_static.isChecked()
+        wifi_address_on = self.radio_roadshow.isChecked() or self.radio_amitcp_ng.isChecked()
+        self._wifi_form.setRowVisible(self._wifi_mode_row, wifi_address_on)
+        wifi_on = wifi_address_on and self.wifi_static.isChecked()
         self._wifi_form.setRowVisible(self.wifi_addr, wifi_on)
         self._wifi_form.setRowVisible(self.wifi_mask, wifi_on)
 
     # --- network stack ---
     def get_network_stack(self) -> NetworkStack | None:
-        return None if self.radio_none.isChecked() else NetworkStack.ROADSHOW
+        if self.radio_none.isChecked():
+            return None
+        if self.radio_miamidx.isChecked():
+            return NetworkStack.MIAMIDX
+        if self.radio_amitcp_ng.isChecked():
+            return NetworkStack.AMITCP_NG
+        return NetworkStack.ROADSHOW
 
     def set_network_stack(self, stack: NetworkStack | None):
         if stack is None:
             self.radio_none.setChecked(True)
+        elif stack == NetworkStack.AMITCP_NG:
+            self.radio_amitcp_ng.setChecked(True)
+        elif stack == NetworkStack.MIAMIDX:
+            self.radio_miamidx.setChecked(True)
         else:
             self.radio_roadshow.setChecked(True)
+        self._update_net_visibility()
 
     def extra_package_entries(self) -> list[dict]:
         """the network-stack package the tree doesn't carry"""
-        if self.get_network_stack() is not None:
-            return [{"name": "roadshow", "enabled": True}]
+        stack = self.get_network_stack()
+        if stack is not None:
+            return [{"name": stack.value.lower(), "enabled": True}]
         return []
 
     # --- per-interface settings ---
@@ -304,6 +369,22 @@ class NetworkTab(QWidget):
     def set_roadshow_archive(self, archive: Path | str | None):
         self.roadshow_archive_edit.setText(str(archive) if archive else "")
         self._refresh_roadshow_status()
+
+    # --- MiamiDX keys ---
+    def _browse_miamidx_key_directory(self):
+        from PySide6.QtWidgets import QFileDialog
+
+        start = self.miamidx_key_directory_edit.text() or str(Path.home())
+        path = QFileDialog.getExistingDirectory(self, "Select MiamiDX keys folder", start)
+        if path:
+            self.miamidx_key_directory_edit.setText(path)
+
+    def get_miamidx_key_directory(self) -> Path | None:
+        text = self.miamidx_key_directory_edit.text().strip()
+        return Path(text) if text else None
+
+    def set_miamidx_key_directory(self, directory: Path | str | None):
+        self.miamidx_key_directory_edit.setText(str(directory) if directory else "")
 
     # --- wifi creds ---
     def get_wifi_config(self) -> WifiConfig | None:

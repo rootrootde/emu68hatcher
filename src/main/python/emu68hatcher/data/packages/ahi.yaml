@@ -9,8 +9,6 @@ versions:
 - 3.2.3
 - '3.9'
 mandatory: true
-requires:
-- wbrun
 download:
   source: aminet
   path: driver/audio/ahiusr_4.18.lha

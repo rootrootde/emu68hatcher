@@ -5,7 +5,7 @@
 #                  (fallback to bare `<os>` key, e.g. 7zr-bootstrap/windows)
 #   direct-url   - single url regardless of host platform
 #
-# hst-imager / hst-amiga are pinned to an exact github release. bump the
+# hst-imager is pinned to an exact github release. bump the
 # version + commit hash in the filenames below to upgrade.
 
 7zip:
@@ -65,28 +65,6 @@ hst-imager:
     windows-arm64:
       url: "https://github.com/henrikstengaard/hst-imager/releases/download/1.6.616/hst-imager_v1.6.616-a91fa4c_console_windows_arm64.zip"
       hash: "02598bbdc00dffa01b2e39248a475f8b"
-
-hst-amiga:
-  type: platform-url
-  platforms:
-    darwin-arm64:
-      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_macos_arm64.zip"
-      hash: "0b764782cf9c907314bc13fba776d516"
-    darwin-x64:
-      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_macos_x64.zip"
-      hash: "7f68413784c4a64005612518bdf90228"
-    linux-x64:
-      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_linux_x64.zip"
-      hash: "3afa1ede55f68b3e5b610a214cd69660"
-    linux-arm64:
-      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_linux_arm64.zip"
-      hash: "5f559e876be3b16fff1f677f5a037e91"
-    windows-x64:
-      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_windows_x64.zip"
-      hash: "e20933f8eb59375da747272cc236aac4"
-    windows-arm64:
-      url: "https://github.com/henrikstengaard/hst-amiga/releases/download/0.6.236/hst-amiga_v0.6.236-be46479_console_windows_arm64.zip"
-      hash: "33ad558c0aa1bdd2415736ff665a41c0"
 
 pfs3aio:
   type: direct-url

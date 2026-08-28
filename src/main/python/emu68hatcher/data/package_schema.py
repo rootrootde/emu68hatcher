@@ -2,7 +2,9 @@
 
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+_IDENTIFIER_PATTERN = r"^[a-z][a-z0-9_]*$"
 
 
 class SourceType(str, Enum):
@@ -51,13 +53,14 @@ class InstallRule(BaseModel):
     # source pattern (glob) within extracted archive
     source: str = Field(alias="from")
 
-    # destination path on Amiga filesystem (relative to System:)
+    # destination path below the configured boot partition's staging root
     dest: str = Field(alias="to")
 
     # options
     recursive: bool = False
     rename: str | None = None  # rename file on install
     stack: int | None = None  # patch a .info icon's do_StackSize (workbench launch stack)
+    xor_byte: int | None = Field(default=None, alias="xor", ge=0, le=255)
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -72,12 +75,13 @@ class RelocateRule(BaseModel):
 
 
 class MenuEntry(BaseModel):
-    """Tools-menu launcher for an installed app (WB 3.2.x only)"""
+    """workbench menu launcher for an installed app."""
 
-    title: str  # label shown in the Workbench Tools menu
+    title: str  # label shown in the Workbench menu
     path: str  # executable path relative to SYS:, e.g. "Programs/IBrowse/IBrowse"
-    submenu: str | None = None  # group under a Tools submenu of this name (None = top level)
-    wb_launch: bool = False  # launch via WBRun (workbench mode), not CLI run
+    menu: str = "Apps"  # Workbench menu title
+    wb_launch: bool = False  # launch in Workbench mode instead of from the CLI
+    selected_icons: bool = False  # pass selected Workbench icons to the launcher
 
 
 class ScriptModification(BaseModel):
@@ -94,7 +98,7 @@ class Package(BaseModel):
     """complete package definition"""
 
     # identity
-    name: str  # internal identifier (lowercase, no spaces)
+    name: str = Field(pattern=_IDENTIFIER_PATTERN)
     friendly_name: str  # display name in UI
     group: str  # category group (System, Applications, Internet, etc.)
     description: str  # tooltip description
@@ -132,11 +136,25 @@ class Package(BaseModel):
     # script modifications
     scripts: list[ScriptModification] = Field(default_factory=list)
 
-    # optional Workbench Tools-menu launcher (injected on WB 3.2.x only)
+    # optional Workbench menu launchers
     menu_entry: MenuEntry | None = None
+    menu_entries: list[MenuEntry] = Field(default_factory=list)
+
+    @field_validator("requires", "recommends", "conflicts", "provides")
+    @classmethod
+    def _validate_tokens(cls, values: list[str]) -> list[str]:
+        import re
+
+        invalid = [value for value in values if not re.fullmatch(_IDENTIFIER_PATTERN, value)]
+        if invalid:
+            raise ValueError(f"tokens must be lowercase identifiers: {invalid}")
+        normalized = [value.lower() for value in values]
+        if len(normalized) != len(set(normalized)):
+            raise ValueError("capability list contains duplicate tokens")
+        return values
 
     def matches_version(self, kickstart_version: str) -> bool:
-        """check if package is compatible wiht a Kickstart version"""
+        """check if package is compatible with a Kickstart version"""
         if not self.versions:
             return True  # no version restriction
         return kickstart_version in self.versions
@@ -163,9 +181,13 @@ class Bundle(BaseModel):
 # groups for organizing packages in UI
 PACKAGE_GROUPS = [
     "System",
+    "Drivers",
+    "RTG",
+    "Commodities",
     "Applications",
     "Utilities",
     "Internet",
+    "Network",
     "Development",
     "Games",
     "Locale",
@@ -186,7 +208,7 @@ def _group_rank(pkg: Package) -> int:
 
 
 class ADFRule(BaseModel):
-    """rule for extracting files form an ADF disk image"""
+    """rule for extracting files from an ADF disk image"""
 
     # source ADF identifier (e.g., "Workbench3_1", "Storage3_2")
     adf: str

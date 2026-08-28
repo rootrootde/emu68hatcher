@@ -161,6 +161,19 @@ def resolve_staging_path(base: Path, rel_path: str) -> Path:
     return result
 
 
+def resolve_source_path(base: Path, rel_path: str) -> Path | None:
+    """Resolve every component case-insensitively, returning None on a miss."""
+    current = base
+    for part in rel_path.split("/"):
+        if not part:
+            continue
+        matched = ci_match_child(current, part)
+        if matched is None:
+            return None
+        current /= matched
+    return current
+
+
 @dataclass
 class FileMapping:
     """mapping of source files to destinations on Amiga"""
@@ -258,7 +271,7 @@ def prepare_staging_directory(
         device_dirs[device] = device_dir
 
         # scaffold only on the boot partition; Work/Data etc start empty so they
-        # dont end up with stray /S /Devs/ /Libs/ folders cluttering the volume
+        # keep boot-only system drawers off data volumes
         if (
             device.upper() not in NON_AMIGA_DEVICES
             and boot_device is not None

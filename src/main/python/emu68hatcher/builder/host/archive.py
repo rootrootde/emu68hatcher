@@ -9,7 +9,13 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from emu68hatcher.utils.host_tools import find_7z, find_hst_imager, run_7z, run_hst_extract
+from emu68hatcher.utils.host_tools import (
+    find_7z,
+    find_hst_imager,
+    list_7z_member_sizes,
+    run_7z,
+    run_hst_extract,
+)
 from emu68hatcher.utils.paths import get_extracted_dir
 
 
@@ -211,6 +217,7 @@ def _extract_7z(
     seven_z = find_7z()
     if not seven_z:
         raise RuntimeError("7z not found. Please install p7zip.")
+    _check_external_archive_size(seven_z, archive_path)
 
     result = run_7z(seven_z, ["x", "-y", f"-o{output_dir}", str(archive_path)])
     if result.returncode != 0:
@@ -227,6 +234,10 @@ def _extract_lha(
     """extract LHA/LZH - hst-imager first (preserves Latin-1), 7z fallback (e.g. Picasso96.lha)"""
     output_dir.mkdir(parents=True, exist_ok=True)
     errors: list[str] = []
+    seven_z = find_7z()
+    if not seven_z:
+        raise RuntimeError("7z not found. Cannot verify the LHA expanded size.")
+    _check_external_archive_size(seven_z, archive_path)
 
     hst = find_hst_imager()
     if hst:
@@ -246,18 +257,24 @@ def _extract_lha(
     else:
         errors.append("hst-imager not found")
 
-    seven_z = find_7z()
-    if seven_z:
-        result = run_7z(seven_z, ["x", "-y", f"-o{output_dir}", str(archive_path)])
-        if result.returncode == 0:
-            return sum(1 for _ in output_dir.rglob("*") if _.is_file())
-        errors.append(
-            f"{seven_z} exit={result.returncode}: {(result.stderr or result.stdout).strip()[:300]}"
-        )
-    else:
-        errors.append("7z not found")
+    result = run_7z(seven_z, ["x", "-y", f"-o{output_dir}", str(archive_path)])
+    if result.returncode == 0:
+        return sum(1 for _ in output_dir.rglob("*") if _.is_file())
+    errors.append(
+        f"{seven_z} exit={result.returncode}: {(result.stderr or result.stdout).strip()[:300]}"
+    )
 
     raise RuntimeError("LHA extraction failed (" + "; ".join(errors) + ")")
+
+
+def _check_external_archive_size(
+    seven_z: Path,
+    archive_path: Path,
+    max_bytes: int = DEFAULT_MAX_EXTRACTED_BYTES,
+) -> None:
+    total = sum(list_7z_member_sizes(seven_z, archive_path))
+    if total > max_bytes:
+        raise RuntimeError(f"archive would exceed {max_bytes} bytes uncompressed")
 
 
 def _extract_tar(

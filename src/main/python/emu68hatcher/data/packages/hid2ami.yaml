@@ -1,0 +1,32 @@
+name: hid2ami
+friendly_name: HID2AMI Mouse Wheel Driver
+group: Drivers
+description: 'mouse wheel support (firmware 3.0.0+)'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+default: false
+download:
+  source: web
+  url: https://raw.githubusercontent.com/EmberHeavyIndustries/HID2AMI/faf72c40f998a1fadbb46edbc19f1a4def65b4c7/Firmware/Hid2Ami.lha
+  hash: A502D5E9F4AE2E71F036157C441EF92F
+  filename: Hid2Ami.lha
+install:
+- from: Hid2Ami/HID2AmiDriver
+  to: C/
+
+# the vendor Installer emits Run" <>NIL:" (InstallerGen escaping artifact) and
+# wrong filename case; the script below uses the corrected form
+scripts:
+- name: HID2AMI Mouse Wheel
+  content: |
+    ;BEGIN HID2AMI
+    If $System EQ "PiStorm"
+      If Exists C:HID2AmiDriver
+        Run <>NIL: C:HID2AmiDriver
+      EndIf
+    EndIf
+    ;END HID2AMI

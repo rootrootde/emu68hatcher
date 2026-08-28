@@ -17,5 +17,5 @@ picasso96:
 magicmenu:
   display_name: MagicMenu
   group: Commodities
-  description: "intuition menu enhancer (2.30 base + 2.35 final update)"
+  description: "intuition menu enhancer 3.0"
   default: false

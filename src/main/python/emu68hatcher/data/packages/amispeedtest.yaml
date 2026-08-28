@@ -1,6 +1,6 @@
 name: amispeedtest
 friendly_name: AmiSpeedTest
-group: Applications
+group: Internet
 description: 'internet speed test'
 versions:
 - '3.1'
@@ -9,9 +9,6 @@ versions:
 - 3.2.3
 - '3.9'
 default: true
-# WB-launch tool: needs its icon stack + tooltypes, so the menu entry runs it via WBRun
-requires:
-- wbrun
 download:
   source: aminet
   path: comm/net/AmiSpeedTest.lha
@@ -23,5 +20,5 @@ install:
 menu_entry:
   title: AmiSpeedTest
   path: Programs/AmiSpeedTest/AmiSpeedTest
-  submenu: Network
+  menu: Network
   wb_launch: true

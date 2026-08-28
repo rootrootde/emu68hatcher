@@ -1,0 +1,19 @@
+name: toolsdaemon_patch
+friendly_name: ToolsDaemon 2.2 Patch
+group: System
+description: 'ToolsDaemon 2.2 binary updates'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+mandatory: true
+requires:
+- toolsdaemon
+download:
+  source: aminet
+  path: util/boot/ToolsDaemon22.lha
+  hash: 79ef8ec1c9d6eff110dd838df9c6863e
+  filename: ToolsDaemon22.lha
+install: []

@@ -1,28 +1,43 @@
-"""configure phase 1: generate/inject startup scripts and Tools menu entries"""
+"""configure startup scripts and Workbench menus"""
 
 from __future__ import annotations
 
-import re
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from emu68hatcher.builder.errors import BuildError
+from emu68hatcher.builder.staging.files import read_info_tooltypes, write_info_tooltypes
 from emu68hatcher.builder.staging.scripts.generator import generate_shell_startup
 from emu68hatcher.builder.staging.scripts.injector import (
     apply_package_scripts,
     apply_standard_injections,
     write_amiga_script,
 )
+from emu68hatcher.builder.staging.toolsdaemon import patch_toolsdaemon
+from emu68hatcher.config.schema import NetworkStack
 from emu68hatcher.data.package_loader import get_local_packages_dir, get_package_by_name
 
 if TYPE_CHECKING:
     from emu68hatcher.builder.workflow import BuildWorkflow
 
-_MENUTOOLS_EXIT_RE = re.compile(r"(?m)^EXIT\b")
+_MENU_INDENT = "        "
+# lower priorities keep ToolsPrefs before AddItem after AutoArrangeIcons (0)
+_TOOLSDAEMON_STARTPRI = -1
+_ADDITEM_STARTPRI = -2
+
+
+@dataclass(frozen=True)
+class _MenuLauncher:
+    menu: str
+    title: str
+    command: str
+    wb_launch: bool = False
+    selected_icons: bool = False
 
 
 def _menu_cmd(script: str) -> str:
-    """build the rx invocation injected into MenuTools - /WAIT pins the diagnostic window open"""
+    """Build an rx invocation whose diagnostic window stays open."""
     return f"SYS:Rexxc/rx >CON:0/20/680/400/{script}/AUTO/WAIT s:{script}.rexx"
 
 
@@ -33,12 +48,15 @@ def _connect_cmd(con_title: str, iface: str) -> str:
     )
 
 
-# System->Prefs submenu launchers (WB 3.2 nests 3 deep via menuclass; 3.1/3.9 have no MenuTools yet).
+def _miamidx_cmd(con_title: str, action: str, *, close: bool) -> str:
+    window = "CLOSE" if close else "WAIT"
+    return f"SYS:Rexxc/rx >CON:0/20/680/400/{con_title}/AUTO/{window} S:MiamiNetwork.rexx {action}"
+
+
+# System->Prefs submenu launchers.
 # requires: package name(s) that must be installed for the editor to exist; empty = stock editor.
 # p96_modern: editor exists only in the user-supplied modern Picasso96 archive, not the aminet one.
-# wb_launch: launch via WBRun so the editor gets its icon stack + tooltypes - the MUI/GUI editors
-# warn or fail on the default 4096-byte CLI stack; stock OS editors are fine on plain run.
-_PREFS_SUBMENU = "System\\Prefs"
+# wb_launch: Workbench mode keeps the icon stack and tooltypes for editors that need them.
 _PREFS_ENTRIES: tuple[dict, ...] = (
     {"title": "AHI", "exe": "Prefs/AHI", "requires": ("ahi",), "wb_launch": True},
     {"title": "DefaultIcons", "exe": "Prefs/DefaultIcons"},
@@ -49,7 +67,7 @@ _PREFS_ENTRIES: tuple[dict, ...] = (
     {
         "title": "MagicMenu",
         "exe": "Prefs/MagicMenuPrefs",
-        "requires": ("magicmenu", "magicmenu235"),
+        "requires": ("magicmenu",),
         "wb_launch": True,
     },
     {"title": "MUI", "exe": "Programs/MUI/MUI", "requires": ("mui38", "mui5"), "wb_launch": True},
@@ -80,6 +98,7 @@ def configure_scripts(
     boot_staging: Path,
     s_dir: Path,
     all_packages: list[str],
+    extracted_paths: dict[str, Path],
 ) -> None:
     """inject into or generate Startup-Sequence, User-Startup, Shell-Startup, FirstBoot"""
     workflow._update_state(progress=10.0)
@@ -90,17 +109,22 @@ def configure_scripts(
         local_packages_dir = get_local_packages_dir()
         content_base = local_packages_dir / "System"
 
-        injection_count = apply_standard_injections(
+        injection_results = apply_standard_injections(
             staging_dir=boot_staging,
             content_base_path=content_base,
         )
+        failures = [result.error for result in injection_results if result.error]
+        if failures:
+            details = "; ".join(failures)
+            raise BuildError(f"Startup-Sequence update failed: {details}")
+        injection_count = sum(result.changed for result in injection_results)
         workflow.logger.info(f"Applied {injection_count} script injections to Startup-Sequence")
 
         verify_content = startup_path.read_text(encoding="iso-8859-1", errors="replace")
         if "FirstBoot" in verify_content and "RexxMast" in verify_content:
             workflow.logger.debug("Startup-Sequence injection verified OK")
         else:
-            workflow.logger.warning("Startup-Sequence may be missing required injections")
+            raise BuildError("Startup-Sequence is missing required FirstBoot or RexxMast setup")
     else:
         raise BuildError(
             "No Startup-Sequence found in staging. "
@@ -131,119 +155,263 @@ def configure_scripts(
     workflow.logger.info(f"Generated Shell-Startup ({len(shell_startup)} bytes)")
 
     workflow._update_state(progress=40.0)
-    _inject_menutools_entries(workflow, boot_staging, all_packages)
+    _configure_toolsdaemon(workflow, boot_staging, s_dir, all_packages, extracted_paths)
 
 
-def _compose_menu_title(submenu: str, title: str) -> str:
-    """\\Sub\\Item nests under a Tools submenu; bare title stays at the Tools level"""
-    return f"\\{submenu}\\{title}" if submenu else title
-
-
-def _menu_add_line(name: str, menu_title: str, cmd: str | None) -> str:
-    """one MENU ADD line; menu_title may be a backslash path (\\Sub\\Item) for a Tools submenu"""
-    if cmd is None:
-        # a "~" title renders as a separator bar; needs a unique NAME and an empty CMD
-        return f'MENU ADD NAME {name} TITLE \'"{menu_title}"\' CMD ""'
-    return f"MENU ADD NAME {name} TITLE '\"{menu_title}\"' CMD \"'address command ''{cmd}'''\""
-
-
-def _collect_app_entries(all_packages: list[str]) -> list[tuple[str, str, str, str]]:
-    """(submenu, title, name, cmd) for installed packages that declare a menu_entry"""
-    entries: list[tuple[str, str, str, str]] = []
+def _collect_app_entries(all_packages: list[str]) -> list[_MenuLauncher]:
+    """Collect launchers declared by installed packages."""
+    entries: list[_MenuLauncher] = []
     for name in all_packages:
         pkg = get_package_by_name(name)
-        if pkg and pkg.menu_entry:
-            me = pkg.menu_entry
-            # WBRun starts the tool in workbench mode (icon stack + tooltypes) for apps that
-            # need it (e.g. AmiSpeedTest); plain GUI apps just get a detached CLI run
-            launch = "WBRun" if me.wb_launch else "run"
-            entries.append((me.submenu or "", me.title, name, f"{launch} >NIL: SYS:{me.path}"))
+        if not pkg:
+            continue
+        menu_entries = ([pkg.menu_entry] if pkg.menu_entry else []) + pkg.menu_entries
+        for me in menu_entries:
+            command = f"SYS:{me.path}" if me.wb_launch else f"Run >NIL: SYS:{me.path}"
+            entries.append(
+                _MenuLauncher(
+                    menu=me.menu,
+                    title=me.title,
+                    command=command,
+                    wb_launch=me.wb_launch,
+                    selected_icons=me.selected_icons,
+                )
+            )
     return entries
 
 
-def _build_menutools_entries(
-    has_network: bool, all_packages: list[str], p96_modern: bool = False
-) -> list[str]:
-    """build MENU ADD lines; append order is display order, grouped per root menu"""
-    # all adds sharing a root menu must stay adjacent in the script - non-adjacent
-    # adds can spawn a duplicate submenu. lines are therefore collected per root
-    # menu (insertion-ordered) and flattened at the end.
-    menus: dict[str, list[str]] = {}
-
-    def add(submenu: str, name: str, title: str, cmd: str | None) -> None:
-        root = submenu.split("\\")[0]
-        line = _menu_add_line(name, _compose_menu_title(submenu, title), cmd)
-        menus.setdefault(root, []).append(line)
-
-    if has_network:
-        add("Network", "NetConfig", "Config", _menu_cmd("NetworkConfig"))
-        add("Network", "NetConnectWifi", "Connect WiFi", _connect_cmd("Connect-WiFi", "WIFI"))
-        add(
-            "Network",
-            "NetConnectEth",
-            "Connect Ethernet",
-            _connect_cmd("Connect-Ethernet", "ETHERNET"),
+def _network_entries(network_stack: NetworkStack | None) -> list[_MenuLauncher]:
+    entries: list[_MenuLauncher] = []
+    if network_stack in (NetworkStack.ROADSHOW, NetworkStack.AMITCP_NG):
+        entries.extend(
+            (
+                _MenuLauncher("Network", "Config", _menu_cmd("NetworkConfig")),
+                _MenuLauncher("Network", "Connect WiFi", _connect_cmd("Connect-WiFi", "WIFI")),
+                _MenuLauncher(
+                    "Network",
+                    "Connect Ethernet",
+                    _connect_cmd("Connect-Ethernet", "ETHERNET"),
+                ),
+            )
         )
+    elif network_stack == NetworkStack.MIAMIDX:
+        entries.extend(
+            (
+                _MenuLauncher("Network", "MiamiDX", _miamidx_cmd("MiamiDX", "CONFIG", close=False)),
+                _MenuLauncher(
+                    "Network",
+                    "Connect WiFi",
+                    _miamidx_cmd("Connect-WiFi", "ONLINE WIFIPI", close=True),
+                ),
+                _MenuLauncher(
+                    "Network",
+                    "Connect Ethernet",
+                    _miamidx_cmd("Connect-Ethernet", "ONLINE GENET", close=True),
+                ),
+                _MenuLauncher(
+                    "Network",
+                    "Disconnect",
+                    _miamidx_cmd("Disconnect", "OFFLINE", close=True),
+                ),
+            )
+        )
+    return entries
 
-    for sub, title, name, cmd in sorted(
-        _collect_app_entries(all_packages), key=lambda e: (e[0].lower(), e[1].lower())
-    ):
-        add(sub, name, title, cmd)
 
-    for entry in _PREFS_ENTRIES:  # tuple order = menu order
+def _prefs_entries(all_packages: list[str], p96_modern: bool) -> list[_MenuLauncher]:
+    entries: list[_MenuLauncher] = []
+    installed = set(all_packages)
+    for entry in _PREFS_ENTRIES:
         requires = entry.get("requires")
-        if requires and not (set(all_packages) & set(requires)):
+        if requires and not (installed & set(requires)):
             continue
         if entry.get("p96_modern") and not p96_modern:
             continue
-        launch = "WBRun" if entry.get("wb_launch") else "run"
-        add(
-            _PREFS_SUBMENU,
-            f"Prefs{entry['title']}",
-            entry["title"],
-            f"{launch} >NIL: SYS:{entry['exe']}",
+        wb_launch = bool(entry.get("wb_launch"))
+        path = f"SYS:{entry['exe']}"
+        entries.append(
+            _MenuLauncher(
+                menu="System",
+                title=entry["title"],
+                command=path if wb_launch else f"Run >NIL: {path}",
+                wb_launch=wb_launch,
+            )
         )
-    add(_PREFS_SUBMENU, "PrefsSep1", "~", None)
-    add(_PREFS_SUBMENU, "PrefsOpen", "Open Prefs", "SYS:Rexxc/rx >NIL: s:Win SYS:Prefs")
-
-    # reboot is a mandatory package, so C:Reboot is always present
-    add("System", "SysSep1", "~", None)
-    add("System", "SysReboot", "Reboot", "C:Reboot")
-
-    # entries without a submenu sit at the Tools level and go last
-    roots = sorted(menus, key=lambda r: r == "")
-    return [line for root in roots for line in menus[root]]
+    return entries
 
 
-def _inject_menutools_entries(
-    workflow: BuildWorkflow, boot_staging: Path, all_packages: list[str]
-) -> None:
-    """add Hatcher entries to WB 3.2.x WBStartup/MenuTools (before EXIT)"""
-    menutools_path = boot_staging / "WBStartup" / "MenuTools"
-    if not menutools_path.exists():
-        workflow.logger.debug("No WBStartup/MenuTools script, skipping menu injection")
-        return
-
-    has_network = workflow.config.network_stack is not None
-    # P96Prefs ships only in the modern user-supplied Picasso96 archive
-    p96_modern = workflow.config.display.picasso96_archive is not None
-    lines = _build_menutools_entries(has_network, all_packages, p96_modern)
-    if not lines:
-        workflow.logger.debug("No menu entries to inject")
-        return
-
-    block = "\n" + "\n".join(lines) + "\n"
-    content = menutools_path.read_text(encoding="iso-8859-1", errors="replace")
-
-    # match start-of-line EXIT only - matching anywhere also hit "EXIT" inside comments/strings.
-    # callable repl: submenu titles contain backslashes (\Network\Config) that a string repl
-    # would parse as regex escapes ("bad escape \N")
-    new_content, count = _MENUTOOLS_EXIT_RE.subn(lambda _m: block + "\nEXIT", content, count=1)
-    if count:
-        content = new_content
-        action = "Injected"
+def _append_launcher(lines: list[str], entry: _MenuLauncher, keyword: str = "ITEM") -> None:
+    lines.append(f"{_MENU_INDENT}{keyword} {entry.title}")
+    selected = " []" if entry.selected_icons else ""
+    if entry.wb_launch:
+        lines.append(f"{_MENU_INDENT}(WB) {entry.command}{selected}")
     else:
-        content += block
-        action = "Appended"
-    menutools_path.write_bytes(content.encode("iso-8859-1"))
-    workflow.logger.info(f"{action} {len(lines)} menu entries into MenuTools")
+        lines.append(f"{_MENU_INDENT}(CLI) 8192 {entry.command}{selected}")
+
+
+def _build_toolsdaemon_menu(
+    network_stack: NetworkStack | None,
+    all_packages: list[str],
+    p96_modern: bool = False,
+    kickstart_version: str | None = None,
+) -> list[str]:
+    """Build the complete ToolsDaemon.menu file."""
+    network_actions = _network_entries(network_stack)
+    package_entries = _collect_app_entries(all_packages)
+    package_menus: dict[str, list[_MenuLauncher]] = {}
+    for entry in sorted(package_entries, key=lambda item: (item.menu.lower(), item.title.lower())):
+        package_menus.setdefault(entry.menu, []).append(entry)
+
+    lines: list[str] = []
+    package_menus.pop("Tools", None)
+
+    network_apps = package_menus.pop("Network", [])
+    if network_actions or network_apps:
+        lines.append("TITLE Network")
+        for entry in network_actions:
+            _append_launcher(lines, entry)
+        if network_actions and network_apps:
+            lines.append(f"{_MENU_INDENT}ITEMBAR")
+        for entry in network_apps:
+            _append_launcher(lines, entry)
+
+    apps = package_menus.pop("Apps", [])
+    if apps:
+        lines.append("TITLE Apps")
+        for entry in apps:
+            _append_launcher(lines, entry)
+
+    system_apps = package_menus.pop("System", [])
+    lines.append("TITLE System")
+    for entry in system_apps:
+        _append_launcher(lines, entry)
+    if system_apps:
+        lines.append(f"{_MENU_INDENT}ITEMBAR")
+
+    lines.append(f"{_MENU_INDENT}ITEM Prefs")
+    for entry in _prefs_entries(all_packages, p96_modern):
+        _append_launcher(lines, entry, keyword="SUB")
+    lines.append(f"{_MENU_INDENT}SUBBAR")
+    open_prefs = (
+        "C:WBRun SYS:Prefs" if kickstart_version == "3.9" else "SYS:Rexxc/rx >NIL: S:Win SYS:Prefs"
+    )
+    _append_launcher(
+        lines,
+        _MenuLauncher("System", "Open Prefs", open_prefs),
+        keyword="SUB",
+    )
+    lines.append(f"{_MENU_INDENT}ITEMBAR")
+    _append_launcher(lines, _MenuLauncher("System", "Reboot", "C:Reboot"))
+
+    for menu in sorted(package_menus, key=str.lower):
+        lines.append(f"TITLE {menu}")
+        for entry in package_menus[menu]:
+            _append_launcher(lines, entry)
+
+    lines.append("END")
+    return lines
+
+
+def _configure_native_tools_menu(
+    boot_staging: Path,
+    s_dir: Path,
+    all_packages: list[str],
+) -> int:
+    """add package launchers to Workbench's native Tools menu."""
+    entries = sorted(
+        (entry for entry in _collect_app_entries(all_packages) if entry.menu == "Tools"),
+        key=lambda entry: entry.title.lower(),
+    )
+    if not entries:
+        return 0
+
+    info_path = boot_staging / "WBStartup" / "AddItem.info"
+    if not info_path.is_file():
+        raise BuildError("Native Tools menu entries require WBStartup/AddItem.info")
+
+    tooltypes = [
+        "DONOTWAIT",
+        f"STARTPRI={_ADDITEM_STARTPRI}",
+        "ADDITEM=----------------, ,NIL:",
+    ]
+    helper_dir = s_dir / "AppMenu"
+    for index, entry in enumerate(entries, start=1):
+        if "," in entry.title:
+            raise BuildError(f"Tools menu title contains a comma: {entry.title}")
+
+        launch = f"C:WBRun {entry.command}" if entry.wb_launch else entry.command
+        if entry.selected_icons:
+            helper_name = f"Tool{index}.rexx"
+            write_amiga_script(
+                helper_dir / helper_name,
+                [
+                    "/* Workbench Tools launcher */",
+                    "OPTIONS RESULTS",
+                    "PARSE ARG commandline",
+                    "commandline = STRIP(commandline, 'B')",
+                    "IF LEFT(commandline, 1) = '\"' THEN PARSE VAR commandline '\"' target '\"'",
+                    "ELSE PARSE VAR commandline target .",
+                    f"launch = '{launch}'",
+                    "IF target ~= 'SYS:' THEN launch = launch || ' \"' || target || '\"'",
+                    "ADDRESS COMMAND launch",
+                    "EXIT RC",
+                ],
+            )
+            launch = f'SYS:Rexxc/rx >NIL: S:AppMenu/{helper_name} "%s"'
+
+        if "," in launch:
+            raise BuildError(f"Tools menu command contains a comma: {entry.title}")
+        tooltypes.append(f"ADDITEM={entry.title},{launch},NIL:")
+
+    write_info_tooltypes(info_path, tooltypes)
+    return len(entries)
+
+
+def _configure_toolsdaemon(
+    workflow: BuildWorkflow,
+    boot_staging: Path,
+    s_dir: Path,
+    all_packages: list[str],
+    extracted_paths: dict[str, Path],
+) -> None:
+    """configure custom menus and native Tools entries."""
+    workflow._milestone("Installing ToolsDaemon 2.2 menus")
+    patched = patch_toolsdaemon(boot_staging, extracted_paths)
+    workflow.logger.info(f"Patched ToolsDaemon 2.2 files: {', '.join(patched)}")
+
+    toolsdaemon_info = boot_staging / "WBStartup" / "ToolsDaemon.info"
+    tooltypes = [
+        entry
+        for entry in read_info_tooltypes(toolsdaemon_info)
+        if not entry.upper().startswith(("STARTPRI=", "WAIT="))
+    ]
+    write_info_tooltypes(
+        toolsdaemon_info,
+        [*tooltypes, f"STARTPRI={_TOOLSDAEMON_STARTPRI}", "WAIT=1"],
+    )
+
+    p96_modern = workflow.config.display.picasso96_archive is not None
+    lines = _build_toolsdaemon_menu(
+        workflow.config.network_stack,
+        all_packages,
+        p96_modern,
+        workflow.config.kickstart.version.value,
+    )
+    write_amiga_script(s_dir / "ToolsDaemon.menu", lines)
+    native_tools = _configure_native_tools_menu(boot_staging, s_dir, all_packages)
+
+    removed = 0
+    for relative_path in (
+        "WBStartup/MenuTools",
+        "WBStartup/MenuTools.info",
+        "WBStartup/Disabled/MenuTools",
+        "WBStartup/Disabled/MenuTools.info",
+    ):
+        path = boot_staging / Path(relative_path)
+        if path.is_file():
+            path.unlink()
+            removed += 1
+    workflow.logger.info(
+        f"Generated S:ToolsDaemon.menu ({len(lines)} lines), {native_tools} native Tools entries; "
+        f"removed {removed} native MenuTools files"
+    )

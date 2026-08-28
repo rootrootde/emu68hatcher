@@ -1,0 +1,33 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Hatcher",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/bin/python",
+      "args": ["-m", "emu68hatcher"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "clear": true, "panel": "dedicated" },
+      "problemMatcher": [],
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      "label": "Test amiga.img",
+      "type": "process",
+      "command": "${workspaceFolder}/test_image_macos.sh",
+      "args": ["${workspaceFolder}/amiga.img"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "clear": true, "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Test amiga.img (reuse)",
+      "type": "process",
+      "command": "${workspaceFolder}/test_image_macos.sh",
+      "args": ["--reuse", "${workspaceFolder}/amiga.img"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "clear": true, "panel": "dedicated" },
+      "problemMatcher": []
+    }
+  ]
+}

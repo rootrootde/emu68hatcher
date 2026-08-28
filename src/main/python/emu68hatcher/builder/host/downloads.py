@@ -70,6 +70,7 @@ class DownloadManager:
         # latest failure reason -> DownloadResult.error
         self._last_error: str | None = None
         self._last_error_permanent: bool = False
+        self._last_download_url: str | None = None
 
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.work_dir.mkdir(parents=True, exist_ok=True)
@@ -96,16 +97,41 @@ class DownloadManager:
             return self.cache_dir / pkg_name / filename
         return self.cache_dir / filename
 
+    @staticmethod
+    def _origin_path(cached: Path) -> Path:
+        return cached.with_suffix(cached.suffix + ".url")
+
+    def _discard_cache_entry(self, cached: Path) -> None:
+        cached.unlink(missing_ok=True)
+        self._origin_path(cached).unlink(missing_ok=True)
+
     def _is_cached(
-        self, filename: str, expected_hash: str | None = None, pkg_name: str | None = None
+        self,
+        filename: str,
+        expected_hash: str | None = None,
+        pkg_name: str | None = None,
+        source_url: str | None = None,
     ) -> bool:
-        """check if file is in cache (+optionaly verify hash)"""
+        """check a cached file's hash or source URL"""
         cached = self._get_cached_path(filename, pkg_name)
         if not cached.exists():
             return False
         if expected_hash:
             return verify_hash(cached, expected_hash)
-        return True
+        origin = self._origin_path(cached)
+        try:
+            matches = bool(source_url) and origin.read_text(encoding="utf-8").strip() == source_url
+        except OSError:
+            matches = False
+        if not matches:
+            self._discard_cache_entry(cached)
+        return matches
+
+    def _write_cache_origin(self, cached: Path, source_url: str) -> None:
+        origin = self._origin_path(cached)
+        tmp = origin.with_suffix(origin.suffix + ".tmp")
+        tmp.write_text(source_url + "\n", encoding="utf-8", newline="\n")
+        tmp.replace(origin)
 
     def _download_file(
         self,
@@ -117,6 +143,7 @@ class DownloadManager:
         """download with retries, writes to .tmp file and only renames on success"""
         tmp = dest.with_suffix(dest.suffix + ".tmp")
         self._last_error_permanent = False
+        self._last_download_url = None
         for attempt in range(self.max_retries):
             try:
                 request = urllib.request.Request(url, headers={"User-Agent": "Emu68 Hatcher/1.0"})
@@ -127,6 +154,10 @@ class DownloadManager:
                     chunk_size = 8192
                     with open(tmp, "wb") as f:
                         while True:
+                            if self._cancelled():
+                                self._last_error = "download cancelled"
+                                tmp.unlink(missing_ok=True)
+                                return False
                             chunk = response.read(chunk_size)
                             if not chunk:
                                 break
@@ -134,13 +165,18 @@ class DownloadManager:
                             downloaded += len(chunk)
                             if file_progress:
                                 file_progress(name, downloaded, total)
+                    if total and downloaded != total:
+                        raise OSError(
+                            f"incomplete response: received {downloaded} of {total} bytes"
+                        )
                     tmp.replace(dest)
+                    self._last_download_url = url
                     return True
             except urllib.error.HTTPError as e:
                 self._last_error = f"HTTP {e.code} {e.reason}"
                 self.logger.warning(f"Download failed for {url}: {self._last_error}")
                 tmp.unlink(missing_ok=True)
-                if e.code == 404:  # skip all mirrors on error 404 - somethings off
+                if e.code == 404:  # the same missing path will fail on every Aminet mirror
                     self._last_error_permanent = True
                     return False
                 # 5xx / 429 / etc. - keep retrying
@@ -186,7 +222,7 @@ class DownloadManager:
                 continue
             if expected_hash and not verify_hash(dest, expected_hash):
                 self.logger.warning(f"hash mismatch from {mirror} for {name}; trying next mirror")
-                dest.unlink(missing_ok=True)
+                self._discard_cache_entry(dest)
                 continue
             return True
         return False
@@ -201,7 +237,7 @@ class DownloadManager:
 
         # check cache first; namespace by package name so two pkgs with the same filename never collide
         cached = self._get_cached_path(item.filename, item.name)
-        if self._is_cached(item.filename, item.expected_hash, item.name):
+        if self._is_cached(item.filename, item.expected_hash, item.name, item.url):
             self.logger.info(f"Using cached: {item.name}")
         else:
             # download
@@ -244,12 +280,13 @@ class DownloadManager:
                             self.logger.warning(
                                 f"hash mismatch from backup {mirror} for {item.name}"
                             )
-                            cached.unlink(missing_ok=True)
+                            self._discard_cache_entry(cached)
                             continue
                         success = True
                         break
 
             if not success:
+                self._origin_path(cached).unlink(missing_ok=True)
                 # log exact error if possible
                 detail = self._last_error or "download failed"
                 result.error = f"{detail} ({item.url})"
@@ -272,9 +309,20 @@ class DownloadManager:
                 result.error = (
                     f"Hash mismatch: got {got} ({size} bytes), expected {item.expected_hash}"
                 )
-                cached.unlink()
+                self._discard_cache_entry(cached)
                 self.results[item.name] = result
                 return result
+
+            if item.expected_hash:
+                self._origin_path(cached).unlink(missing_ok=True)
+            else:
+                try:
+                    self._write_cache_origin(cached, self._last_download_url or item.url)
+                except OSError as e:
+                    self._discard_cache_entry(cached)
+                    result.error = f"Could not record cache origin: {e}"
+                    self.results[item.name] = result
+                    return result
 
         result.success = True
         result.path = cached

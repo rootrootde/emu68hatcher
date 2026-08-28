@@ -115,11 +115,13 @@ def download_7zip(force: bool = False, progress_callback=None) -> Path | None:
         logger.info(f"7-Zip already installed at {target_path}")
         return target_path
 
-    # prefer system wide 7zip installation if available
-    system_7z = shutil.which("7z") or shutil.which("7zz") or shutil.which("7za")
+    # prefer a system-wide install; the acceptable-names policy lives in _TOOL_NAMES
+    from emu68hatcher.utils.host_tools import find_7z
+
+    system_7z = find_7z()
     if system_7z:
         logger.info(f"7-Zip found in system: {system_7z}")
-        return Path(system_7z)
+        return system_7z
 
     dl_info = resolve_tool_download("7zip")
     if not dl_info or not dl_info.get("url"):
@@ -239,7 +241,6 @@ def _exe_suffix() -> str:
 # display labels
 TOOL_LABELS = {
     "hst-imager": "HST-Imager",
-    "hst-amiga": "HST-Amiga",
     "7z": "7-Zip",
 }
 
@@ -249,7 +250,7 @@ TOOL_LABELS = {
 def _tool_target_path(tool_name: str) -> Path | None:
     """path our downloader installs 'tool_name' to inside the tools dir"""
     suf = _exe_suffix()
-    names = {"hst-imager": f"hst-imager{suf}", "hst-amiga": f"hst-amiga{suf}"}
+    names = {"hst-imager": f"hst-imager{suf}"}
     name = names.get(tool_name)
     return get_tools_dir() / name if name else None
 
@@ -276,9 +277,9 @@ def _write_stamp(target_path: Path, stamp: str | None) -> None:
 
 def tool_needs_download(tool_name: str) -> bool:
     """True if a pinned tool is missing, or our installed copy is stale vs. tools.yaml"""
-    from emu68hatcher.utils.host_tools import find_7z, find_hst_amiga, find_hst_imager
+    from emu68hatcher.utils.host_tools import find_7z, find_hst_imager
 
-    finders = {"hst-imager": find_hst_imager, "hst-amiga": find_hst_amiga, "7z": find_7z}
+    finders = {"hst-imager": find_hst_imager, "7z": find_7z}
     finder = finders.get(tool_name)
     if finder is None:
         return False
@@ -301,7 +302,7 @@ def download_tool(
     force: bool = False,
     progress_callback=None,
 ) -> Path | None:
-    """download a GitHub-hosted host tool (hst-imager / hst-amiga)"""
+    """download a GitHub-hosted host tool (hst-imager)"""
     tools_dir = get_tools_dir()
     tools_dir.mkdir(parents=True, exist_ok=True)
     suf = _exe_suffix()
@@ -312,10 +313,6 @@ def download_tool(
         "hst-imager": (
             f"hst-imager{suf}",
             [f"hst.imager{suf}", f"Hst.Imager.Console{suf}"],
-        ),
-        "hst-amiga": (
-            f"hst-amiga{suf}",
-            [f"hst.amiga{suf}", f"Hst.Amiga.ConsoleApp{suf}", f"Hst.Amiga{suf}"],
         ),
     }
     if tool_name not in layout:

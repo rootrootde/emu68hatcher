@@ -6,25 +6,12 @@ import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from emu68hatcher.builder.staging.files import ci_match_child, resolve_staging_path
+from emu68hatcher.builder.staging.files import resolve_source_path, resolve_staging_path
 from emu68hatcher.data.package_loader import get_package_by_name
 from emu68hatcher.utils.paths import ensure_dir
 
 if TYPE_CHECKING:
     from emu68hatcher.builder.workflow import BuildWorkflow
-
-
-def _ci_resolve(base: Path, rel: str) -> Path | None:
-    """case-insensitive lookup of rel under base (Amiga FS semantics); None on any miss"""
-    current = base
-    for part in rel.split("/"):
-        if not part:
-            continue
-        matched = ci_match_child(current, part)
-        if matched is None:
-            return None
-        current = current / matched
-    return current
 
 
 def apply_relocations(workflow: BuildWorkflow, boot_staging: Path, all_packages: list[str]) -> int:
@@ -40,7 +27,7 @@ def apply_relocations(workflow: BuildWorkflow, boot_staging: Path, all_packages:
 
 
 def _relocate_one(workflow: BuildWorkflow, boot_staging: Path, source: str, dest: str) -> int:
-    src = _ci_resolve(boot_staging, source)
+    src = resolve_source_path(boot_staging, source)
     if src is None or not src.exists():
         workflow.logger.info(f"relocate: {source} not present, skipping")
         return 0
@@ -51,7 +38,7 @@ def _relocate_one(workflow: BuildWorkflow, boot_staging: Path, source: str, dest
     count = 0
     # move the file and, when present, its sibling .info - the icon travels with the file
     for rel in (source, source + ".info"):
-        item = _ci_resolve(boot_staging, rel)
+        item = resolve_source_path(boot_staging, rel)
         if item is None or not item.exists():
             continue
         target = resolve_staging_path(dest_dir, item.name)

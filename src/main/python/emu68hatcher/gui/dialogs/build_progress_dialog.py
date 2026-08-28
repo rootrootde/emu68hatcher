@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from emu68hatcher.builder.stage_registry import PROGRESS_STAGE_ORDER, STAGE_LABELS
 from emu68hatcher.config.schema import BuildConfig, OutputType
 from emu68hatcher.gui.workers import BuildWorker
 from emu68hatcher.utils.platform import OperatingSystem, get_platform_info
@@ -147,35 +148,8 @@ class BuildProgressDialog(QDialog):
         self.worker.build_finished.connect(self.on_finished)
         self.worker.start()
 
-    _STAGE_NAMES = {
-        "init": "Initializing",
-        "validate": "Validating",
-        "download": "Downloading",
-        "extract": "Extracting",
-        "create_image": "Creating Image",
-        "install_workbench": "Installing Workbench",
-        "install_packages": "Installing Packages",
-        "configure": "Configuring",
-        "install_extras": "Mirroring Extras",
-        "finalize": "Finalizing",
-        "flash": "Flashing to SD card",
-        "complete": "Complete",
-        "failed": "Failed",
-    }
-
-    # the stages that report progress, in pipeline order - drives the overall bar
-    _STAGE_ORDER = [
-        "validate",
-        "download",
-        "extract",
-        "create_image",
-        "install_workbench",
-        "install_packages",
-        "configure",
-        "install_extras",
-        "finalize",
-        "flash",
-    ]
+    _STAGE_NAMES = STAGE_LABELS
+    _STAGE_ORDER = PROGRESS_STAGE_ORDER
 
     @Slot(str, float, str)
     def on_progress(self, stage: str, progress: float, message: str):

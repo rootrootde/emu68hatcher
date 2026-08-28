@@ -1,0 +1,27 @@
+name: network_config
+friendly_name: Network Config
+group: System
+description: 'shared network settings and launchers'
+versions:
+- '3.1'
+- '3.2'
+- 3.2.2.1
+- 3.2.3
+- '3.9'
+download:
+  source: local
+install:
+- from: System/S/NetworkConfig.rexx
+  to: S/
+- from: System/Utilities/Network Config
+  to: Utilities/
+- from: System/Utilities/Network Config.info
+  to: Utilities/
+- from: System/Utilities/Connect WiFi
+  to: Utilities/
+- from: System/Utilities/Connect WiFi.info
+  to: Utilities/
+- from: System/Utilities/Connect Ethernet
+  to: Utilities/
+- from: System/Utilities/Connect Ethernet.info
+  to: Utilities/

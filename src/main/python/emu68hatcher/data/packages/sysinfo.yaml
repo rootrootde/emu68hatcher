@@ -22,4 +22,4 @@ install:
 menu_entry:
   title: SysInfo
   path: Programs/SysInfo/SysInfo
-  submenu: System
+  menu: System

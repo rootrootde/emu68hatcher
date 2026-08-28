@@ -2,27 +2,23 @@
 
 import re
 
-from emu68hatcher.config.defaults import (
+from emu68hatcher.config.constants import (
     CYLINDER_SIZE,
     DEFAULT_BOOT_DEVICE,
     DEFAULT_WORK_DEVICE,
-    FFS_MAX_PARTITION_SIZE,
-    MAX_AMIGA_PARTITIONS,
     MBR_OVERHEAD,
     MBR_SECTOR_SIZE,
-    MIN_AMIGA_PARTITION_SIZE,
-    MIN_BOOT_PARTITION_SIZE,
+    PFS3_MAX_PARTITION_SIZE,
     RDB_OVERHEAD,
 )
-from emu68hatcher.config.schema import (
+from emu68hatcher.config.partition_models import (
     AmigaPartition,
     Filesystem,
     MBRPartition,
     PartitionConfig,
 )
 
-# 101 GB as PFS3 max in partition creation
-PFS3_MAX_CREATE: int = 101 * 1024 * 1024 * 1024
+PFS3_MAX_CREATE: int = PFS3_MAX_PARTITION_SIZE
 
 
 def round_to_cylinder(size: int) -> int:
@@ -93,64 +89,13 @@ def validate_partition_layout(
     amiga_partitions: list[AmigaPartition],
 ) -> list[str]:
     """validate a partition layout. returns list of error strings (empty = valid)"""
-    errors = []
+    from pydantic import ValidationError
 
-    if boot_size < MIN_BOOT_PARTITION_SIZE:
-        errors.append(
-            f"Boot partition must be at least {MIN_BOOT_PARTITION_SIZE // (1024 * 1024)} MB"
-        )
-
-    if boot_size % MBR_SECTOR_SIZE != 0:
-        errors.append("Boot partition size must be MBR sector aligned (512 bytes)")
-
-    if not amiga_partitions:
-        errors.append("At least one Amiga partition is required")
-        return errors
-
-    if len(amiga_partitions) > MAX_AMIGA_PARTITIONS:
-        errors.append(f"Maximum {MAX_AMIGA_PARTITIONS} Amiga partitions allowed")
-
-    bootable_count = sum(1 for p in amiga_partitions if p.bootable)
-    if bootable_count == 0:
-        errors.append("One Amiga partition must be bootable")
-    elif bootable_count > 1:
-        errors.append("Only one Amiga partition can be bootable")
-
-    devices = [p.device for p in amiga_partitions]
-    if len(devices) != len(set(devices)):
-        errors.append("Device names must be unique")
-
-    volumes = [p.volume.lower() for p in amiga_partitions]
-    if len(volumes) != len(set(volumes)):
-        errors.append("Volume names must be unique")
-
-    for p in amiga_partitions:
-        if p.size < MIN_AMIGA_PARTITION_SIZE:
-            errors.append(
-                f"{p.device}: size must be at least {MIN_AMIGA_PARTITION_SIZE // (1024 * 1024)} MB"
-            )
-
-        if p.size % CYLINDER_SIZE != 0:
-            errors.append(f"{p.device}: size must be cylinder aligned ({CYLINDER_SIZE} bytes)")
-
-        if p.filesystem == Filesystem.PFS3 and p.size > PFS3_MAX_CREATE:
-            errors.append(
-                f"{p.device}: PFS3 partition cannot exceed {PFS3_MAX_CREATE // (1024**3)} GB"
-            )
-
-        if p.filesystem == Filesystem.FFS and p.size > FFS_MAX_PARTITION_SIZE:
-            errors.append(
-                f"{p.device}: FFS partition cannot exceed {FFS_MAX_PARTITION_SIZE // (1024**3)} GB"
-            )
-
-    id76_size = calculate_id76_size(disk_size, boot_size)
-    usable = calculate_usable_amiga_space(id76_size)
-    total_amiga = sum(p.size for p in amiga_partitions)
-    if total_amiga > usable:
-        over_mb = (total_amiga - usable) / (1024 * 1024)
-        errors.append(f"Amiga partitions exceed available space by {over_mb:.0f} MB")
-
-    return errors
+    try:
+        build_partition_config(disk_size, boot_size, amiga_partitions)
+    except ValidationError as e:
+        return [str(error["msg"]) for error in e.errors()]
+    return []
 
 
 def build_partition_config(
@@ -161,6 +106,7 @@ def build_partition_config(
     """assemble a PartitionConfig from editor state"""
     id76_size = calculate_id76_size(disk_size_bytes, boot_size)
 
+    validated_parts = [AmigaPartition.model_validate(p.model_dump()) for p in amiga_partitions]
     return PartitionConfig(
         disk_size=disk_size_bytes,
         layout=[
@@ -169,7 +115,7 @@ def build_partition_config(
                 type="id76",
                 name="AMIGA",
                 size=id76_size,
-                amiga_partitions=list(amiga_partitions),
+                amiga_partitions=validated_parts,
             ),
         ],
     )

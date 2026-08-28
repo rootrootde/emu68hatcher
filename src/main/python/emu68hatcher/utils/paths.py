@@ -78,8 +78,11 @@ def get_dotnet_bundle_dir() -> Path:
 
 
 def make_temp_workdir() -> Path:
-    """create a fresh temp dir under cache"""
-    temp_base = _ensure(get_cache_dir() / "temp")
+    """create a fresh local work directory"""
+    temp_base = get_cache_dir() / "temp"
+    if os.name == "nt" and temp_base.drive.startswith("\\\\"):
+        return Path(tempfile.mkdtemp(prefix="emu68hatcher-"))
+    temp_base = _ensure(temp_base)
     return Path(tempfile.mkdtemp(dir=temp_base))
 
 

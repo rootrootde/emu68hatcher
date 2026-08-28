@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class SparseUnsupportedError(RuntimeError):
-    """destination filesystem cant host a sparse file"""
+    """destination filesystem cannot host a sparse file"""
 
 
 def allocate_sparse(path: Path, size_bytes: int) -> None:

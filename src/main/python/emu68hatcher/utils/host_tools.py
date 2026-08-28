@@ -1,4 +1,4 @@
-"""host tool resolution - locates hst-imager / hst-amiga / 7z and builds their subprocess env"""
+"""host tool resolution - locates hst-imager / 7z and builds their subprocess env"""
 
 import hashlib
 import logging
@@ -54,13 +54,10 @@ _TOOL_NAMES: dict[str, tuple[list[str], list[str]]] = {
         ["hst-imager.exe", "hst.imager.exe", "Hst.Imager.Console.exe"],
         ["hst-imager", "hst.imager", "Hst.Imager.Console"],
     ),
-    "hst-amiga": (
-        ["hst-amiga.exe", "hst.amiga.exe", "Hst.Amiga.exe"],
-        ["hst-amiga", "hst.amiga", "Hst.Amiga"],
-    ),
+    # never accept 7za (no LHA codec); 7zz first so a system 7z cannot shadow the full build
     "7z": (
-        ["7z.exe", "7za.exe"],
-        ["7z", "7za", "7zz"],
+        ["7z.exe"],
+        ["7zz", "7z"],
     ),
 }
 
@@ -79,11 +76,6 @@ def _find_named(tool: str) -> Path | None:
 def find_hst_imager() -> Path | None:
     """find the HST Imager binary"""
     return _find_named("hst-imager")
-
-
-def find_hst_amiga() -> Path | None:
-    """find the HST Amiga binary"""
-    return _find_named("hst-amiga")
 
 
 def find_7z() -> Path | None:
@@ -106,6 +98,45 @@ def run_7z(
     )
 
 
+def parse_7z_member_sizes(output: str) -> list[int]:
+    """Return regular-file sizes from 7-Zip's technical listing."""
+    sizes: list[int] = []
+    record: dict[str, str] = {}
+
+    def finish_record() -> None:
+        if "Size" not in record:
+            return
+        attributes = record.get("Attributes", "")
+        if record.get("Folder") == "+" or attributes.startswith("D"):
+            return
+        try:
+            size = int(record["Size"])
+        except ValueError as e:
+            raise RuntimeError(f"Invalid 7-Zip member size: {record['Size']!r}") from e
+        if size < 0:
+            raise RuntimeError(f"Invalid negative 7-Zip member size: {size}")
+        sizes.append(size)
+
+    for line in output.splitlines():
+        if not line.strip():
+            finish_record()
+            record = {}
+            continue
+        key, separator, value = line.partition(" = ")
+        if separator:
+            record[key] = value
+    finish_record()
+    return sizes
+
+
+def list_7z_member_sizes(seven_z: Path, archive_path: Path) -> list[int]:
+    result = run_7z(seven_z, ["l", "-slt", str(archive_path)], timeout=60)
+    if result.returncode != 0:
+        message = (result.stderr or result.stdout).strip()
+        raise RuntimeError(f"7z listing failed: {message}")
+    return parse_7z_member_sizes(result.stdout)
+
+
 def get_hst_imager_env() -> dict[str, str]:
     """parent env + DOTNET_BUNDLE_EXTRACT_BASE_DIR; pass to subprocess.run(env=...) for direct hst-imager calls"""
     env = os.environ.copy()
@@ -114,10 +145,11 @@ def get_hst_imager_env() -> dict[str, str]:
 
 
 def localize_for_hst(path: Path, local_dir: Path) -> Path:
-    """return path, or a local copy when UNC-hosted - hst-imager resolves forward-slash UNC paths as 'Path not found'"""
-    if not path.drive.startswith("\\\\"):
+    """copy UNC-hosted inputs locally before calling hst-imager"""
+    source = path.absolute() if os.name == "nt" else path
+    if not source.drive.startswith("\\\\"):
         return path
-    return _copy_to_local(path, local_dir)
+    return _copy_to_local(source, local_dir)
 
 
 def _copy_to_local(path: Path, local_dir: Path) -> Path:

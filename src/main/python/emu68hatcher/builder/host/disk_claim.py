@@ -17,6 +17,7 @@ from ctypes import (
 from emu68hatcher.utils.platform import OperatingSystem, get_platform_info
 
 logger = logging.getLogger(__name__)
+_failed_claims: list[DiskClaim] = []
 
 
 class DiskClaim:
@@ -37,18 +38,24 @@ class DiskClaim:
         self._thread.start()
         if not self._ready.wait(timeout=3.0):
             logger.warning("disk claim did not signal ready in 3s")
+            self._stop.set()
+            self._thread.join(timeout=5.0)
             return False
         if self._error:
             logger.warning(f"disk claim failed: {self._error}")
             return False
         return self._claimed
 
-    def release(self) -> None:
+    def release(self) -> bool:
         if self._thread:
             self._stop.set()
             self._thread.join(timeout=5.0)
+            if self._thread.is_alive():
+                logger.error("disk claim thread did not stop within 5s")
+                return False
             self._thread = None
         self._claimed = False
+        return True
 
     def _run(self) -> None:
         try:
@@ -120,10 +127,13 @@ class DiskClaim:
 
 
 def claim_macos_disk(device: str) -> DiskClaim | None:
-    """build + acquire a DiskClaim; None if it cant be obtained"""
+    """build + acquire a DiskClaim; None if it cannot be obtained"""
     if get_platform_info().os != OperatingSystem.MACOS:
         return None
     claim = DiskClaim(device)
     if claim.acquire():
         return claim
+    if not claim.release():
+        _failed_claims.append(claim)
+        logger.error("retaining failed disk claim until its worker exits")
     return None

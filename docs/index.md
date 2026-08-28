@@ -11,7 +11,7 @@ Runs on macOS, Linux and Windows.
 - AmigaOS 3.9 install from the original CD image (**.iso**) - BoingBag 1+2 (including the soft ROM update) download automatically; boots on a Kickstart 3.1 ROM
 - Customizable package set: MUI, WHDLoad+WHDLoadWrapper, IBrowse, HippoPlayer, ...
 - RTG via Picasso96 (free Aminet version bundled; point at your own **Picasso96.lha** to install the commercial 3.x version)
-- Network support: Roadshow TCP/IP stack (demo bundled; point at your own **Roadshow.lha** to install the full commercial version), wifipi (wifi) + genet (ethernet) drivers, **Network Config** tool (WiFi/ethernet connect, DHCP or static IP, DNS, default gateway)
+- Network support: Roadshow, MiamiDX, or AmiTCP_NG, with wifipi (wifi), genet (ethernet), and Workbench connect tools. Roadshow and AmiTCP_NG support DHCP or static IP, DNS, and a default gateway. MiamiDX uses included DHCP profiles.
 - Partition layout editor (PFS3 + FFS), optional per-partition "extra content" directory to pre-load Work / Data volumes (WHDLoad games, backups, ...)
 - Build configs as JSON (save / load)
 - Build to **.img** file (sparse by default), flash to SD card after build, or write straight to SD card
@@ -20,8 +20,8 @@ Runs on macOS, Linux and Windows.
 
 **Still in an early stage** - Only actively tested on my A1200 + pistorm32-lite + CM4 / on macOS. If you run it on different hardware or OS, let me know on the [Discord](https://discord.com/invite/ApTbasXJPE) or open a [GitHub issue](https://github.com/rootrootde/emu68hatcher/issues) - even just "it worked" is useful.
 
-- **No framethrower / unicam configuration yet**
 - **mostly tested on 3.2(.3)** - expect more potential issues with 3.1
+- Boot ROM selection follows Emu68 Imager and prefers a matching A1200 ROM when available. This setup has also been confirmed on an A600, but manual ROM selection is not available yet.
 
 ## Support + Feedback
 
@@ -49,5 +49,6 @@ Bundled / downloaded at build time:
 
 - [WHDLoad](http://whdload.de/)
 - [Roadshow Demo](https://www.amigashop.org/product_info.php?cPath=2_34&products_id=200&language=de) bundled with permission from A. Magerl (APC&TCP)
+- [MiamiDX 1.0c](https://aminet.net/package/comm/tcp/MiamiDx10cmain) downloaded from Aminet when selected
 - [7-Zip](https://github.com/ip7z/7zip) (GNU LGPL) - downloaded at install time, License.txt copied alongside the binary
 - Aminet packages (MUI, HippoPlayer, IBrowse, akDatatypes, Picasso96, ...) - downloaded from [aminet.net](https://aminet.net) at build time; each ships its own readme with license

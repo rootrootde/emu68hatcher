@@ -6,13 +6,11 @@ IF NOT $UAEMAJOR GT 0
    IF NOT FAIL
       C:SetEnv System "PiStorm"
       C:SetEnv RpiType "RPi4"
-      SYS:C/EMU68INFO variant >ENV:PistormVariant
    ELSE
       C:Version brcm-sdhc.device >NIL:
       IF NOT FAIL
          C:SetEnv System "PiStorm"
          C:SetEnv RpiType "RPi3"
-         SYS:C/EMU68INFO variant >ENV:PistormVariant
       ELSE
          C:SetEnv SYSTEM "UAE"
       ENDIF

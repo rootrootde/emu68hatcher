@@ -2,6 +2,7 @@
 
 import hashlib
 import re
+from collections.abc import Callable
 from pathlib import Path
 
 from emu68hatcher.data.install_media import walk_files_capped
@@ -253,6 +254,7 @@ def identify_kickstart(path: Path) -> dict | None:
 def scan_for_kickstart_roms(
     directories: Path | list[Path] | tuple[Path, ...],
     max_files: int = 5000,
+    cancel_check: Callable[[], bool] | None = None,
 ) -> tuple[list[dict], bool]:
     """scan one or more dirs for Kickstart ROMs (cap at max_files per dir); returns (results, truncated)"""
     dirs = [directories] if isinstance(directories, Path) else list(directories)
@@ -263,11 +265,13 @@ def scan_for_kickstart_roms(
     seen_paths: set[Path] = set()
 
     for directory in dirs:
+        if cancel_check and cancel_check():
+            break
         if not directory.exists() or not directory.is_dir():
             continue
 
         seen_count = 0
-        for path, ext in walk_files_capped(directory, max_files):
+        for path, ext in walk_files_capped(directory, max_files, cancel_check):
             seen_count += 1
             if path in seen_paths:
                 continue
@@ -278,6 +282,8 @@ def scan_for_kickstart_roms(
                 continue
 
             if ext in rom_extensions or size in KICKSTART_ROM_SIZES:
+                if cancel_check and cancel_check():
+                    break
                 info = identify_kickstart(path)
                 if info:
                     entry = {

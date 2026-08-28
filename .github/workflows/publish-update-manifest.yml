@@ -1,0 +1,77 @@
+name: Publish update manifest
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-manifest
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Read latest published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/${{ github.repository }}/releases/latest > "$RUNNER_TEMP/release.json"
+          tag=$(jq -r .tag_name "$RUNNER_TEMP/release.json")
+          mkdir -p "$RUNNER_TEMP/release-assets"
+          gh release download "$tag" --dir "$RUNNER_TEMP/release-assets" --pattern 'emu68hatcher-*'
+
+      - name: Build and sign manifest
+        env:
+          UPDATE_MANIFEST_PRIVATE_KEY: ${{ secrets.UPDATE_MANIFEST_PRIVATE_KEY }}
+        run: |
+          if [ -z "$UPDATE_MANIFEST_PRIVATE_KEY" ]; then
+            echo "::error::UPDATE_MANIFEST_PRIVATE_KEY is not configured"
+            exit 1
+          fi
+          key="$RUNNER_TEMP/update-manifest-key.pem"
+          install -m 600 /dev/null "$key"
+          printf '%s' "$UPDATE_MANIFEST_PRIVATE_KEY" > "$key"
+          python scripts/build-update-manifest.py \
+            updates/manifest-source.json "$RUNNER_TEMP/manifest-source.json" \
+            --release-json "$RUNNER_TEMP/release.json" \
+            --asset-dir "$RUNNER_TEMP/release-assets"
+          python scripts/sign-update-manifest.py \
+            "$RUNNER_TEMP/manifest-source.json" "$RUNNER_TEMP/manifest.json" \
+            --key "$key"
+          python -c "from pathlib import Path; from emu68hatcher.data.update_manifest import verify_manifest_bytes; verify_manifest_bytes(Path('$RUNNER_TEMP/manifest.json').read_bytes())"
+
+      - name: Publish updates branch
+        run: |
+          if git ls-remote --exit-code origin refs/heads/updates >/dev/null 2>&1; then
+            git fetch origin updates:refs/remotes/origin/updates
+            git worktree add "$RUNNER_TEMP/published" origin/updates
+            git -C "$RUNNER_TEMP/published" switch -C updates
+          else
+            git worktree add --detach "$RUNNER_TEMP/published"
+            git -C "$RUNNER_TEMP/published" switch --orphan updates
+            git -C "$RUNNER_TEMP/published" rm -rf . || true
+          fi
+          cp "$RUNNER_TEMP/manifest.json" "$RUNNER_TEMP/published/manifest.json"
+          git -C "$RUNNER_TEMP/published" config user.name github-actions
+          git -C "$RUNNER_TEMP/published" config user.email github-actions@github.com
+          git -C "$RUNNER_TEMP/published" add manifest.json
+          if ! git -C "$RUNNER_TEMP/published" diff --cached --quiet; then
+            git -C "$RUNNER_TEMP/published" commit -m "update manifest"
+            git -C "$RUNNER_TEMP/published" push origin updates
+          fi

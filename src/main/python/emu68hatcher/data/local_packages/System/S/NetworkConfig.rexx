@@ -2,9 +2,9 @@
  *
  * Replaces NetworkManager.rexx and WifiConfig.rexx. Loops on a top-level
  * menu: WiFi/Ethernet/Offline actions plus a Settings submenu for WiFi
- * credentials, per-interface static IP / DHCP, DNS, and the boot toggle.
+ * credentials, per-interface static IP / DHCP, DNS, and the Roadshow boot toggle.
  *
- * Invoked by 'rx s:NetworkConfig.rexx' - from the Tools menu or from
+ * Invoked by 'rx s:NetworkConfig.rexx' - from the Network menu or from
  * SYS:Utilities/Network Config's double-click launcher.
  */
 
@@ -25,10 +25,12 @@ hRoutesCfg     = "DEVS:Internet/routes"
 hWirelessPrefs = "SYS:Prefs/Env-Archive/Sys/wireless.prefs"
 hTuningsFile   = "S:RoadshowSettings"
 hBootDisable   = "S:Network-disabled"
+hAmiTcpMarker  = "LIBS:AmiTCP_NG.version"
 hChoiceFile    = "T:hatcher-choice"
 hWmLog         = "RAM:hatcher-wm.log"
 hWifipiDevice  = "SYS:Devs/Networks/wifipi.device"
 hGenetDevice   = "SYS:Devs/Networks/genet.device"
+hAmiTcp        = exists(hAmiTcpMarker)
 
 address command
 
@@ -57,6 +59,22 @@ if upper(strip(hCmd)) = "ONLINE" then do
     exit 0
 end
 
+/* boot entry, run from User-Startup after Network-Startup. DHCP may still
+   be settling, so retry for up to a minute before giving up quietly. */
+if upper(strip(hCmd)) = "SYNCTIME" then do
+    if ~exists("C:sntp") then exit 0
+    do hTry = 1 to 6
+        "C:sntp pool.ntp.org >NIL:"
+        if rc = 0 then do
+            /* server reachable - the shared routine does the sync + RTC save */
+            call HatcherSyncTime
+            exit 0
+        end
+        "C:Wait 10"
+    end
+    exit 5
+end
+
 /* main loop */
 do forever
     "RequestChoice >"hChoiceFile ,
@@ -76,17 +94,23 @@ exit 0
 
 SettingsMenu:
     do forever
-        "RequestChoice >"hChoiceFile ,
-            "TITLE ""Hatcher Network: Settings""" ,
-            "BODY ""Choose what to configure:""" ,
-            "GADGETS ""WiFi creds|WiFi IP|Ether IP|DNS|Boot|Back"""
+        if hAmiTcp then
+            "RequestChoice >"hChoiceFile ,
+                "TITLE ""Hatcher Network: Settings""" ,
+                "BODY ""Choose what to configure:""" ,
+                "GADGETS ""WiFi creds|WiFi IP|Ether IP|DNS|Back"""
+        else
+            "RequestChoice >"hChoiceFile ,
+                "TITLE ""Hatcher Network: Settings""" ,
+                "BODY ""Choose what to configure:""" ,
+                "GADGETS ""WiFi creds|WiFi IP|Ether IP|DNS|Boot|Back"""
         hSel = ReadChoice()
         select
             when hSel = "1" then call WifiCredsScreen
             when hSel = "2" then call InterfaceIpScreen "wifipi", hWifipiCfg
             when hSel = "3" then call InterfaceIpScreen "genet", hGenetCfg
             when hSel = "4" then call DnsScreen
-            when hSel = "5" then call BootToggleScreen
+            when hSel = "5" & ~hAmiTcp then call BootToggleScreen
             otherwise return
         end
     end
@@ -112,7 +136,7 @@ HatcherOnlineWifi:
     hConnResult = 0
 
     if ~exists("Libs:bsdsocket.library") then do
-        say "Roadshow's bsdsocket.library is not installed."
+        say "No bsdsocket.library is installed."
         "C:Wait 4"
         return
     end
@@ -175,7 +199,7 @@ HatcherOnlineGenet:
     hConnResult = 0
 
     if ~exists("Libs:bsdsocket.library") then do
-        say "Roadshow's bsdsocket.library is not installed."
+        say "No bsdsocket.library is installed."
         "C:Wait 4"
         return
     end
@@ -239,6 +263,8 @@ HatcherKillWm:
 HatcherApplyTunings:
     parse arg hTarget
     hTarget = upper(hTarget)
+    if hAmiTcp then return
+    if ~exists("C:roadshowcontrol") then return
     if ~open("t", hTuningsFile, "R") then return
     do while ~eof("t")
         hRow = strip(readln("t"))
@@ -272,6 +298,18 @@ HatcherSyncTime:
     end
     "C:SetDST NOASK NOREQ QUIET >NIL:"
     "C:sntp pool.ntp.org >NIL:"
+    call HatcherSaveClock
+    return
+
+/* write the synced time to whichever RTC is present - I2C (CM4 IO board)
+   first, clockport battclock as fallback; both absent is fine. */
+HatcherSaveClock:
+    if exists("C:SetClockI2C") then do
+        "C:SetClockI2C SAVE >NIL:"
+        /* same WARN threshold as the boot-side probe - LOAD and SAVE must agree */
+        if rc < 5 then return
+    end
+    "C:SetClock SAVE >NIL:"
     return
 
 ReadSsid:
@@ -342,7 +380,10 @@ InterfaceIpScreen:
     /* read existing values for prefill */
     hCurAddr = ""
     hCurMask = ""
-    hCurGw   = ReadDefaultRoute(hRoutesCfg)
+    if hAmiTcp then
+        hCurGw = ""
+    else
+        hCurGw = ReadDefaultRoute(hRoutesCfg)
     if exists(hCfgPath) then do
         if open("f", hCfgPath, "R") then do
             do while ~eof("f")
@@ -395,16 +436,19 @@ InterfaceIpScreen:
         hNewGw = strip(hNewGw)
     end
 
-    hRc = WriteInterfaceCfg(hCfgPath, hNewMode, hNewAddr, hNewMask)
+    hRc = WriteInterfaceCfg(hCfgPath, hNewMode, hNewAddr, hNewMask, ,
+        hNewGw, hAmiTcp, hDnsCfg)
     if hRc = 0 then do
         call rtezrequest("Could not write " || hCfgPath, "OK", hTitle)
         return
     end
 
     if hNewMode = "static" then do
-        if ~WriteDefaultRoute(hRoutesCfg, hNewGw) then do
-            call rtezrequest("Could not write " || hRoutesCfg, "OK", hTitle)
-            return
+        if ~hAmiTcp then do
+            if ~WriteDefaultRoute(hRoutesCfg, hNewGw) then do
+                call rtezrequest("Could not write " || hRoutesCfg, "OK", hTitle)
+                return
+            end
         end
         hMsg = hLabel || " set to static" || '0a'x || ,
             "address=" || hNewAddr || '0a'x || ,
@@ -413,9 +457,11 @@ InterfaceIpScreen:
             hMsg = hMsg || '0a'x || "default route=" || hNewGw
     end
     else do
-        if ~WriteDefaultRoute(hRoutesCfg, "") then do
-            call rtezrequest("Could not write " || hRoutesCfg, "OK", hTitle)
-            return
+        if ~hAmiTcp then do
+            if ~WriteDefaultRoute(hRoutesCfg, "") then do
+                call rtezrequest("Could not write " || hRoutesCfg, "OK", hTitle)
+                return
+            end
         end
         hMsg = hLabel || " set to DHCP"
     end
@@ -423,7 +469,7 @@ InterfaceIpScreen:
     return
 
 WriteInterfaceCfg: procedure
-    parse arg hCfgPath, hMode, hAddr, hMask
+    parse arg hCfgPath, hMode, hAddr, hMask, hGateway, hUseAmiTcp, hDnsPath
 
     /* drop tool-managed keys; keep everything else as-is. gateway= is
        also dropped to clean up files written by older versions - roadshow
@@ -444,6 +490,7 @@ WriteInterfaceCfg: procedure
                 if hKey = "address"   then hKeep = 0
                 if hKey = "netmask"   then hKeep = 0
                 if hKey = "gateway"   then hKeep = 0
+                if hKey = "nameserver" then hKeep = 0
                 if hKeep then do
                     hLines.0 = hLines.0 + 1
                     hN = hLines.0
@@ -464,6 +511,62 @@ WriteInterfaceCfg: procedure
     else do
         call writeln("w", "address=" || hAddr)
         call writeln("w", "netmask=" || hMask)
+        if hUseAmiTcp then do
+            if hGateway ~= "" then call writeln("w", "gateway=" || hGateway)
+            if exists(hDnsPath) then do
+                if open("d", hDnsPath, "R") then do
+                    do while ~eof("d")
+                        hDnsLine = strip(readln("d"))
+                        parse var hDnsLine hDnsKey hDnsValue
+                        if upper(strip(hDnsKey)) = "NAMESERVER" then
+                            call writeln("w", "nameserver=" || strip(hDnsValue))
+                    end
+                    call close("d")
+                end
+            end
+        end
+    end
+    call close("w")
+    return 1
+
+UpdateAmiTcpDns: procedure
+    parse arg hCfgPath, hDnsPath
+    if ~exists(hCfgPath) then return 1
+
+    hLines.0 = 0
+    hStatic = 0
+    if ~open("r", hCfgPath, "R") then return 0
+    do while ~eof("r")
+        hOne = readln("r")
+        hCheck = strip(hOne)
+        hKey = ""
+        if hCheck ~= "" & left(hCheck, 1) ~= "#" then do
+            parse var hCheck hKey "=" .
+            hKey = strip(hKey)
+        end
+        if hKey = "address" then hStatic = 1
+        if hKey ~= "nameserver" then do
+            hLines.0 = hLines.0 + 1
+            hN = hLines.0
+            hLines.hN = hOne
+        end
+    end
+    call close("r")
+
+    if ~open("w", hCfgPath, "W") then return 0
+    do i = 1 to hLines.0
+        call writeln("w", hLines.i)
+    end
+    if hStatic & exists(hDnsPath) then do
+        if open("d", hDnsPath, "R") then do
+            do while ~eof("d")
+                hDnsLine = strip(readln("d"))
+                parse var hDnsLine hDnsKey hDnsValue
+                if upper(strip(hDnsKey)) = "NAMESERVER" then
+                    call writeln("w", "nameserver=" || strip(hDnsValue))
+            end
+            call close("d")
+        end
     end
     call close("w")
     return 1
@@ -556,6 +659,17 @@ DnsScreen:
         if hOne ~= "" then call writeln("w", "nameserver " || hOne)
     end
     call close("w")
+
+    if hAmiTcp then do
+        if ~UpdateAmiTcpDns(hWifipiCfg, hDnsCfg) then do
+            call rtezrequest("Could not update " || hWifipiCfg, "OK", "DNS")
+            return
+        end
+        if ~UpdateAmiTcpDns(hGenetCfg, hDnsCfg) then do
+            call rtezrequest("Could not update " || hGenetCfg, "OK", "DNS")
+            return
+        end
+    end
 
     call rtezrequest("DNS servers saved.", "OK", "DNS")
     return
