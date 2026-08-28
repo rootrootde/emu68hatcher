@@ -3,8 +3,8 @@
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QSize, Qt, Slot
-from PySide6.QtGui import QIcon, QPainter, QPixmap
+from PySide6.QtCore import QSize, QStandardPaths, Qt, QUrl, Slot
+from PySide6.QtGui import QDesktopServices, QIcon, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QApplication,
@@ -69,10 +69,16 @@ class StartTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._worker = None
+        self._update_worker = None
+        self._app_download_worker = None
         self._row_widgets: dict[str, tuple[QLabel, QLabel]] = {}
         self._fresh_downloads: set[str] = set()
+        from emu68hatcher.data.update_manifest import get_active_selection
+
+        self._update_selection = get_active_selection()
         self._setup_ui()
         self.refresh_status()
+        self.refresh_update_status()
 
     # --- UI ---
     def _setup_ui(self):
@@ -183,6 +189,50 @@ class StartTab(QWidget):
         tools_layout.addLayout(btn_row)
         layout.addWidget(tools_group)
 
+        updates_group = QGroupBox("Updates")
+        updates_layout = QVBoxLayout(updates_group)
+        updates_layout.setSpacing(12)
+
+        self.hatcher_update_icon = QLabel("…")
+        self.hatcher_update_icon.setFixedWidth(24)
+        self.hatcher_update_label = QLabel("")
+        self.hatcher_update_label.setWordWrap(True)
+        hatcher_row = QHBoxLayout()
+        hatcher_row.addWidget(self.hatcher_update_icon)
+        hatcher_row.addWidget(self.hatcher_update_label, 1)
+        updates_layout.addLayout(hatcher_row)
+
+        self.manifest_update_icon = QLabel("…")
+        self.manifest_update_icon.setFixedWidth(24)
+        self.manifest_update_label = QLabel("")
+        self.manifest_update_label.setWordWrap(True)
+        manifest_row = QHBoxLayout()
+        manifest_row.addWidget(self.manifest_update_icon)
+        manifest_row.addWidget(self.manifest_update_label, 1)
+        updates_layout.addLayout(manifest_row)
+
+        update_buttons = QHBoxLayout()
+        update_buttons.addStretch()
+        self.check_updates_btn = QPushButton("Check for Updates")
+        self.check_updates_btn.clicked.connect(self.check_for_updates)
+        update_buttons.addWidget(self.check_updates_btn)
+        self.open_release_btn = QPushButton("Open Download Page")
+        self.open_release_btn.clicked.connect(self.open_release_page)
+        update_buttons.addWidget(self.open_release_btn)
+        self.download_update_btn = QPushButton("Download Update…")
+        self.download_update_btn.clicked.connect(self.download_application_update)
+        update_buttons.addWidget(self.download_update_btn)
+        updates_layout.addLayout(update_buttons)
+
+        self.update_download_status = QLabel("")
+        self.update_download_status.setVisible(False)
+        updates_layout.addWidget(self.update_download_status)
+        self.update_download_bar = QProgressBar()
+        self.update_download_bar.setRange(0, 100)
+        self.update_download_bar.setVisible(False)
+        updates_layout.addWidget(self.update_download_bar)
+        layout.addWidget(updates_group)
+
         # download progress group (hidden until a download starts)
         self.progress_group = QGroupBox("Download Progress")
         progress_layout = QVBoxLayout(self.progress_group)
@@ -237,11 +287,173 @@ class StartTab(QWidget):
         else:
             self.download_btn.setText("All Tools Installed")
 
+    def refresh_update_status(self):
+        from emu68hatcher import __version__
+        from emu68hatcher.data.update_manifest import get_current_artifact, is_newer_version
+
+        selection = self._update_selection
+        release = selection.manifest.hatcher
+        newer = is_newer_version(__version__, release.version)
+        if newer:
+            self.hatcher_update_icon.setText("⚠️")
+            self.hatcher_update_label.setText(
+                f"Emu68 Hatcher {release.version} is available (installed: {__version__})"
+            )
+        else:
+            self.hatcher_update_icon.setText("✅")
+            self.hatcher_update_label.setText(f"Emu68 Hatcher {__version__} is current")
+
+        source_label = {
+            "bundled": "bundled",
+            "cache": "cached",
+            "remote": "server",
+        }[selection.source]
+        if selection.error:
+            self.manifest_update_icon.setText("⚠️")
+            self.manifest_update_label.setText(
+                f"Package list check failed; using {source_label} revision "
+                f"{selection.manifest.revision}"
+            )
+            self.manifest_update_label.setToolTip(selection.error)
+        elif selection.source == "remote" and selection.changed:
+            self.manifest_update_icon.setText("✅")
+            self.manifest_update_label.setText(
+                f"Package list updated to server revision {selection.manifest.revision}"
+            )
+            self.manifest_update_label.setToolTip("")
+        elif selection.checked:
+            self.manifest_update_icon.setText("✅")
+            self.manifest_update_label.setText(
+                f"Package list revision {selection.manifest.revision} is current"
+            )
+            self.manifest_update_label.setToolTip("")
+        else:
+            self.manifest_update_icon.setText("✅")
+            self.manifest_update_label.setText(
+                f"Using {source_label} package list revision {selection.manifest.revision}"
+            )
+            self.manifest_update_label.setToolTip("")
+
+        self.open_release_btn.setEnabled(newer)
+        self.download_update_btn.setEnabled(
+            newer and get_current_artifact(selection.manifest) is not None
+        )
+
+    @Slot()
+    def check_for_updates(self):
+        from emu68hatcher.gui.workers import UpdateCheckWorker
+
+        if self._update_worker and self._update_worker.isRunning():
+            return
+        self.check_updates_btn.setEnabled(False)
+        self.manifest_update_icon.setText("…")
+        self.manifest_update_label.setText("Checking package list and application version…")
+        self._update_worker = UpdateCheckWorker(self)
+        self._update_worker.check_finished.connect(self._on_update_check_finished)
+        self._update_worker.finished.connect(self._update_worker_finished)
+        self._update_worker.start()
+
+    @Slot(object)
+    def _on_update_check_finished(self, selection):
+        if not selection.error:
+            from emu68hatcher.data.package_loader import clear_package_caches
+            from emu68hatcher.data.update_manifest import activate_manifest
+
+            try:
+                activate_manifest(selection)
+                clear_package_caches()
+            except Exception as error:
+                from emu68hatcher.data.update_manifest import (
+                    ManifestSelection,
+                    get_active_selection,
+                )
+
+                active = get_active_selection()
+                selection = ManifestSelection(
+                    active.manifest,
+                    active.source,
+                    error=str(error) or type(error).__name__,
+                    checked=True,
+                )
+        self._update_selection = selection
+        self.check_updates_btn.setEnabled(True)
+        self.refresh_update_status()
+
+    def _update_worker_finished(self):
+        self._update_worker = None
+
+    @Slot()
+    def open_release_page(self):
+        url = str(self._update_selection.manifest.hatcher.release_url)
+        if not QDesktopServices.openUrl(QUrl(url)):
+            QMessageBox.warning(self, "Application Update", "Could not open the download page.")
+
+    @Slot()
+    def download_application_update(self):
+        from emu68hatcher.data.update_manifest import get_current_artifact
+        from emu68hatcher.gui.workers import ApplicationUpdateDownloadWorker
+
+        if self._app_download_worker and self._app_download_worker.isRunning():
+            return
+        artifact = get_current_artifact(self._update_selection.manifest)
+        if artifact is None:
+            return
+        download_location = QStandardPaths.writableLocation(
+            QStandardPaths.StandardLocation.DownloadLocation
+        )
+        destination = Path(download_location) if download_location else Path.home() / "Downloads"
+        self.download_update_btn.setEnabled(False)
+        self.update_download_status.setText(f"Downloading {artifact.filename}…")
+        self.update_download_status.setVisible(True)
+        self.update_download_bar.setRange(0, 100)
+        self.update_download_bar.setValue(0)
+        self.update_download_bar.setVisible(True)
+        self._app_download_worker = ApplicationUpdateDownloadWorker(artifact, destination, self)
+        self._app_download_worker.download_progress.connect(self._on_update_download_progress)
+        self._app_download_worker.download_finished.connect(self._on_update_download_finished)
+        self._app_download_worker.finished.connect(self._app_download_worker_finished)
+        self._app_download_worker.start()
+
+    @Slot(int, int)
+    def _on_update_download_progress(self, current: int, total: int):
+        if total > 0:
+            self.update_download_bar.setRange(0, 100)
+            self.update_download_bar.setValue(min(100, int(current * 100 / total)))
+            self.update_download_status.setText(
+                f"Downloading update - {current / (1024 * 1024):.1f} / "
+                f"{total / (1024 * 1024):.1f} MB"
+            )
+        else:
+            self.update_download_bar.setRange(0, 0)
+
+    @Slot(bool, str)
+    def _on_update_download_finished(self, success: bool, detail: str):
+        self.update_download_bar.setRange(0, 100)
+        self.download_update_btn.setEnabled(True)
+        if success:
+            self.update_download_bar.setValue(100)
+            self.update_download_status.setText(f"Downloaded to {detail}")
+            QMessageBox.information(
+                self,
+                "Application Update",
+                f"The verified installer was downloaded to:\n{detail}",
+            )
+        else:
+            self.update_download_bar.setValue(0)
+            self.update_download_status.setText("Update download failed")
+            QMessageBox.warning(self, "Application Update", detail)
+
+    def _app_download_worker_finished(self):
+        self._app_download_worker = None
+
     # --- reset ---
     @Slot()
     def reset_app_data(self):
         """wipe cache, temp files and downloaded tools after confirmation"""
-        if self._worker and self._worker.isRunning():
+        if any(
+            worker is not None and worker.isRunning()
+            for worker in (self._worker, self._update_worker, self._app_download_worker)
+        ):
             return
 
         box = QMessageBox(self)
@@ -258,6 +470,8 @@ class StartTab(QWidget):
         if box.clickedButton() is not delete_btn:
             return
 
+        from emu68hatcher.data.package_loader import clear_package_caches
+        from emu68hatcher.data.update_manifest import initialize_manifest
         from emu68hatcher.utils.paths import reset_runtime_data
 
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
@@ -267,7 +481,10 @@ class StartTab(QWidget):
             QApplication.restoreOverrideCursor()
 
         self.progress_group.setVisible(False)
+        self._update_selection = initialize_manifest()
+        clear_package_caches()
         self.refresh_status()
+        self.refresh_update_status()
         if failures:
             QMessageBox.warning(
                 self,
@@ -302,12 +519,13 @@ class StartTab(QWidget):
         self._worker = None
 
     def shutdown_workers(self, timeout_ms: int = 500) -> bool:
-        worker = self._worker
-        if worker is None or not worker.isRunning():
-            return True
-        worker.requestInterruption()
-        worker.wait(timeout_ms)
-        return not worker.isRunning()
+        workers = [self._worker, self._update_worker, self._app_download_worker]
+        running = [worker for worker in workers if worker is not None and worker.isRunning()]
+        for worker in running:
+            worker.requestInterruption()
+        for worker in running:
+            worker.wait(timeout_ms)
+        return not any(worker.isRunning() for worker in running)
 
     @Slot(str)
     def _on_tool_started(self, tool_name: str):

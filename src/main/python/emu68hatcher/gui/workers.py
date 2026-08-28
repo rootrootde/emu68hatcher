@@ -133,6 +133,59 @@ class ToolDownloadWorker(QThread):
         self.download_finished.emit(len(failed) == 0, failed)
 
 
+class UpdateCheckWorker(QThread):
+    """Fetch the signed update manifest."""
+
+    check_finished = Signal(object)
+
+    def run(self):
+        from emu68hatcher.data.update_manifest import check_remote_manifest
+
+        try:
+            result = check_remote_manifest()
+        except Exception as error:
+            logger.exception("update check failed")
+            from emu68hatcher.data.update_manifest import ManifestSelection, get_active_selection
+
+            active = get_active_selection()
+            result = ManifestSelection(
+                active.manifest,
+                active.source,
+                error=str(error) or type(error).__name__,
+                checked=True,
+            )
+        self.check_finished.emit(result)
+
+
+class ApplicationUpdateDownloadWorker(QThread):
+    """Download and verify one application installer."""
+
+    download_progress = Signal(int, int)
+    download_finished = Signal(bool, str)
+
+    def __init__(self, artifact, destination_dir: Path, parent=None):
+        super().__init__(parent)
+        self.artifact = artifact
+        self.destination_dir = destination_dir
+
+    def run(self):
+        from emu68hatcher.data.update_manifest import download_hatcher_artifact
+
+        try:
+            path = download_hatcher_artifact(
+                self.artifact,
+                self.destination_dir,
+                progress=lambda current, total: self.download_progress.emit(current, total),
+                cancelled=self.isInterruptionRequested,
+            )
+        except Exception as error:
+            if not self.isInterruptionRequested():
+                logger.exception("application update download failed")
+            self.download_finished.emit(False, str(error) or type(error).__name__)
+            return
+        self.download_finished.emit(True, str(path))
+
+
 class ROMScanWorker(QThread):
     """scan one or more directories for Kickstart ROMs"""
 

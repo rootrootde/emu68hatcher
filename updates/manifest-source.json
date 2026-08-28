@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "hatcher": {
+    "version": "0.9.0",
+    "release_url": "https://github.com/rootrootde/emu68hatcher/releases",
+    "artifacts": {}
+  },
+  "packages": {
+    "magicmenu": {
+      "source": "github",
+      "repo": "AmiKit/MagicMenu",
+      "tag": "v3.1",
+      "hash": "4539081FCE7789F11374B07F99915AE1",
+      "filename": "MagicMenu_3.1.lha"
+    }
+  }
+}

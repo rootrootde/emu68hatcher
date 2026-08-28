@@ -8,6 +8,10 @@ import yaml
 from pydantic import ValidationError
 
 from emu68hatcher.data.package_schema import ADFRule, Bundle, Package, _group_rank
+from emu68hatcher.data.update_manifest import (
+    get_active_selection,
+    get_package_download_override,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +65,17 @@ def load_all_packages() -> list[Package]:
                         f"first defined in {origins[key].name}"
                     )
                     continue
+                override = get_package_download_override(pkg.name)
+                if override is not None:
+                    pkg = pkg.model_copy(update={"download": override})
                 origins[key] = yaml_file
                 packages.append(pkg)
+        unknown_overrides = get_active_selection().manifest.packages.keys() - origins.keys()
+        if unknown_overrides:
+            logger.warning(
+                "update manifest references unknown package(s): %s",
+                ", ".join(sorted(unknown_overrides)),
+            )
         if errors:
             raise ValueError("invalid package files:\n  " + "\n  ".join(errors))
         _validate_dependency_graph(packages)  # fail fast on bad requires/conflicts/provides
@@ -71,6 +84,17 @@ def load_all_packages() -> list[Package]:
 
     # return a copy so callers can't mutate the shared cache
     return list(_packages_cache)
+
+
+def clear_package_caches() -> None:
+    """Drop package views after a manifest change."""
+    global _adf_rules_cache, _bundles_cache, _package_index_cache, _packages_cache
+
+    _packages_cache = None
+    _package_index_cache = None
+    _bundles_cache = None
+    _adf_rules_cache = None
+    get_packages_for_version.cache_clear()
 
 
 def _validate_dependency_graph(packages: list[Package]) -> None:

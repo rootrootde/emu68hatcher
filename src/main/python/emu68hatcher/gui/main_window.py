@@ -3,6 +3,7 @@
 import sys
 from pathlib import Path
 
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -47,6 +48,7 @@ class MainWindow(QMainWindow):
         self.config = create_default_config()
         self.setup_ui()
         self.resize(1400, 800)
+        QTimer.singleShot(0, self.start_tab.check_for_updates)
 
     def setup_ui(self):
         self.setWindowTitle(f"Emu68 Hatcher {__version__}")
@@ -132,7 +134,7 @@ class MainWindow(QMainWindow):
         for label, tab in (
             ("asset scans", self.kickstart_tab),
             ("disk scan", self.output_tab),
-            ("tool download", self.start_tab),
+            ("downloads", self.start_tab),
         ):
             if not tab.shutdown_workers():
                 running.append(label)
