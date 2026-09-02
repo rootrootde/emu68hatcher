@@ -1,7 +1,7 @@
 {
   "payload": {
     "schema_version": 1,
-    "revision": 1787947779,
+    "revision": 1788386335,
     "hatcher": {
       "version": "0.9.0",
       "release_url": "https://github.com/rootrootde/emu68hatcher/releases/tag/v0.9.0",
@@ -45,6 +45,66 @@
       }
     },
     "packages": {
+      "amelinium": {
+        "source": "web",
+        "path": null,
+        "url": "http://juen.in/latest/amelinium/Amelinium.lha",
+        "backup_url": null,
+        "repo": null,
+        "tag": null,
+        "hash": "1C3F5C5F283070D78174C3D46C762890",
+        "filename": "Amelinium.lha"
+      },
+      "amigaamp": {
+        "source": "aminet",
+        "path": "mus/play/AmigaAMP3-68k.lha",
+        "url": null,
+        "backup_url": null,
+        "repo": null,
+        "tag": null,
+        "hash": "B73250E69D852CC12DFC12846B480030",
+        "filename": "AmigaAMP3-68k.lha"
+      },
+      "amitcp_ng": {
+        "source": "github",
+        "path": null,
+        "url": null,
+        "backup_url": null,
+        "repo": "MW0MWZ/AmiTCP_NG",
+        "tag": "v4.1.6",
+        "hash": "6C01BF75BE49C57ADAFC7A223DAEDC54",
+        "filename": "AmiTCP_NG-v4.1.6.lha"
+      },
+      "emu68_tools": {
+        "source": "github",
+        "path": null,
+        "url": null,
+        "backup_url": null,
+        "repo": "michalsc/Emu68-tools",
+        "tag": "v1.1",
+        "hash": "505C72151D67988E415B330AA6E19A8C",
+        "filename": "Emu68-tools.zip"
+      },
+      "genet_device_legacy": {
+        "source": "github",
+        "path": null,
+        "url": null,
+        "backup_url": null,
+        "repo": "rondoval/emu68-genet-driver",
+        "tag": "v1.3",
+        "hash": "263F49B359C8E8D65A7EF59C14A2E943",
+        "filename": "genet.device"
+      },
+      "hippoplayerupdate": {
+        "source": "aminet",
+        "path": "mus/play/hippoplayerupdate.lha",
+        "url": null,
+        "backup_url": null,
+        "repo": null,
+        "tag": null,
+        "hash": "8D3609208F67515108C269EFD34664A4",
+        "filename": "hippoplayerupdate.lha"
+      },
       "magicmenu": {
         "source": "github",
         "path": null,
@@ -60,6 +120,6 @@
   "signature": {
     "algorithm": "ed25519",
     "key_id": "updates-2026",
-    "value": "ei1NNhKSFhiaDsoISc0H+48XaWxA0tWM0VD5OA0q9oBNz0NVOq5m+NtSNn92Bw2S6bMuM4CjAGlpX3Bw4CpaAA=="
+    "value": "ez9GTnR3/UdXYwt8UTE8nzG/TsfL0b49cZBOtkI/ZHi3wXo5vh4XfRIH+wyZGveOKGGTar1dAUX4vtcAd3pRDQ=="
   }
 }
