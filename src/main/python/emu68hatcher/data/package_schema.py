@@ -30,6 +30,7 @@ class DownloadInfo(BaseModel):
     repo: str | None = None  # format: "owner/repo"
     # restricted charset so a YAML tag can't smuggle ? # / etc. into the github api url
     tag: str | None = Field(default=None, pattern=r"^[\w.\-+]+$")
+    check_latest_release: bool = True
 
     # verification
     hash: str | None = None  # MD5 hash for verification

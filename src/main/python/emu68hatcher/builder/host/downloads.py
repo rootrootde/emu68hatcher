@@ -69,7 +69,6 @@ class DownloadManager:
         self._cancel_cb = cancel_callback
         # latest failure reason -> DownloadResult.error
         self._last_error: str | None = None
-        self._last_error_permanent: bool = False
         self._last_download_url: str | None = None
 
         self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -142,7 +141,6 @@ class DownloadManager:
     ) -> bool:
         """download with retries, writes to .tmp file and only renames on success"""
         tmp = dest.with_suffix(dest.suffix + ".tmp")
-        self._last_error_permanent = False
         self._last_download_url = None
         for attempt in range(self.max_retries):
             try:
@@ -176,8 +174,7 @@ class DownloadManager:
                 self._last_error = f"HTTP {e.code} {e.reason}"
                 self.logger.warning(f"Download failed for {url}: {self._last_error}")
                 tmp.unlink(missing_ok=True)
-                if e.code == 404:  # the same missing path will fail on every Aminet mirror
-                    self._last_error_permanent = True
+                if e.code == 404:
                     return False
                 # 5xx / 429 / etc. - keep retrying
             except Exception as e:
@@ -200,7 +197,9 @@ class DownloadManager:
         name: str = "",
         expected_hash: str | None = None,
     ) -> bool:
-        """try mirrors in order; 404 short-circuits the rest (aminet mirrors share layout), hash mismatch falls through like a miss"""
+        """try mirrors in order and keep the most useful failure reason"""
+        hash_error = None
+        last_error = None
         for mirror in mirrors:
             if self._cancelled():
                 return False
@@ -213,18 +212,28 @@ class DownloadManager:
             url = f"{mirror.rstrip('/')}/{path.lstrip('/')}"
             self.logger.info(f"Trying mirror: {url}")
             if not self._download_file(url, dest, file_progress=file_progress, name=name):
-                if self._last_error_permanent:
-                    # 404 on one mirror = skip all other mirrors for this file
-                    self.logger.info(
-                        f"Giving up on {name}: {self._last_error} (same path on every mirror)"
-                    )
-                    return False
+                last_error = self._last_error
                 continue
             if expected_hash and not verify_hash(dest, expected_hash):
-                self.logger.warning(f"hash mismatch from {mirror} for {name}; trying next mirror")
+                from emu68hatcher.utils.hashing import HashAlgorithm, calculate_hash
+
+                try:
+                    got = calculate_hash(dest, HashAlgorithm.MD5)
+                except Exception:
+                    got = "(unreadable)"
+                try:
+                    size = dest.stat().st_size
+                except OSError:
+                    size = -1
+                hash_error = f"Hash mismatch: got {got} ({size} bytes), expected {expected_hash}"
+                self.logger.warning(
+                    f"hash mismatch from {mirror} for {name}: got {got}, "
+                    f"expected {expected_hash}; trying next mirror"
+                )
                 self._discard_cache_entry(dest)
                 continue
             return True
+        self._last_error = hash_error or last_error
         return False
 
     def download(

@@ -1,0 +1,68 @@
+name: Check package downloads
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: package-download-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install pydantic pyyaml
+
+      - name: Check package downloads
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          python scripts/check-package-downloads.py --report "$RUNNER_TEMP/package-check.md"
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Write job summary
+        if: always()
+        run: cat "$RUNNER_TEMP/package-check.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update tracking issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHECK_STATUS: ${{ steps.check.outputs.status }}
+        run: |
+          title="package downloads need attention"
+          issue=$(gh issue list --state open --limit 100 --json number,title \
+            --jq '.[] | select(.title == "package downloads need attention") | .number' | head -n 1)
+          report="$RUNNER_TEMP/package-check.md"
+
+          if [ "$CHECK_STATUS" != "0" ]; then
+            if [ -n "$issue" ]; then
+              gh issue view "$issue" --json body --jq .body > "$RUNNER_TEMP/old-package-check.md"
+              if ! cmp -s "$report" "$RUNNER_TEMP/old-package-check.md"; then
+                gh issue edit "$issue" --body-file "$report"
+                gh issue comment "$issue" --body "The package check results changed. The issue body has the current report."
+              fi
+            else
+              gh issue create --title "$title" --body-file "$report"
+            fi
+          elif [ -n "$issue" ]; then
+            gh issue close "$issue" --comment "All configured package downloads pass again."
+          fi
