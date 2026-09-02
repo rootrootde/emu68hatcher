@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QStyle,
     QVBoxLayout,
     QWidget,
 )
@@ -61,6 +62,22 @@ _TOOL_ROWS = [
     ("hst-imager", "Disk image creation and manipulation"),
     ("7z", "Archive extraction (p7zip)"),
 ]
+
+_STATUS_ICON_SIZE = QSize(20, 20)
+_STATUS_LABEL_SIZE = QSize(24, 24)
+
+
+def _set_status_icon(
+    label: QLabel,
+    icon: QStyle.StandardPixmap,
+    accessible_name: str,
+) -> None:
+    screen = label.screen() or QApplication.primaryScreen()
+    pixel_ratio = screen.devicePixelRatio() if screen is not None else 1.0
+    label.setPixmap(label.style().standardIcon(icon).pixmap(_STATUS_ICON_SIZE, pixel_ratio))
+    label.setFixedSize(_STATUS_LABEL_SIZE)
+    label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    label.setAccessibleName(accessible_name)
 
 
 class StartTab(QWidget):
@@ -141,9 +158,12 @@ class StartTab(QWidget):
             row = QHBoxLayout()
             row.setSpacing(10)
 
-            status_label = QLabel("…")
-            status_label.setFixedWidth(24)
-            status_label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+            status_label = QLabel()
+            _set_status_icon(
+                status_label,
+                QStyle.StandardPixmap.SP_BrowserReload,
+                "Checking",
+            )
 
             text_col = QVBoxLayout()
             text_col.setSpacing(2)
@@ -193,8 +213,12 @@ class StartTab(QWidget):
         updates_layout = QVBoxLayout(updates_group)
         updates_layout.setSpacing(12)
 
-        self.hatcher_update_icon = QLabel("…")
-        self.hatcher_update_icon.setFixedWidth(24)
+        self.hatcher_update_icon = QLabel()
+        _set_status_icon(
+            self.hatcher_update_icon,
+            QStyle.StandardPixmap.SP_BrowserReload,
+            "Checking",
+        )
         self.hatcher_update_label = QLabel("")
         self.hatcher_update_label.setWordWrap(True)
         hatcher_row = QHBoxLayout()
@@ -202,8 +226,12 @@ class StartTab(QWidget):
         hatcher_row.addWidget(self.hatcher_update_label, 1)
         updates_layout.addLayout(hatcher_row)
 
-        self.manifest_update_icon = QLabel("…")
-        self.manifest_update_icon.setFixedWidth(24)
+        self.manifest_update_icon = QLabel()
+        _set_status_icon(
+            self.manifest_update_icon,
+            QStyle.StandardPixmap.SP_BrowserReload,
+            "Checking",
+        )
         self.manifest_update_label = QLabel("")
         self.manifest_update_label.setWordWrap(True)
         manifest_row = QHBoxLayout()
@@ -268,15 +296,27 @@ class StartTab(QWidget):
             path = finders[name]()
             status_label, path_label = self._row_widgets[name]
             if not path:
-                status_label.setText("❌")
+                _set_status_icon(
+                    status_label,
+                    QStyle.StandardPixmap.SP_DialogCancelButton,
+                    "Missing",
+                )
                 path_label.setText("not installed")
                 any_missing = True
             elif tool_needs_download(name):
-                status_label.setText("⚠️")
+                _set_status_icon(
+                    status_label,
+                    QStyle.StandardPixmap.SP_MessageBoxWarning,
+                    "Update available",
+                )
                 path_label.setText(f"{path} (update available)")
                 any_stale = True
             else:
-                status_label.setText("✅")
+                _set_status_icon(
+                    status_label,
+                    QStyle.StandardPixmap.SP_DialogApplyButton,
+                    "Installed",
+                )
                 path_label.setText(str(path))
 
         self.download_btn.setEnabled(any_missing or any_stale)
@@ -295,12 +335,20 @@ class StartTab(QWidget):
         release = selection.manifest.hatcher
         newer = is_newer_version(__version__, release.version)
         if newer:
-            self.hatcher_update_icon.setText("⚠️")
+            _set_status_icon(
+                self.hatcher_update_icon,
+                QStyle.StandardPixmap.SP_MessageBoxWarning,
+                "Update available",
+            )
             self.hatcher_update_label.setText(
                 f"Emu68 Hatcher {release.version} is available (installed: {__version__})"
             )
         else:
-            self.hatcher_update_icon.setText("✅")
+            _set_status_icon(
+                self.hatcher_update_icon,
+                QStyle.StandardPixmap.SP_DialogApplyButton,
+                "Current",
+            )
             self.hatcher_update_label.setText(f"Emu68 Hatcher {__version__} is current")
 
         source_label = {
@@ -309,26 +357,42 @@ class StartTab(QWidget):
             "remote": "server",
         }[selection.source]
         if selection.error:
-            self.manifest_update_icon.setText("⚠️")
+            _set_status_icon(
+                self.manifest_update_icon,
+                QStyle.StandardPixmap.SP_MessageBoxWarning,
+                "Check failed",
+            )
             self.manifest_update_label.setText(
                 f"Package list check failed; using {source_label} revision "
                 f"{selection.manifest.revision}"
             )
             self.manifest_update_label.setToolTip(selection.error)
         elif selection.source == "remote" and selection.changed:
-            self.manifest_update_icon.setText("✅")
+            _set_status_icon(
+                self.manifest_update_icon,
+                QStyle.StandardPixmap.SP_DialogApplyButton,
+                "Updated",
+            )
             self.manifest_update_label.setText(
                 f"Package list updated to server revision {selection.manifest.revision}"
             )
             self.manifest_update_label.setToolTip("")
         elif selection.checked:
-            self.manifest_update_icon.setText("✅")
+            _set_status_icon(
+                self.manifest_update_icon,
+                QStyle.StandardPixmap.SP_DialogApplyButton,
+                "Current",
+            )
             self.manifest_update_label.setText(
                 f"Package list revision {selection.manifest.revision} is current"
             )
             self.manifest_update_label.setToolTip("")
         else:
-            self.manifest_update_icon.setText("✅")
+            _set_status_icon(
+                self.manifest_update_icon,
+                QStyle.StandardPixmap.SP_DialogApplyButton,
+                "Available",
+            )
             self.manifest_update_label.setText(
                 f"Using {source_label} package list revision {selection.manifest.revision}"
             )
@@ -346,7 +410,11 @@ class StartTab(QWidget):
         if self._update_worker and self._update_worker.isRunning():
             return
         self.check_updates_btn.setEnabled(False)
-        self.manifest_update_icon.setText("…")
+        _set_status_icon(
+            self.manifest_update_icon,
+            QStyle.StandardPixmap.SP_BrowserReload,
+            "Checking",
+        )
         self.manifest_update_label.setText("Checking package list and application version…")
         self._update_worker = UpdateCheckWorker(self)
         self._update_worker.check_finished.connect(self._on_update_check_finished)
