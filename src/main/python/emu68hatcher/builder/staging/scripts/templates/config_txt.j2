@@ -64,6 +64,25 @@ dtparam=ant2
 {% endif %}
 {% endif %}
 
+{% if storage_overlays %}
+# Emu68 storage
+
+# Pi 3 and CM3 use the SDHC controller.
+[pi3]
+{{ storage_overlays.sdhc }}
+
+# Pi Zero 2 uses the SDHC controller.
+[pi02]
+{{ storage_overlays.sdhc }}
+
+# Pi 4, Pi 400 and CM4 use the eMMC controller.
+[pi4]
+{{ storage_overlays.emmc }}
+
+# Applies the remaining settings to every supported board.
+[all]
+{% endif %}
+
 # HDMI output
 {% if force_hdmi %}
 

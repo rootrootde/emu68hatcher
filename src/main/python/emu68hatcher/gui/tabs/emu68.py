@@ -350,12 +350,15 @@ class Emu68Tab(QWidget):
 
         self.release_button_group = QButtonGroup(self)
         self.release_radio_stable = QRadioButton("1.0.7 (stable)")
-        self.release_radio_alpha = QRadioButton("1.1.0-alpha.1")
+        self.release_radio_beta = QRadioButton("1.1.0-beta.1 (beta)")
+        self.release_radio_alpha = QRadioButton("1.1.0-alpha.1 (legacy)")
         self.release_radio_stable.setChecked(True)
         self.release_button_group.addButton(self.release_radio_stable)
+        self.release_button_group.addButton(self.release_radio_beta)
         self.release_button_group.addButton(self.release_radio_alpha)
         self.release_button_group.buttonClicked.connect(self._select_emu68_version)
         layout.addWidget(self.release_radio_stable)
+        layout.addWidget(self.release_radio_beta)
         layout.addWidget(self.release_radio_alpha)
         return release_group
 
@@ -852,14 +855,17 @@ class Emu68Tab(QWidget):
 
     def set_emu68_version(self, version: Emu68Version | str):
         self.emu68_version = version if isinstance(version, Emu68Version) else Emu68Version(version)
-        if self.emu68_version == Emu68Version.V1_1_0_ALPHA_1:
+        if self.emu68_version == Emu68Version.V1_1_0_BETA_1:
+            self.release_radio_beta.setChecked(True)
+        elif self.emu68_version == Emu68Version.V1_1_0_ALPHA_1:
             self.release_radio_alpha.setChecked(True)
         else:
             self.release_radio_stable.setChecked(True)
-        is_11 = self.emu68_version == Emu68Version.V1_1_0_ALPHA_1
 
-        if is_11:
+        if self.emu68_version == Emu68Version.V1_1_0_ALPHA_1:
             defaults = ("2", "no limit", "omit", "enabled", "external", "disabled")
+        elif self.emu68_version == Emu68Version.V1_1_0_BETA_1:
+            defaults = ("2", "no limit", "omit", "disabled", "internal", "disabled")
         else:
             defaults = ("1", "2048 MB", "32 MB", "disabled", "internal", "first boot")
 
@@ -875,6 +881,8 @@ class Emu68Tab(QWidget):
         self.emu68_version_changed.emit(self.emu68_version.value)
 
     def get_emu68_version(self) -> Emu68Version:
+        if self.release_radio_beta.isChecked():
+            return Emu68Version.V1_1_0_BETA_1
         if self.release_radio_alpha.isChecked():
             return Emu68Version.V1_1_0_ALPHA_1
         return Emu68Version.V1_0_7
@@ -893,7 +901,7 @@ class Emu68Tab(QWidget):
         self.sd_clock_spin.setEnabled(not self.sd_low_speed_check.isChecked())
         self.emmc_clock_spin.setEnabled(not self.emmc_low_speed_check.isChecked())
         self.chip_distance_spin.setEnabled(self.chip_slowdown_check.isChecked())
-        is_11 = self.emu68_version == Emu68Version.V1_1_0_ALPHA_1
+        is_11 = self.emu68_version.value.startswith("1.1")
         default_bus_test = not is_11 and self.bus_test_combo.currentData() == "default"
         bus_test = self.bus_test_combo.currentData() == "first_boot" or default_bus_test
         self.bus_test_size_spin.setEnabled(bus_test)

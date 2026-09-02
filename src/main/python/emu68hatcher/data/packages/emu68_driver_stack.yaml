@@ -10,6 +10,7 @@ versions:
 - '3.9'
 emu68_versions:
 - 1.1.0-alpha.1
+- 1.1.0-beta.1
 mandatory: true
 download:
   source: github

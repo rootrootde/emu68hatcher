@@ -104,6 +104,7 @@ class Emu68Version(str, Enum):
 
     V1_0_7 = "1.0.7"
     V1_1_0_ALPHA_1 = "1.1.0-alpha.1"
+    V1_1_0_BETA_1 = "1.1.0-beta.1"
 
 
 ######################

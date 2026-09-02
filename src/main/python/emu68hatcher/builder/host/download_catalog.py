@@ -230,6 +230,14 @@ EMU68_RELEASES: dict[str, dict] = {
         # 1.1 ships a newer VideoCore.card that overrides the Emu68-tools one
         "extras": [("emu68_videocore", "VideoCore.card")],
     },
+    "1.1.0-beta.1": {
+        "tag": "v1.1.0-beta.1",
+        "zips": [
+            ("emu68_boot", "Emu68-pistorm.zip"),
+            ("emu68_boot_classic", "Emu68-pistorm-classic.zip"),
+        ],
+        "extras": [("emu68_videocore", "VideoCore.card")],
+    },
 }
 
 
