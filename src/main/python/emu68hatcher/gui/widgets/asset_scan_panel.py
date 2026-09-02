@@ -136,6 +136,7 @@ class AssetScanPanel(QWidget):
             self._rom_rows = []
             self._whdload_rows = []
             self._adf_rows = []
+            self.adf_results.emit([], False)
             self._refresh_details_button()
             if configured_directories:
                 paths = "\n".join(str(path) for path in configured_directories)
@@ -154,6 +155,7 @@ class AssetScanPanel(QWidget):
         self._rom_rows = []
         self._whdload_rows = []
         self._adf_rows = []
+        self.adf_results.emit([], False)
         self._dialog_title = ""
         self._refresh_details_button()
         self.rom_status.setText("Scanning for ROMs...")

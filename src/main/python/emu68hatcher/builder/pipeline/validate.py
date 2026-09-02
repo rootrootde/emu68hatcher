@@ -34,6 +34,7 @@ def stage_validate(workflow: BuildWorkflow, _previous=None) -> ValidatedInputs:
     kickstart_version = workflow.config.kickstart.version.value
     rom_path, rom_info = _resolve_rom(workflow, existing_dirs, kickstart_version)
     found_media = _resolve_media(workflow, existing_dirs, kickstart_version)
+    _check_icon_set_adf(workflow, found_media, kickstart_version)
     _check_optional_package_adfs(workflow, found_media, kickstart_version)
     if workflow.config.network_stack == NetworkStack.MIAMIDX:
         from emu68hatcher.builder.pipeline.configure_network import (
@@ -164,4 +165,21 @@ def _check_optional_package_adfs(
         "Enabled package(s) need install media that wasn't found:\n"
         + "\n".join(lines)
         + "\n\nAdd the missing ADFs or disable the packages in the Software tab."
+    )
+
+
+def _check_icon_set_adf(
+    workflow: BuildWorkflow,
+    found_media: list,
+    kickstart_version: str,
+) -> None:
+    from emu68hatcher.data.icon_sets import format_adf_name, get_icon_set_extra_adf
+
+    required_adf = get_icon_set_extra_adf(workflow.config.icon_set, kickstart_version)
+    if required_adf is None or required_adf in {media.adf_name for media in found_media}:
+        return
+    label = format_adf_name(required_adf)
+    raise BuildError(
+        f"The selected icon set '{workflow.config.icon_set}' requires a recognized "
+        f"{label} ADF. Add the ADF to the Amiga Files tab or select another icon set."
     )
