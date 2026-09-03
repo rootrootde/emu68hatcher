@@ -1,6 +1,7 @@
 """start tab - welcome screen and required-tool setup"""
 
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 from PySide6.QtCore import QSize, QStandardPaths, Qt, QTimer, QUrl, Slot
@@ -96,6 +97,16 @@ def _installer_action(path: Path) -> tuple[str, bool] | None:
     if os_name == OperatingSystem.LINUX and suffix == ".deb" and linux_supports_deb_packages():
         return "Open Package Installer", False
     return None
+
+
+def _format_manifest_revision(revision: int) -> str:
+    try:
+        revision_date = datetime.fromtimestamp(revision, timezone.utc).date()
+    except (OSError, OverflowError, ValueError):
+        return f"revision {revision}"
+    if revision_date.year < 2000:
+        return f"revision {revision}"
+    return f"{revision_date.isoformat()} (revision {revision})"
 
 
 class StartTab(QWidget):
@@ -372,13 +383,14 @@ class StartTab(QWidget):
                 QStyle.StandardPixmap.SP_DialogApplyButton,
                 "Current",
             )
-            self.hatcher_update_label.setText(f"Emu68 Hatcher {__version__} is current")
+            self.hatcher_update_label.setText(f"Emu68 Hatcher {__version__} is up to date")
 
         source_label = {
             "bundled": "bundled",
             "cache": "cached",
             "remote": "server",
         }[selection.source]
+        revision_label = _format_manifest_revision(selection.manifest.revision)
         if selection.error:
             _set_status_icon(
                 self.manifest_update_icon,
@@ -386,8 +398,7 @@ class StartTab(QWidget):
                 "Check failed",
             )
             self.manifest_update_label.setText(
-                f"Package list check failed; using {source_label} revision "
-                f"{selection.manifest.revision}"
+                f"Package list check failed; using {source_label} list: {revision_label}"
             )
             self.manifest_update_label.setToolTip(selection.error)
         elif selection.source == "remote" and selection.changed:
@@ -397,7 +408,7 @@ class StartTab(QWidget):
                 "Updated",
             )
             self.manifest_update_label.setText(
-                f"Package list updated to server revision {selection.manifest.revision}"
+                f"Package list updated from server: {revision_label}"
             )
             self.manifest_update_label.setToolTip("")
         elif selection.checked:
@@ -406,9 +417,7 @@ class StartTab(QWidget):
                 QStyle.StandardPixmap.SP_DialogApplyButton,
                 "Current",
             )
-            self.manifest_update_label.setText(
-                f"Package list revision {selection.manifest.revision} is current"
-            )
+            self.manifest_update_label.setText(f"Package list is up to date: {revision_label}")
             self.manifest_update_label.setToolTip("")
         else:
             _set_status_icon(
@@ -417,7 +426,7 @@ class StartTab(QWidget):
                 "Available",
             )
             self.manifest_update_label.setText(
-                f"Using {source_label} package list revision {selection.manifest.revision}"
+                f"Using {source_label} package list: {revision_label}"
             )
             self.manifest_update_label.setToolTip("")
 
