@@ -3,7 +3,7 @@
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QSize, QStandardPaths, Qt, QUrl, Slot
+from PySide6.QtCore import QSize, QStandardPaths, Qt, QTimer, QUrl, Slot
 from PySide6.QtGui import QDesktopServices, QIcon, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
@@ -78,6 +78,24 @@ def _set_status_icon(
     label.setFixedSize(_STATUS_LABEL_SIZE)
     label.setAlignment(Qt.AlignmentFlag.AlignCenter)
     label.setAccessibleName(accessible_name)
+
+
+def _installer_action(path: Path) -> tuple[str, bool] | None:
+    from emu68hatcher.utils.platform import (
+        OperatingSystem,
+        detect_os,
+        linux_supports_deb_packages,
+    )
+
+    os_name = detect_os()
+    suffix = path.suffix.lower()
+    if os_name == OperatingSystem.MACOS and suffix == ".dmg":
+        return "Open DMG", False
+    if os_name == OperatingSystem.WINDOWS and suffix == ".exe":
+        return "Run Installer and Quit", True
+    if os_name == OperatingSystem.LINUX and suffix == ".deb" and linux_supports_deb_packages():
+        return "Open Package Installer", False
+    return None
 
 
 class StartTab(QWidget):
@@ -330,6 +348,11 @@ class StartTab(QWidget):
     def refresh_update_status(self):
         from emu68hatcher import __version__
         from emu68hatcher.data.update_manifest import get_current_artifact, is_newer_version
+        from emu68hatcher.utils.platform import (
+            OperatingSystem,
+            detect_os,
+            linux_supports_deb_packages,
+        )
 
         selection = self._update_selection
         release = selection.manifest.hatcher
@@ -398,10 +421,22 @@ class StartTab(QWidget):
             )
             self.manifest_update_label.setToolTip("")
 
+        artifact = get_current_artifact(selection.manifest)
         self.open_release_btn.setEnabled(newer)
-        self.download_update_btn.setEnabled(
-            newer and get_current_artifact(selection.manifest) is not None
-        )
+        self.download_update_btn.setEnabled(newer and artifact is not None)
+        self.download_update_btn.setText("Download Update…")
+        self.download_update_btn.setToolTip("")
+        if (
+            newer
+            and artifact is not None
+            and detect_os() == OperatingSystem.LINUX
+            and artifact.filename.lower().endswith(".deb")
+            and not linux_supports_deb_packages()
+        ):
+            self.download_update_btn.setText("Download .deb…")
+            self.download_update_btn.setToolTip(
+                "This package can only be opened directly on Debian-based systems."
+            )
 
     @Slot()
     def check_for_updates(self):
@@ -501,15 +536,55 @@ class StartTab(QWidget):
         if success:
             self.update_download_bar.setValue(100)
             self.update_download_status.setText(f"Downloaded to {detail}")
-            QMessageBox.information(
-                self,
-                "Application Update",
-                f"The verified installer was downloaded to:\n{detail}",
-            )
+            self._show_downloaded_update(Path(detail))
         else:
             self.update_download_bar.setValue(0)
             self.update_download_status.setText("Update download failed")
             QMessageBox.warning(self, "Application Update", detail)
+
+    def _show_downloaded_update(self, path: Path) -> None:
+        box = QMessageBox(self)
+        box.setWindowTitle("Application Update")
+        box.setIcon(QMessageBox.Icon.Information)
+        box.setText(f"{path.name} was downloaded and verified.")
+
+        action = _installer_action(path)
+        launch_btn = None
+        release_btn = None
+        if action is not None:
+            label, quit_after_launch = action
+            launch_btn = box.addButton(label, QMessageBox.ButtonRole.AcceptRole)
+            note = f"Saved to:\n{path}"
+            if quit_after_launch:
+                note += "\n\nEmu68 Hatcher will close after the installer starts."
+            box.setInformativeText(note)
+        else:
+            box.setInformativeText(
+                f"Saved to:\n{path}\n\nThis package cannot be opened automatically on this system."
+            )
+            release_btn = box.addButton("Open Download Page", QMessageBox.ButtonRole.ActionRole)
+
+        folder_btn = box.addButton("Open Downloads Folder", QMessageBox.ButtonRole.ActionRole)
+        later_btn = box.addButton("Later", QMessageBox.ButtonRole.RejectRole)
+        box.setDefaultButton(later_btn)
+        box.setEscapeButton(later_btn)
+        box.exec()
+
+        clicked = box.clickedButton()
+        if clicked is folder_btn:
+            self._open_local_path(path.parent, "Could not open the Downloads folder.")
+        elif release_btn is not None and clicked is release_btn:
+            self.open_release_page()
+        elif launch_btn is not None and clicked is launch_btn:
+            if self._open_local_path(path, "Could not open the downloaded installer."):
+                if action is not None and action[1]:
+                    QTimer.singleShot(0, self.window().close)
+
+    def _open_local_path(self, path: Path, error_message: str) -> bool:
+        if QDesktopServices.openUrl(QUrl.fromLocalFile(str(path))):
+            return True
+        QMessageBox.warning(self, "Application Update", f"{error_message}\n\n{path}")
+        return False
 
     def _app_download_worker_finished(self):
         self._app_download_worker = None
