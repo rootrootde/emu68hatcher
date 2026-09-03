@@ -4,7 +4,7 @@ Build ready-to-run SD cards with pre-configured Workbench installation (+batteri
 
 Runs on macOS, Linux and Windows.
 
-<img src="docs/assets/screenshot_macos.png" alt="Emu68 Hatcher main window (macOS, light + dark)" width="600">
+<a href="docs/assets/screenshot_macos.png"><img src="docs/assets/screenshot_macos.png" alt="Emu68 Hatcher Start tab on macOS" width="900"></a>
 
 > [!NOTE]
 > **Still in an early stage** - see [known issues](https://rootrootde.github.io/emu68hatcher/#known-issues-limitations). Only actively tested on my A1200 + pistorm32-lite + CM4 / on macOS. If you run it on different hardware or OS, let me know on the [Discord](https://discord.com/invite/ApTbasXJPE) or open a [GitHub issue](https://github.com/rootrootde/emu68hatcher/issues) - even just "it worked" is useful.
@@ -13,10 +13,11 @@ Runs on macOS, Linux and Windows.
 
 - Bootable Emu68 install for pistorm32-lite, pistorm, pistorm16
 - Workbench install from stock ADFs (3.1 / 3.2 / 3.2.2.1 / 3.2.3), or AmigaOS 3.9 from the original CD image
-- Customizable package set: MUI, WHDLoad+WHDLoadWrapper, IBrowse, HippoPlayer, ...
+- Customizable [package set](https://rootrootde.github.io/emu68hatcher/packages/): MUI, WHDLoad+WHDLoadWrapper, IBrowse, HippoPlayer, ViNCEd, ...
 - RTG (Picasso96), networking (Roadshow, MiamiDX, or AmiTCP_NG + wifipi/genet drivers), partition layout editor (PFS3 + FFS) - user-supplied full versions of Roadshow and Picasso96 supported
 - SD card flashing (direct, or write the **.img** to a card after the build), sparse **.img** by default
 - Build configs as JSON (save / load)
+- Update checks for the app and its signed package list
 
 → see [docs](https://rootrootde.github.io/emu68hatcher/) for more
 

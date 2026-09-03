@@ -17,6 +17,7 @@ _GROUP_ORDER = [
     "Internet",
     "Commodities",
     "Applications",
+    "Utilities",
     "Locale",
 ]
 _ALL_VERSIONS = {"3.1", "3.2", "3.2.2.1", "3.2.3", "3.9"}
@@ -24,11 +25,8 @@ _ALL_VERSIONS = {"3.1", "3.2", "3.2.2.1", "3.2.3", "3.9"}
 _HEADER = """\
 # Packages
 
-Everything the builder can put on a card, taken from the same package
-definitions the app uses. The Installed column tells you how a package
-gets onto the image: **always** is part of every build, **preselected**
-is on by default but can be unticked, **optional** is off until you
-enable it.
+Generated from the package definitions used by the app. **always** is required,
+**preselected** is on by default, and **optional** starts off.
 
 """
 

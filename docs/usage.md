@@ -2,36 +2,53 @@
 
 ## Build an image
 
-1. **Launch the app.** It will check whether some required tools are installed.
+1. **Launch the app.** It checks tools, updates and the package list.
 
-2. **Start tab - install missing tools.** If required tools are shown as missing, click **Download Missing Tools** and wait for green checkmarks.
+2. **Start tab.** Download missing or outdated tools. App updates go to Downloads and can be opened after verification; on Linux this needs a Debian-based system.
 
-3. **Amiga Files tab - pick the Workbench version, icon set, and languages.** Add one or more directories that contain your Kickstart ROMs and Workbench ADFs. Click **Add...** to point at a folder; the list re-scans after each add/remove. Files are identified by hash, so filenames don't matter. Pick the **icon set** (GlowIcons on 3.2+, or Standard) next to the Workbench version, and tick any **language** disks you want installed. **Show details...** opens a tabbed view of what was detected: the boot ROM picked, the WHDLoad ROM inventory that gets staged to **DEVS:Kickstarts/**, and the per-ADF breakdown. Automatic ROM selection follows Emu68 Imager and prefers a matching A1200 ROM when available; this does not restrict the image to A1200 hardware. For **AmigaOS 3.9**, add your OS 3.9 CD image (**.iso**, do not mount it) and a Kickstart 3.1 ROM instead of ADFs - the BoingBag updates download automatically.
+    [![Start tab with installed tools and update status](assets/screenshot_macos.png)](assets/screenshot_macos.png){ target="_blank" }
 
-4. **Emu68 tab - select the Emu68 release and boot behaviour.** Pick 1.0.7 stable for PiStorm32-lite / classic or 1.1.0-beta.1 for PiStorm16 support and the consolidated Pi4/CM4 driver stack. The older alpha remains available for rebuilding an existing setup. The basic view contains the CM4 antenna and storage timing. **Show Advanced** adds boot, memory, storage, compatibility, bus-test, and manual override settings. The right pane shows the generated **config.txt** and **cmdline.txt**, including values from the Display and Software tabs. With one-time diagnostics enabled, the affected file is split into first-boot and later-boot previews; the BAK file replaces the active file after the first boot.
+3. **Amiga Files tab.** Add folders with a Kickstart ROM and Workbench ADFs, then pick version, icon set and languages. Files are matched by hash; **Show details...** lists what was found. AmigaOS 3.9 uses the CD **.iso** and a Kickstart 3.1 ROM instead. GlowIcons needs its matching ADF.
 
-5. **Display tab - configure HDMI and Workbench output.** Pick the Pi HDMI mode and Workbench screen mode, choose the Picasso96 source, and configure Framethrower / Unicam. A VideoCore Workbench mode is written to **ScreenMode.prefs** during the build; native mode keeps the first-boot screen mode setup. Framethrower requires a VideoCore mode. **Show Advanced** contains the HDMI hotplug setting.
+    [![Amiga Files tab with a detected Workbench 3.2.3 set](assets/screenshots/amiga-files.png)](assets/screenshots/amiga-files.png){ target="_blank" }
 
-6. **Software tab - enable/disable optional packages.** Pick MUI 3.8 or 5.0, plus any applications and commodities you want. Mandatory system packages are always included and not shown here. The first build downloads everything (with caching, subsequent builds are faster).
+4. **Emu68 tab.** Pick 1.0.7 stable or 1.1.0-beta.1 and set boot options. The right side previews **config.txt** and **cmdline.txt**; more settings are under **Show Advanced**.
 
-7. **Network tab - set up TCP/IP (optional).** Choose Roadshow, MiamiDX, or AmiTCP_NG. Roadshow uses the bundled demo unless you select your own **Roadshow.lha**. Roadshow and AmiTCP_NG support DHCP or static addresses, DNS, and a default gateway. MiamiDX installs its main and MUI archives from Aminet with DHCP profiles for genet, wifipi, and uaenet. Its optional registration folder must contain **MIAMI.KEY1**, **MIAMI.KEY2**, and **MIAMIDX.KEY** together. Enter WiFi credentials for the selected stack. Networking starts from the **Connect WiFi** or **Connect Ethernet** Workbench tools; MiamiDX does not connect automatically at boot.
+    [![Emu68 tab with release selection and generated boot files](assets/screenshots/emu68.png)](assets/screenshots/emu68.png){ target="_blank" }
+
+5. **Display tab.** Set HDMI and Workbench modes, Picasso96, Framethrower and Unicam. Use **Browse...** for your own full **Picasso96.lha**.
+
+    [![Display tab with HDMI, Workbench and Framethrower settings](assets/screenshots/display.png)](assets/screenshots/display.png){ target="_blank" }
+
+6. **Software tab.** Select optional software and a MUI version. The list is filtered for the chosen Workbench and Emu68 versions. See [Packages](packages.md) for all packages.
+
+    [![Software tab with package groups](assets/screenshots/software.png)](assets/screenshots/software.png){ target="_blank" }
+
+7. **Network tab.** Choose Roadshow, MiamiDX or AmiTCP_NG and enter DHCP, static or wifi settings. Roadshow archives and MiamiDX registration files can be supplied here. Connections start from the Workbench tools.
+
+    [![Network tab with Roadshow and DHCP selected](assets/screenshots/network.png)](assets/screenshots/network.png){ target="_blank" }
 
 8. **Output tab.** Pick how to deliver the build:
-    - **Image file** - writes a regular **.img** file to disk. Sparse files are enabled by default, so a large image only uses as much disk space as the actual data.
-    - **Image file + flash to SD card** - same as above, then writes the image to the SD card you pick block-by-block. Requires admin/sudo. Faster for large builds: file copy hits local-disk speed and the SD card is only written once at hardware speed.
-    - **Direct to SD card** - skips the **.img** file and writes each Amiga file through hst-imager's PFS3 layer over the SD card interface. Useful when you don't need to keep the image around, but several times slower than the image+flash path once partitions get into multi-GB territory.
+
+    - **Image file** - writes a sparse **.img**.
+    - **Image file + flash to SD card** - keeps the image and then flashes it; fastest for large builds.
+    - **Direct to SD card** - skips the image, but is slower with large partitions.
 
     !!! danger "Double-check the target!"
         **Picking the wrong disk will wipe it.** Emu68 Hatcher will refuse to write to mounted root partitions (=your operating system) but has no problem with wiping anything else you have connected.
 
-9. **Partitions tab - configure disk size and partition layout.** Default is an 8 GB image with a ~512 MB Workbench partition (disk size / 15) and a "Work" partition filling the rest. You can add/remove/resize partitions, drag the borders on the partition bar to resize them or type exact sizes. With an SD card selected on the Output tab, the disk size matches the card.
+    [![Output tab set to build an image and flash it to SD](assets/screenshots/output.png)](assets/screenshots/output.png){ target="_blank" }
 
-    Selecting a partition shows an **Extra content directory** picker below the table. Point it at a local folder and its contents get mirrored into that partition during the build (e.g. pre-load a Work partition with WHDLoad games, demos, or backups). The extras mirror runs last, so any file you drop in there overrides the generated one.
+9. **Partitions tab.** Add or resize partitions and optional extra-content folders. Default is a 64 GB image with 1 GB **EMU68BOOT**, about 1/15 for Workbench and **Work** using the rest. FAT32 and RDB use two MBR entries; the listed Amiga partitions are inside the RDB.
 
-10. **Click "Build image".** On first run downloads a bunch of packages (uses cache after that). Progress and a build log are shown in the dialog. The log is also written to **buildlog.txt** next to the output image.
+    Extra content is copied last and can overwrite generated files.
 
-Both flashing modes prompt for admin access once at the start of the build. After a flash completes, an **Eject** button lets you safely remove the card (macOS / Linux). On macOS, full disk access for hst-imager must be granted/setup on first install - see [Installation](installation.md#macos).
+    [![Partitions tab with three Amiga partitions](assets/screenshots/partitions.png)](assets/screenshots/partitions.png){ target="_blank" }
+
+10. **Click "Build Image".** The first build downloads packages; later builds use the cache. The dialog and **buildlog.txt** contain the build log.
+
+Flashing asks for admin access. On macOS, hst-imager also needs Full Disk Access; see [Installation](installation.md#macos).
 
 ## Save / load configuration
 
-You can save the current configuration to a JSON file via **Save Config...** (bottom left) and load it later with **Load Config...**.
+Use **Save Config...** and **Load Config...** for JSON configs. wifi credentials are not saved.

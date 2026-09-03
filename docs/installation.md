@@ -17,7 +17,7 @@
 | 3.9 (CD **.iso**) | A1200 40.068 (the BoingBag soft ROM update loads at boot) |
 
 !!! note "Why is an A1200 ROM selected?"
-    Automatic ROM selection follows Emu68 Imager, the original basis for this project, and prefers a matching A1200 ROM when one is available. This does not limit the image to an A1200: this setup has also been confirmed to run on an A600 with PiStorm/Emu68. Manual boot ROM selection is not available yet.
+    Automatic selection follows Emu68 Imager and prefers an A1200 ROM when available. It also works on an A600 with PiStorm/Emu68. Manual selection is not available yet.
 
 ## Pick your OS
 
