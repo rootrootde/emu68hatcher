@@ -1,46 +1,46 @@
 {
   "payload": {
     "schema_version": 1,
-    "revision": 1788386335,
+    "revision": 1788539919,
     "hatcher": {
-      "version": "0.9.0",
-      "release_url": "https://github.com/rootrootde/emu68hatcher/releases/tag/v0.9.0",
+      "version": "1.0.0",
+      "release_url": "https://github.com/rootrootde/emu68hatcher/releases/tag/v1.0.0",
       "artifacts": {
         "linux-arm64": {
-          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v0.9.0/emu68hatcher-0.9.0-linux-arm64.deb",
-          "filename": "emu68hatcher-0.9.0-linux-arm64.deb",
-          "sha256": "bee211543dbcc9a9acfe2b0fa5f4dec815e01cc67526f10f45acdb9732b62af9",
-          "size": 67916932
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.0/emu68hatcher-1.0.0-linux-arm64.deb",
+          "filename": "emu68hatcher-1.0.0-linux-arm64.deb",
+          "sha256": "82da95f069c3fc2fa412d30552b775709a8a7fcd9fb6b91bc909fef4971c3841",
+          "size": 70919276
         },
         "linux-x64": {
-          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v0.9.0/emu68hatcher-0.9.0-linux-x64.deb",
-          "filename": "emu68hatcher-0.9.0-linux-x64.deb",
-          "sha256": "c2ca3451441ebaaa67c85bd8bddabaa03e1d6ece3bc07e8722c79d8955160deb",
-          "size": 71845548
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.0/emu68hatcher-1.0.0-linux-x64.deb",
+          "filename": "emu68hatcher-1.0.0-linux-x64.deb",
+          "sha256": "0568059d54ebeefc9c81ab4e922ea79e932aecda9f21d0b158adc34825d44519",
+          "size": 75084428
         },
         "macos-arm64": {
-          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v0.9.0/emu68hatcher-0.9.0-macos-arm64.dmg",
-          "filename": "emu68hatcher-0.9.0-macos-arm64.dmg",
-          "sha256": "7b737602f7aa14e1a5e0bb8fd5946053466f6738fcdd3b81c0fce0ea83c785b3",
-          "size": 32647799
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.0/emu68hatcher-1.0.0-macos-arm64.dmg",
+          "filename": "emu68hatcher-1.0.0-macos-arm64.dmg",
+          "sha256": "081d583ba0ab7f87acf090f27d8d179abda1b2c91adf3890428bd807d42554d4",
+          "size": 36535651
         },
         "macos-x64": {
-          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v0.9.0/emu68hatcher-0.9.0-macos-x64.dmg",
-          "filename": "emu68hatcher-0.9.0-macos-x64.dmg",
-          "sha256": "f7fde183b4c48e90fe86840b4395dcbbf86c335ecec4fecd8439f8609a73e436",
-          "size": 36492576
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.0/emu68hatcher-1.0.0-macos-x64.dmg",
+          "filename": "emu68hatcher-1.0.0-macos-x64.dmg",
+          "sha256": "1baacf2b9621f7aacf0f404c9f4221d27a3beee35f0230c7c456b80f514bf1bf",
+          "size": 38540199
         },
         "windows-arm64": {
-          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v0.9.0/emu68hatcher-0.9.0-windows-arm64.exe",
-          "filename": "emu68hatcher-0.9.0-windows-arm64.exe",
-          "sha256": "1d0216ba87131df780fb753af240940bbc75723dc30998c8b4c93273e9464a6c",
-          "size": 37733463
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.0/emu68hatcher-1.0.0-windows-arm64.exe",
+          "filename": "emu68hatcher-1.0.0-windows-arm64.exe",
+          "sha256": "626e47cf1ac49b9fe5bf2dbccf3e5b4e3a7b6b95f648f47c8c424ed705b90eed",
+          "size": 40698194
         },
         "windows-x64": {
-          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v0.9.0/emu68hatcher-0.9.0-windows-x64.exe",
-          "filename": "emu68hatcher-0.9.0-windows-x64.exe",
-          "sha256": "1f86e2faa0337f6446a58ea8ec7ac155415e420efeb505d80b878b6aa1db669b",
-          "size": 47652916
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.0/emu68hatcher-1.0.0-windows-x64.exe",
+          "filename": "emu68hatcher-1.0.0-windows-x64.exe",
+          "sha256": "a57ab4d1bad5fa61bdb848f0685d2ac56fdac0adbf278f5c4da117cb8f17a7be",
+          "size": 51413482
         }
       }
     },
@@ -120,6 +120,6 @@
   "signature": {
     "algorithm": "ed25519",
     "key_id": "updates-2026",
-    "value": "ez9GTnR3/UdXYwt8UTE8nzG/TsfL0b49cZBOtkI/ZHi3wXo5vh4XfRIH+wyZGveOKGGTar1dAUX4vtcAd3pRDQ=="
+    "value": "32hYHRpqVuXMre5I3x0JG9tLqhlspm+4c+zafewdyr+YPFRx0E+wdYoeNSN1Wnrw6kOLdTEhHaoptCrTCdhcAw=="
   }
 }
