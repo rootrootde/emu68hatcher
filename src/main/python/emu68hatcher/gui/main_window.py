@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.config = create_default_config()
         self.setup_ui()
-        self.resize(1400, 800)
+        self.resize(1200, 800)
         QTimer.singleShot(0, self.start_tab.check_for_updates)
 
     def setup_ui(self):
