@@ -30,7 +30,6 @@ class OutputTab(QWidget):
     # multi-GB values on a 32-bit signed int signal
     target_size_changed = Signal(object, str)
     target_size_cleared = Signal()
-    target_restore_complete = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -39,7 +38,6 @@ class OutputTab(QWidget):
         self._disk_workers: set[DiskListWorker] = set()
         self._disk_generation = 0
         self._pending_device: str | None = None
-        self._restore_in_progress = False
         self._last_emitted_device: str | None = None
         self.setup_ui()
         # disk list populates lazily - first refresh on tab show is fine
@@ -187,17 +185,13 @@ class OutputTab(QWidget):
     def _accept_disk_error(self, generation: int, message: str) -> None:
         if generation != self._disk_generation:
             return
-        restoring = self._restore_in_progress
         self._pending_device = None
-        self._restore_in_progress = False
         self._disks = []
         self.disk_combo.blockSignals(True)
         self.disk_combo.clear()
         self.disk_combo.addItem(f"(disk scan failed: {message})", None)
         self.disk_combo.blockSignals(False)
         self._emit_target_size(force=True)
-        if restoring:
-            self.target_restore_complete.emit()
 
     def shutdown_workers(self, timeout_ms: int = 500) -> bool:
         workers = tuple(worker for worker in self._disk_workers if worker.isRunning())
@@ -213,7 +207,6 @@ class OutputTab(QWidget):
     def _on_disks_loaded(self, disks: list):
         self._disks = disks
         desired = self._pending_device
-        restoring = self._restore_in_progress
         self.disk_combo.blockSignals(True)
         self.disk_combo.clear()
         if not disks:
@@ -229,10 +222,7 @@ class OutputTab(QWidget):
                 self.disk_combo.setCurrentIndex(index if index >= 0 else 0)
         self.disk_combo.blockSignals(False)
         self._pending_device = None
-        self._restore_in_progress = False
-        self._emit_target_size(force=restoring)
-        if restoring:
-            self.target_restore_complete.emit()
+        self._emit_target_size()
 
     def _emit_target_size(self, *, force: bool = False):
         """DEVICE or IMG+flash: push the picked card's size so partitions can auto-size"""
@@ -267,17 +257,13 @@ class OutputTab(QWidget):
             "flash_target": flash_target,
         }
 
-    def set_config(self, config: OutputConfig | None) -> bool:
+    def set_config(self, config: OutputConfig | None) -> None:
         if config is None:
-            self.target_restore_complete.emit()
-            return False
-        pending_device: str | None = None
+            return
         if config.type == OutputType.DEVICE:
             self.mode_device.setChecked(True)
-            pending_device = str(config.path)
         elif config.flash_target:
             self.mode_img_flash.setChecked(True)
-            pending_device = config.flash_target
             if config.path:
                 self.output_path.setText(str(config.path))
             self.sparse_cb.setChecked(config.sparse)
@@ -286,10 +272,16 @@ class OutputTab(QWidget):
             if config.path:
                 self.output_path.setText(str(config.path))
             self.sparse_cb.setChecked(config.sparse)
-        self._pending_device = pending_device
-        self._restore_in_progress = pending_device is not None
+
+        # raw device names are reused and may point at another disk next time
+        self.disk_combo.blockSignals(True)
+        self.disk_combo.setCurrentIndex(0 if self.disk_combo.count() else -1)
+        self.disk_combo.blockSignals(False)
+        self._pending_device = None
         # setChecked does not emit buttonClicked
         self._on_mode_changed()
-        if pending_device is None:
-            self.target_restore_complete.emit()
-        return pending_device is not None
+
+    def needs_disk_target(self) -> bool:
+        return (self.mode_device.isChecked() or self.mode_img_flash.isChecked()) and not (
+            self.disk_combo.currentData()
+        )
