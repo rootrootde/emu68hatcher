@@ -1,6 +1,8 @@
 """partition tab - editable layout"""
 
+import os
 from pathlib import Path
+from time import monotonic
 
 from PySide6.QtWidgets import (
     QComboBox,
@@ -15,14 +17,19 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from emu68hatcher.builder.staging.tree_copy import TreeUsage
 from emu68hatcher.config.defaults import (
     COMMON_DISK_SIZES,
 )
-from emu68hatcher.config.partition_helpers import disk_size_for_gb
+from emu68hatcher.config.partition_helpers import (
+    disk_size_for_gb,
+    usable_partition_content_size,
+)
 from emu68hatcher.config.schema import PartitionConfig
 from emu68hatcher.gui.partition_editor_model import PartitionEditorModel
 from emu68hatcher.gui.widgets.partition_bar import PartitionBar
 from emu68hatcher.gui.widgets.partition_table import PartitionTable
+from emu68hatcher.gui.workers import ExtraContentSizeWorker
 
 
 class PartitionsTab(QWidget):
@@ -31,6 +38,11 @@ class PartitionsTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._updating = False
+        self._extra_workers: set[ExtraContentSizeWorker] = set()
+        self._extra_generation = 0
+        self._extra_pending: set[str] = set()
+        self._extra_usage: dict[str, TreeUsage] = {}
+        self._extra_scan_errors: dict[str, str] = {}
         self._model = PartitionEditorModel(64)
         self.setup_ui()
         self._sync_boot_spin()
@@ -279,6 +291,8 @@ class PartitionsTab(QWidget):
             return
         self._model.set_extra_directory(row, Path(path))
         self._extras_edit.setText(path)
+        self._scan_extra_directories()
+        self._update_extra_status_cells()
 
     def _clear_extras_directory(self):
         row = self._selected_partition_row()
@@ -286,6 +300,8 @@ class PartitionsTab(QWidget):
             return
         self._model.set_extra_directory(row, None)
         self._extras_edit.clear()
+        self._scan_extra_directories()
+        self._update_extra_status_cells()
 
     def _on_bootable_changed(self, row: int, checked: bool) -> None:
         if self._updating or row < 0 or row >= len(self._model.partitions):
@@ -299,7 +315,8 @@ class PartitionsTab(QWidget):
         """rebuild table from internal state"""
         self._updating = True
         try:
-            self.part_table.render(self._model.partitions)
+            statuses = [self._extra_status(part) for part in self._model.partitions]
+            self.part_table.render(self._model.partitions, statuses)
             self.remove_btn.setEnabled(len(self._model.partitions) > 1)
             self.add_btn.setEnabled(self._model.can_add)
         finally:
@@ -353,6 +370,7 @@ class PartitionsTab(QWidget):
         if gb is None:
             gb = 8
         self._model.reset(disk_size_gb=gb)
+        self._scan_extra_directories()
         self._sync_boot_spin()
         self._refresh_table()
 
@@ -368,6 +386,7 @@ class PartitionsTab(QWidget):
             return
 
         self._model.load(config)
+        self._scan_extra_directories()
 
         # snap to the closest disk-size preset
         approx_gb = config.disk_size / (1_000_000_000 * 0.95)
@@ -379,3 +398,149 @@ class PartitionsTab(QWidget):
 
         self._sync_boot_spin()
         self._refresh_table()
+
+    @staticmethod
+    def _extra_key(path: Path) -> str:
+        return os.path.normcase(os.path.abspath(path.expanduser()))
+
+    def _extra_directories(self) -> dict[str, Path]:
+        directories: dict[str, Path] = {}
+        for part in self._model.partitions:
+            if part.extra_content_directory is None:
+                continue
+            path = Path(part.extra_content_directory).expanduser()
+            directories[self._extra_key(path)] = Path(self._extra_key(path))
+        return directories
+
+    def _scan_extra_directories(self) -> None:
+        self._extra_generation += 1
+        generation = self._extra_generation
+        for worker in self._extra_workers:
+            if worker.isRunning():
+                worker.requestInterruption()
+
+        directories = self._extra_directories()
+        self._extra_pending = set(directories)
+        for key in directories:
+            self._extra_usage.pop(key, None)
+            self._extra_scan_errors.pop(key, None)
+        if not directories:
+            return
+
+        worker = ExtraContentSizeWorker(list(directories.values()), self)
+        self._extra_workers.add(worker)
+        worker.size_found.connect(
+            lambda path, usage, current=generation: self._accept_extra_usage(current, path, usage)
+        )
+        worker.scan_error.connect(
+            lambda path, error, current=generation: self._accept_extra_error(current, path, error)
+        )
+        worker.finished.connect(
+            lambda current_worker=worker, current=generation: self._extra_worker_finished(
+                current_worker, current
+            )
+        )
+        worker.start()
+
+    def _accept_extra_usage(self, generation: int, path: str, usage: TreeUsage) -> None:
+        if generation != self._extra_generation:
+            return
+        key = self._extra_key(Path(path))
+        self._extra_usage[key] = usage
+        self._extra_scan_errors.pop(key, None)
+        self._extra_pending.discard(key)
+        self._update_extra_status_cells()
+
+    def _accept_extra_error(self, generation: int, path: str, error: str) -> None:
+        if generation != self._extra_generation:
+            return
+        key = self._extra_key(Path(path))
+        self._extra_scan_errors[key] = error
+        self._extra_pending.discard(key)
+        self._update_extra_status_cells()
+
+    def _extra_worker_finished(
+        self,
+        worker: ExtraContentSizeWorker,
+        generation: int,
+    ) -> None:
+        self._extra_workers.discard(worker)
+        worker.deleteLater()
+        if generation == self._extra_generation:
+            for path in worker.directories:
+                self._extra_pending.discard(self._extra_key(path))
+            self._update_extra_status_cells()
+
+    @staticmethod
+    def _format_extra_size(size: int) -> str:
+        if size >= 1024**3:
+            return f"{size / 1024**3:.1f} GiB"
+        if size >= 1024**2:
+            return f"{size / 1024**2:.1f} MiB"
+        return f"{size / 1024:.1f} KiB"
+
+    def _extra_status(self, part) -> tuple[str, str | None]:
+        if part.extra_content_directory is None:
+            return "", None
+        path = Path(part.extra_content_directory).expanduser()
+        key = self._extra_key(path)
+        if key in self._extra_pending:
+            return "checking...", None
+        if not path.exists() or not path.is_dir():
+            return "folder not found", "warning"
+        if key in self._extra_scan_errors:
+            return "could not read folder", "error"
+        usage = self._extra_usage.get(key)
+        if usage is None:
+            return "not checked", "warning"
+
+        required = usage.estimated_bytes
+        usable = usable_partition_content_size(part.size)
+        text = f"{self._format_extra_size(required)} / {self._format_extra_size(usable)}"
+        if required > usable:
+            return f"{text} - too large", "error"
+        return f"{text} - fits", "ok"
+
+    def _update_extra_status_cells(self) -> None:
+        if self.part_table.rowCount() != len(self._model.partitions):
+            return
+        for row, part in enumerate(self._model.partitions):
+            text, state = self._extra_status(part)
+            self.part_table.set_extra_status(row, text, state)
+
+    def extra_content_scan_pending(self) -> bool:
+        return bool(self._extra_pending.intersection(self._extra_directories()))
+
+    def extra_content_errors(self) -> list[str]:
+        errors: list[str] = []
+        for part in self._model.partitions:
+            if part.extra_content_directory is None:
+                continue
+            path = Path(part.extra_content_directory).expanduser()
+            if not path.exists() or not path.is_dir():
+                continue
+            key = self._extra_key(path)
+            scan_error = self._extra_scan_errors.get(key)
+            if scan_error:
+                errors.append(f"{part.device} ({part.volume}): cannot read {path}: {scan_error}")
+                continue
+            usage = self._extra_usage.get(key)
+            if usage is None:
+                errors.append(f"{part.device} ({part.volume}): folder size was not checked")
+                continue
+            usable = usable_partition_content_size(part.size)
+            if usage.estimated_bytes > usable:
+                errors.append(
+                    f"{part.device} ({part.volume}): {self._format_extra_size(usage.estimated_bytes)} "
+                    f"selected, but only {self._format_extra_size(usable)} is usable"
+                )
+        return errors
+
+    def shutdown_workers(self, timeout_ms: int = 500) -> bool:
+        workers = tuple(worker for worker in self._extra_workers if worker.isRunning())
+        for worker in workers:
+            worker.requestInterruption()
+        deadline = monotonic() + timeout_ms / 1000
+        for worker in workers:
+            worker.wait(max(0, int((deadline - monotonic()) * 1000)))
+        return not any(worker.isRunning() for worker in workers)

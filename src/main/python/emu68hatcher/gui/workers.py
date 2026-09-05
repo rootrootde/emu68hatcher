@@ -242,6 +242,38 @@ class ADFScanWorker(QThread):
         self.scan_finished.emit(found_media, truncated)
 
 
+class ExtraContentSizeWorker(QThread):
+    """measure extra content directories"""
+
+    size_found = Signal(str, object)
+    scan_error = Signal(str, str)
+
+    def __init__(self, directories: list[Path], parent=None):
+        super().__init__(parent)
+        self.directories = directories
+
+    def run(self):
+        from emu68hatcher.builder.staging.tree_copy import measure_contained_tree
+
+        for directory in self.directories:
+            if self.isInterruptionRequested():
+                return
+            try:
+                usage = measure_contained_tree(
+                    directory,
+                    cancel_check=self.isInterruptionRequested,
+                )
+            except InterruptedError:
+                return
+            except Exception as e:
+                logger.exception("extra content size check failed")
+                self.scan_error.emit(str(directory), str(e) or type(e).__name__)
+                continue
+            if self.isInterruptionRequested():
+                return
+            self.size_found.emit(str(directory), usage)
+
+
 class DiskListWorker(QThread):
     """enumerate removable disks off the GUI thread"""
 

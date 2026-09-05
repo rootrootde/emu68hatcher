@@ -132,6 +132,7 @@ class MainWindow(QMainWindow):
         for label, tab in (
             ("asset scans", self.kickstart_tab),
             ("disk scan", self.output_tab),
+            ("extra content scan", self.partitions_tab),
             ("downloads", self.start_tab),
         ):
             if not tab.shutdown_workers():
@@ -341,6 +342,23 @@ class MainWindow(QMainWindow):
         except Exception as e:
             # config validation (e.g. a malformed static IP) raises here - surface it cleanly
             QMessageBox.warning(self, "Invalid Configuration", str(e))
+            return
+
+        if self.partitions_tab.extra_content_scan_pending():
+            QMessageBox.warning(
+                self,
+                "Extra Content Check",
+                "The extra content folder size is still being checked. Try again in a moment.",
+            )
+            return
+
+        extra_errors = self.partitions_tab.extra_content_errors()
+        if extra_errors:
+            QMessageBox.warning(
+                self,
+                "Extra Content Does Not Fit",
+                "Extra content cannot be copied:\n\n" + "\n".join(extra_errors),
+            )
             return
 
         # a typed SSID that yields no wifi config means the password was too short to keep

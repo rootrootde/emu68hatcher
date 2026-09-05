@@ -19,6 +19,7 @@ from emu68hatcher.config.partition_models import (
 )
 
 PFS3_MAX_CREATE: int = PFS3_MAX_PARTITION_SIZE
+_MIN_CONTENT_HEADROOM = 1024 * 1024
 
 
 def round_to_cylinder(size: int) -> int:
@@ -29,6 +30,11 @@ def round_to_cylinder(size: int) -> int:
 def round_to_mbr_sector(size: int) -> int:
     """round down to MBR sector boundary (512 bytes)"""
     return (size // MBR_SECTOR_SIZE) * MBR_SECTOR_SIZE
+
+
+def usable_partition_content_size(size: int) -> int:
+    headroom = max(_MIN_CONTENT_HEADROOM, size // 50)
+    return max(0, size - headroom)
 
 
 def disk_size_for_gb(gb: int) -> int:
