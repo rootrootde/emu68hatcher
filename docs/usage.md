@@ -26,7 +26,7 @@
 
 7. **Network tab.** Choose Roadshow, MiamiDX or AmiTCP_NG and enter DHCP, static or wifi settings. Roadshow archives and MiamiDX registration files can be supplied here. Connections start from the Workbench tools.
 
-    [![Network tab with Roadshow and DHCP selected](assets/screenshots/network.png)](assets/screenshots/network.png){ target="_blank" }
+    [![Network tab with Roadshow and static ethernet](assets/screenshots/network.png)](assets/screenshots/network.png){ target="_blank" }
 
 8. **Output tab.** Pick how to deliver the build:
 
@@ -43,7 +43,7 @@
 
     Extra content is copied last and can overwrite generated files.
 
-    [![Partitions tab with three Amiga partitions](assets/screenshots/partitions.png)](assets/screenshots/partitions.png){ target="_blank" }
+    [![Partitions tab with four Amiga partitions](assets/screenshots/partitions.png)](assets/screenshots/partitions.png){ target="_blank" }
 
 10. **Click "Build Image".** The first build downloads packages; later builds use the cache. The dialog and **buildlog.txt** contain the build log.
 
