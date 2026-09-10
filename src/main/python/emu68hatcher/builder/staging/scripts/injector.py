@@ -274,10 +274,10 @@ STARTUP_SEQUENCE_INJECTIONS = [
     ),
     ScriptInjection(
         target_script="S/Startup-Sequence",
-        action=InjectionAction.INJECT_AFTER,
+        action=InjectionAction.INJECT_BEFORE,
         content_file="S/Startup-Sequence_UAE_ScreenMode",
         start_pattern=r"^(?:C:)?IPrefs(?:\s|$)",
-        name="UAE ScreenMode Fallback",
+        name="UAE ScreenMode",
     ),
     # main FirstBoot section (runs 4th)
     ScriptInjection(

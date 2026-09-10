@@ -14,3 +14,5 @@ download:
 install:
 - from: System/S/Hatcher-FirstBoot
   to: S/
+- from: System/C/Hatcher-UAE-ScreenMode
+  to: C/

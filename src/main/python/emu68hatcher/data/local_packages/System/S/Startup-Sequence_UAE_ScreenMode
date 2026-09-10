@@ -1,7 +1,13 @@
 FailAt 21
 IF $System EQ "UAE"
-	IF EXISTS SYS:Prefs/Env-Archive/Sys/ScreenMode.prefs.Native
-		SYS:Prefs/ScreenMode FROM SYS:Prefs/Env-Archive/Sys/ScreenMode.prefs.Native USE >NIL:
+	IF EXISTS SYS:Prefs/Env-Archive/Sys/ScreenMode.prefs.UAE
+		C:Hatcher-UAE-ScreenMode >S:UAE-ScreenMode.log
+		IF WARN
+			IF EXISTS SYS:Prefs/Env-Archive/Sys/ScreenMode.prefs.Native
+				Copy SYS:Prefs/Env-Archive/Sys/ScreenMode.prefs.Native ENV:Sys/ScreenMode.prefs >NIL:
+				Echo "Hatcher: using native screen mode"
+			ENDIF
+		ENDIF
 	ENDIF
 ENDIF
 FailAt 10

@@ -37,6 +37,7 @@ def configure_preferences(
 ) -> None:
     from emu68hatcher.builder.staging.prefs import (
         configure_workbench_screen_mode,
+        enable_workbench_backdrop,
         install_default_prefs,
     )
 
@@ -44,6 +45,13 @@ def configure_preferences(
     workflow._milestone("Configuring Amiga preferences")
     install_default_prefs(prefs_dir)
     workflow.logger.info("Configured Amiga preferences (wbpattern + env vars)")
+
+    try:
+        enable_workbench_backdrop(prefs_dir)
+    except (OSError, ValueError) as exc:
+        workflow.logger.warning(f"Could not enable Workbench backdrop: {exc}")
+    else:
+        workflow.logger.info("Enabled Workbench backdrop")
 
     workbench_mode = workflow.config.display.workbench_mode
     if workbench_mode != WorkbenchScreenMode.NATIVE:

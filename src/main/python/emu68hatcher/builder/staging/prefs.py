@@ -6,7 +6,7 @@ import struct
 from pathlib import Path
 
 from emu68hatcher.builder.errors import BuildError
-from emu68hatcher.builder.staging.files import resolve_source_path
+from emu68hatcher.builder.staging.files import resolve_source_path, resolve_staging_path
 from emu68hatcher.config.display_models import WorkbenchScreenModeInfo
 
 # AmigaOS IFF prefs PRHD: BYTE ph_Version + BYTE ph_Type + ULONG ph_Flags = 6 bytes.
@@ -73,6 +73,50 @@ def install_default_prefs(prefs_dir: Path) -> None:
     generate_default_env_vars(env_archive)
 
 
+def enable_workbench_backdrop(prefs_dir: Path) -> Path:
+    path = resolve_staging_path(prefs_dir, "Env-Archive/Sys/WBConfig.prefs")
+    if path.exists():
+        data = patch_workbench_backdrop(path.read_bytes())
+    else:
+        # stock window geometry is only needed when no prefs came from the install media.
+        body = struct.pack(">8x6H", 0, 11, 640, 389, 1, 0)
+        data = make_iff_form(
+            b"PREF",
+            [make_iff_chunk(b"PRHD", _PRHD_BODY), make_iff_chunk(b"WBCF", body)],
+        )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return path
+
+
+def patch_workbench_backdrop(data: bytes) -> bytes:
+    if len(data) < 12 or data[:4] != b"FORM" or data[8:12] != b"PREF":
+        raise ValueError("WBConfig.prefs is not an IFF PREF file")
+
+    form_end = 8 + struct.unpack_from(">I", data, 4)[0]
+    if form_end < 12 or form_end > len(data):
+        raise ValueError("WBConfig.prefs has an invalid IFF FORM size")
+
+    offset = 12
+    while offset + 8 <= form_end:
+        chunk_id = data[offset : offset + 4]
+        chunk_size = struct.unpack_from(">I", data, offset + 4)[0]
+        body = offset + 8
+        chunk_end = body + chunk_size
+        if chunk_end + (chunk_size & 1) > form_end:
+            raise ValueError("WBConfig.prefs has a truncated IFF chunk")
+        if chunk_id == b"WBCF":
+            if chunk_size != 20:
+                raise ValueError("WBConfig.prefs has an unsupported WBCF chunk size")
+            patched = bytearray(data)
+            # WBCF byte 17 is backdrop (file offset 51 in stock prefs).
+            patched[body + 17] = 1
+            return bytes(patched)
+        offset = chunk_end + (chunk_size & 1)
+
+    raise ValueError("WBConfig.prefs has no WBCF chunk")
+
+
 def configure_workbench_screen_mode(
     prefs_dir: Path,
     mode: WorkbenchScreenModeInfo,
@@ -90,16 +134,28 @@ def configure_workbench_screen_mode(
     original = screenmode_path.read_bytes()
     try:
         patched = patch_screenmode_prefs(original, mode.mode_id, mode.depth)
+        uae = patch_screenmode_prefs(
+            original, mode.mode_id, mode.depth, width=mode.width, height=mode.height
+        )
     except ValueError as exc:
         raise BuildError(f"Cannot set the Workbench screen mode: {exc}") from exc
 
     native_path = screenmode_path.with_name(f"{screenmode_path.name}.Native")
     native_path.write_bytes(original)
+    # UAE assigns its own mode IDs; the guest helper needs the requested dimensions.
+    screenmode_path.with_name(f"{screenmode_path.name}.UAE").write_bytes(uae)
     screenmode_path.write_bytes(patched)
     return screenmode_path
 
 
-def patch_screenmode_prefs(data: bytes, mode_id: int, depth: int) -> bytes:
+def patch_screenmode_prefs(
+    data: bytes,
+    mode_id: int,
+    depth: int,
+    *,
+    width: int | None = None,
+    height: int | None = None,
+) -> bytes:
     if len(data) < 12 or data[:4] != b"FORM" or data[8:12] != b"PREF":
         raise ValueError("ScreenMode.prefs is not an IFF PREF file")
 
@@ -120,7 +176,11 @@ def patch_screenmode_prefs(data: bytes, mode_id: int, depth: int) -> bytes:
                 raise ValueError("ScreenMode.prefs has an invalid SCRM chunk")
             patched = bytearray(data)
             struct.pack_into(">I", patched, body + 16, mode_id)
-            patched[body + 25] = depth
+            struct.pack_into(">H", patched, body + 24, depth)
+            if width is not None:
+                struct.pack_into(">H", patched, body + 20, width)
+            if height is not None:
+                struct.pack_into(">H", patched, body + 22, height)
             return bytes(patched)
         offset = chunk_end + (chunk_size & 1)
 
