@@ -12,6 +12,8 @@ mandatory: true
 download:
   source: github
   repo: michalsc/Emu68-tools
+  tag: v1.1
+  hash: 505C72151D67988E415B330AA6E19A8C
   filename: Emu68-tools.zip
 install:
 - from: WaitUntilConnected/WaitUntilConnected

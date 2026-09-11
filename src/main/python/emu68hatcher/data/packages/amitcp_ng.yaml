@@ -17,9 +17,9 @@ conflicts:
 download:
   source: github
   repo: MW0MWZ/AmiTCP_NG
-  tag: v4.1.5
-  filename: AmiTCP_NG-v4.1.5-68040.lha
-  hash: 48B9D23B97391EB08D09BF57FCF2B102
+  tag: v4.1.6
+  filename: AmiTCP_NG-v4.1.6.lha
+  hash: 6C01BF75BE49C57ADAFC7A223DAEDC54
 install:
 - from: AmiTCP_NG/data/Libs/bsdsocket.library
   to: Libs/

@@ -41,6 +41,12 @@ nav:
 hooks:
   - docs_hooks.py
 
+extra_css:
+  - assets/lightbox.css
+
+extra_javascript:
+  - assets/lightbox.js
+
 markdown_extensions:
   - admonition
   - attr_list

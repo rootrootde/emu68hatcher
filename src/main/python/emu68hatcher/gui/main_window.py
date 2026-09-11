@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.config = create_default_config()
         self.setup_ui()
-        self.resize(1400, 800)
+        self.resize(1200, 800)
         QTimer.singleShot(0, self.start_tab.check_for_updates)
 
     def setup_ui(self):
@@ -100,8 +100,6 @@ class MainWindow(QMainWindow):
         # output mode + selected disk drives partition sizing in DEVICE/flash modes
         self.output_tab.target_size_changed.connect(self.partitions_tab.set_auto_disk_size)
         self.output_tab.target_size_cleared.connect(self.partitions_tab.clear_auto_disk_size)
-        self.output_tab.target_restore_complete.connect(self._on_output_target_restored)
-        self._pending_loaded_partitions = None
 
         layout.addWidget(self.tabs)
 
@@ -134,6 +132,7 @@ class MainWindow(QMainWindow):
         for label, tab in (
             ("asset scans", self.kickstart_tab),
             ("disk scan", self.output_tab),
+            ("extra content scan", self.partitions_tab),
             ("downloads", self.start_tab),
         ):
             if not tab.shutdown_workers():
@@ -175,17 +174,11 @@ class MainWindow(QMainWindow):
                 self.network_tab.set_network_settings(self.config.network)
                 self.packages_tab.set_config(self.config.packages)
                 self.kickstart_tab.set_locale(self.config.packages)
-                self._pending_loaded_partitions = self.config.partitions
                 self.output_tab.set_config(self.config.output)
+                self.partitions_tab.set_config(self.config.partitions)
                 self.statusBar().showMessage(f"Loaded: {path}")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to load config: {e}")
-
-    def _on_output_target_restored(self):
-        config = self._pending_loaded_partitions
-        self._pending_loaded_partitions = None
-        if config is not None:
-            self.partitions_tab.set_config(config)
 
     def save_config_file(self):
         path, _ = QFileDialog.getSaveFileName(
@@ -336,11 +329,36 @@ class MainWindow(QMainWindow):
         return config
 
     def build_image(self):
+        if self.output_tab.needs_disk_target():
+            QMessageBox.warning(
+                self,
+                "Missing SD Card",
+                "Select an SD card in the Output tab.",
+            )
+            return
+
         try:
             self.collect_config()
         except Exception as e:
             # config validation (e.g. a malformed static IP) raises here - surface it cleanly
             QMessageBox.warning(self, "Invalid Configuration", str(e))
+            return
+
+        if self.partitions_tab.extra_content_scan_pending():
+            QMessageBox.warning(
+                self,
+                "Extra Content Check",
+                "The extra content folder size is still being checked. Try again in a moment.",
+            )
+            return
+
+        extra_errors = self.partitions_tab.extra_content_errors()
+        if extra_errors:
+            QMessageBox.warning(
+                self,
+                "Extra Content Does Not Fit",
+                "Extra content cannot be copied:\n\n" + "\n".join(extra_errors),
+            )
             return
 
         # a typed SSID that yields no wifi config means the password was too short to keep

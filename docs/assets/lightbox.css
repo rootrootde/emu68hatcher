@@ -1,0 +1,59 @@
+.image-lightbox-link img {
+  cursor: zoom-in;
+}
+
+.image-lightbox {
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 2rem);
+  padding: 0;
+  border: 0;
+  overflow: visible;
+  background: transparent;
+}
+
+.image-lightbox::backdrop {
+  background: rgb(4 6 12 / 85%);
+  backdrop-filter: blur(3px);
+}
+
+.image-lightbox__frame {
+  position: relative;
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 0.35rem;
+  background: var(--md-default-bg-color);
+  box-shadow: 0 1rem 4rem rgb(0 0 0 / 55%);
+}
+
+.image-lightbox__image {
+  display: block;
+  width: auto;
+  max-width: calc(100vw - 3.5rem);
+  height: auto;
+  max-height: calc(100vh - 6rem);
+  object-fit: contain;
+}
+
+.image-lightbox__caption {
+  padding: 0.55rem 0.25rem 0;
+  color: var(--md-default-fg-color--light);
+  text-align: center;
+}
+
+.image-lightbox__close {
+  position: absolute;
+  top: -0.7rem;
+  right: -0.7rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--md-default-bg-color);
+  font: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  background: var(--md-default-fg-color);
+  box-shadow: 0 0.2rem 0.8rem rgb(0 0 0 / 40%);
+}

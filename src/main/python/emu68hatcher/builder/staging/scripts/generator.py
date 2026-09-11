@@ -39,11 +39,20 @@ EMU68_KERNELS: dict[str, dict[str, str]] = {
         "classic": "Emu68-pistorm-classic.gz",
         "pistorm16": "Emu68-pistorm.gz",
     },
+    "1.1.0-beta.1": {
+        "modern": "Emu68-pistorm.gz",
+        "classic": "Emu68-pistorm-classic.gz",
+        "pistorm16": "Emu68-pistorm.gz",
+    },
 }
 
 
 def _is_emu68_11(emu68_version: str) -> bool:
     return emu68_version.startswith("1.1")
+
+
+def _uses_beta_overlays(emu68_version: str) -> bool:
+    return emu68_version == "1.1.0-beta.1"
 
 
 def _bus_test_enabled(settings: CmdlineTxtSettings, emu68_version: str) -> bool:
@@ -54,8 +63,12 @@ def _bus_test_enabled(settings: CmdlineTxtSettings, emu68_version: str) -> bool:
     return not _is_emu68_11(emu68_version)
 
 
-def _emu68_overlay(settings: CmdlineTxtSettings) -> str | None:
+def _emu68_overlay(settings: CmdlineTxtSettings, beta_overlays: bool) -> str | None:
     params = []
+    if beta_overlays and settings.no_fpu:
+        params.append("no_fpu")
+    if beta_overlays and settings.vbr_move:
+        params.append("vbr_move")
     if settings.fast_page_zero:
         params.append("FP0")
     if settings.chip_slowdown:
@@ -71,6 +84,39 @@ def _emu68_overlay(settings: CmdlineTxtSettings) -> str | None:
     return "dtoverlay=emu68," + ",".join(params)
 
 
+def _storage_overlay(
+    name: str,
+    unit0: str,
+    low_speed: bool,
+    clock_mhz: int | None,
+) -> str:
+    params = [f"unit0={unit0}"]
+    if low_speed:
+        params.append("low_speed")
+    elif clock_mhz:
+        params.append(f"clock={clock_mhz}")
+    return f"dtoverlay={name}," + ",".join(params)
+
+
+def _storage_overlays(settings: CmdlineTxtSettings, emu68_version: str) -> dict[str, str]:
+    if not _uses_beta_overlays(emu68_version):
+        return {}
+    return {
+        "sdhc": _storage_overlay(
+            "sdhc",
+            settings.sd_unit0.value,
+            settings.sd_low_speed,
+            settings.sd_clock_mhz,
+        ),
+        "emmc": _storage_overlay(
+            "emmc",
+            settings.emmc_unit0.value,
+            settings.emmc_low_speed,
+            settings.emmc_clock_mhz,
+        ),
+    }
+
+
 def _config_overlays(
     settings: Emu68BootSettings,
     emu68_version: str,
@@ -79,14 +125,20 @@ def _config_overlays(
     if not _is_emu68_11(emu68_version):
         return []
 
+    cmdline = settings.cmdline_txt
+    beta_overlays = _uses_beta_overlays(emu68_version)
     overlays = []
-    emu68 = _emu68_overlay(settings.cmdline_txt)
+    emu68 = _emu68_overlay(cmdline, beta_overlays)
     if emu68:
         overlays.append(emu68)
 
-    if include_diagnostics and _bus_test_enabled(settings.cmdline_txt, emu68_version):
-        size = settings.cmdline_txt.bus_test_size_kb * 1024
-        iterations = settings.cmdline_txt.bus_test_iterations
+    if beta_overlays:
+        if cmdline.z2_ram_size_mb is not None:
+            overlays.append(f"dtoverlay=z2ram,size={cmdline.z2_ram_size_mb}")
+
+    if include_diagnostics and _bus_test_enabled(cmdline, emu68_version):
+        size = cmdline.bus_test_size_kb * 1024
+        iterations = cmdline.bus_test_iterations
         overlays.append(f"dtoverlay=diagnostic,buptest,bupsize={size},bupiter={iterations}")
 
     if settings.config_txt.framethrower:
@@ -107,13 +159,14 @@ def _config_overlays(
 def _config_values(settings: Emu68BootSettings, emu68_version: str) -> dict:
     config = settings.config_txt
     is_11 = _is_emu68_11(emu68_version)
+    is_alpha = emu68_version == "1.1.0-alpha.1"
     turbo = config.cpu_turbo == ReleaseToggle.ENABLED or (
-        config.cpu_turbo == ReleaseToggle.DEFAULT and is_11
+        config.cpu_turbo == ReleaseToggle.DEFAULT and is_alpha
     )
 
     antenna = config.antenna
     if antenna == AntennaMode.DEFAULT:
-        antenna = AntennaMode.EXTERNAL if is_11 else None
+        antenna = AntennaMode.EXTERNAL if is_alpha else None
 
     return {
         "boot_delay": config.boot_delay,
@@ -144,20 +197,25 @@ def _cmdline_tokens(
     include_bus_test: bool,
 ) -> list[str]:
     cmdline = settings.cmdline_txt
-    tokens = [
-        f"sd.unit0={cmdline.sd_unit0.value}",
-        f"emmc.unit0={cmdline.emmc_unit0.value}",
-    ]
-    if cmdline.sd_low_speed:
-        tokens.append("sd.low_speed")
-    elif cmdline.sd_clock_mhz:
-        tokens.append(f"sd.clock={cmdline.sd_clock_mhz}")
-    if cmdline.emmc_low_speed:
-        tokens.append("emmc.low_speed")
-    elif cmdline.emmc_clock_mhz:
-        tokens.append(f"emmc.clock={cmdline.emmc_clock_mhz}")
+    beta_overlays = _uses_beta_overlays(emu68_version)
+    tokens = []
+    if not beta_overlays:
+        tokens.extend(
+            (
+                f"sd.unit0={cmdline.sd_unit0.value}",
+                f"emmc.unit0={cmdline.emmc_unit0.value}",
+            )
+        )
+        if cmdline.sd_low_speed:
+            tokens.append("sd.low_speed")
+        elif cmdline.sd_clock_mhz:
+            tokens.append(f"sd.clock={cmdline.sd_clock_mhz}")
+        if cmdline.emmc_low_speed:
+            tokens.append("emmc.low_speed")
+        elif cmdline.emmc_clock_mhz:
+            tokens.append(f"emmc.clock={cmdline.emmc_clock_mhz}")
 
-    if cmdline.vbr_move:
+    if cmdline.vbr_move and not beta_overlays:
         tokens.append("vbr_move")
     if not _is_emu68_11(emu68_version):
         if cmdline.fast_page_zero:
@@ -184,13 +242,13 @@ def _cmdline_tokens(
                 )
             elif config.framethrower_scaling == FramethrowerScaling.INTEGER:
                 tokens.append("unicam.integer")
-    if cmdline.no_fpu:
+    if cmdline.no_fpu and not beta_overlays:
         tokens.append("nofpu")
     if cmdline.limit_2g:
         tokens.append("limit_2g")
     if cmdline.disable_zorro3:
         tokens.append("z3_disable")
-    if cmdline.z2_ram_size_mb is not None:
+    if cmdline.z2_ram_size_mb is not None and not beta_overlays:
         tokens.append(f"z2_ram_size={cmdline.z2_ram_size_mb}")
     if cmdline.vc4_memory_mb is not None:
         tokens.append(f"vc4.mem={cmdline.vc4_memory_mb}")
@@ -245,6 +303,7 @@ def generate_config_txt(
         kernel_modern=kernels["modern"],
         kernel_classic=kernels["classic"],
         kernel_pistorm16=kernels["pistorm16"],
+        storage_overlays=_storage_overlays(boot_settings.cmdline_txt, emu68_version),
         overlays=_config_overlays(boot_settings, emu68_version, include_diagnostics),
         extra_config_lines=boot_settings.config_txt.extra_lines,
         **_config_values(boot_settings, emu68_version),

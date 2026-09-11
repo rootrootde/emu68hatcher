@@ -15,7 +15,9 @@ download:
   source: github
   repo: rondoval/emu68-genet-driver
   tag: v1.3
+  hash: 263F49B359C8E8D65A7EF59C14A2E943
   filename: genet.device
+  check_latest_release: false
 install:
 - from: genet.device
   to: Devs/Networks/

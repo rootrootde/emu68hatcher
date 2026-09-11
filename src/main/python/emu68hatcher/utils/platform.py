@@ -68,6 +68,18 @@ def detect_architecture() -> Architecture:
         return Architecture.UNKNOWN
 
 
+def linux_supports_deb_packages() -> bool:
+    if detect_os() != OperatingSystem.LINUX:
+        return False
+    try:
+        release = platform.freedesktop_os_release()
+    except OSError:
+        return False
+    distro_ids = {release.get("ID", "").lower()}
+    distro_ids.update(release.get("ID_LIKE", "").lower().split())
+    return bool(distro_ids & {"debian", "ubuntu"})
+
+
 def is_root() -> bool:
     """check if running with root/administrator privileges"""
     if platform.system() == "Windows":

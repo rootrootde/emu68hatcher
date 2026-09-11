@@ -22,7 +22,6 @@ from emu68hatcher.config.schema import (
     KickstartConfig,
     KickstartVersion,
 )
-from emu68hatcher.gui.widgets import select_combo_by_data
 from emu68hatcher.gui.widgets.asset_scan_panel import AssetScanPanel
 
 # dropdown order follows schema.SUPPORTED_KICKSTARTS (add a version there to expose it here)
@@ -39,6 +38,8 @@ class KickstartTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.icon_sets: list[dict] = []
+        self._recognized_adfs: set[str] = set()
+        self._requested_icon_set: str | None = None
         self._locale_checks: dict[str, QCheckBox] = {}
         self.setup_ui()
 
@@ -78,6 +79,7 @@ class KickstartTab(QWidget):
         self.icon_set_combo = QComboBox()
         self.icon_set_combo.setMinimumWidth(200)
         self.icon_set_combo.setToolTip("GlowIcons recommended for high color displays")
+        self.icon_set_combo.activated.connect(self._on_icon_set_activated)
         self._populate_icon_set_combo()
         icon_layout.addWidget(self.icon_set_combo)
         icon_layout.addStretch()
@@ -90,6 +92,7 @@ class KickstartTab(QWidget):
         self.rom_status = self.asset_panel.rom_status
         self.whdload_status = self.asset_panel.whdload_status
         self.adf_status = self.asset_panel.adf_status
+        self.asset_panel.adf_results.connect(self._on_adf_results)
         layout.addWidget(self.asset_panel)
 
         #############
@@ -111,6 +114,8 @@ class KickstartTab(QWidget):
         """re-scan + refresh the icon-set list and language grid when version changes"""
         self.version_changed.emit(self.get_selected_version())
         if hasattr(self, "icon_set_combo"):
+            self._recognized_adfs.clear()
+            self._requested_icon_set = None
             self._load_icon_sets(self.get_selected_version())
             self._populate_icon_set_combo()
         if hasattr(self, "_lang_grid"):
@@ -155,16 +160,19 @@ class KickstartTab(QWidget):
         """load the icon sets available for a Kickstart version"""
         self.icon_sets = []
         try:
-            from emu68hatcher.data.data_manager import load_yaml_data
+            from emu68hatcher.data.icon_sets import (
+                get_icon_set_extra_adf,
+                get_icon_sets_for_version,
+            )
 
-            for r in load_yaml_data("icon_sets"):
-                if ks_version not in r.get("versions", []):
-                    continue
+            for r in get_icon_sets_for_version(ks_version):
+                name = r.get("name", "Standard")
                 self.icon_sets.append(
                     {
-                        "name": r.get("name", "Standard"),
+                        "name": name,
                         "description": r.get("description", ""),
                         "default": r.get("default", False),
+                        "required_adf": get_icon_set_extra_adf(name, ks_version),
                     }
                 )
         except Exception:
@@ -180,19 +188,48 @@ class KickstartTab(QWidget):
                         "name": "GlowIcons",
                         "description": "Glow Icons for high color modes",
                         "default": True,
+                        "required_adf": "GlowIcons3_2",
                     }
                 )
                 self.icon_sets[0]["default"] = False
 
     def _populate_icon_set_combo(self):
         """fill the icon set dropdown from self.icon_sets, picking the default"""
+        from emu68hatcher.data.icon_sets import format_adf_name
+
         self.icon_set_combo.clear()
-        default_idx = 0
+        available_default = None
+        first_available = None
+        requested_idx = None
         for i, icon_set in enumerate(self.icon_sets):
-            self.icon_set_combo.addItem(icon_set["name"], icon_set["name"])
-            if icon_set["default"]:
-                default_idx = i
-        self.icon_set_combo.setCurrentIndex(default_idx)
+            name = icon_set["name"]
+            required_adf = icon_set.get("required_adf")
+            available = required_adf is None or required_adf in self._recognized_adfs
+            label = name if available else f"{name} (ADF not found)"
+            self.icon_set_combo.addItem(label, name)
+            item = self.icon_set_combo.model().item(i)
+            item.setEnabled(available)
+            description = icon_set["description"]
+            if not available:
+                description += f"\nRequires a recognized {format_adf_name(required_adf)} ADF."
+            item.setToolTip(description)
+            if available and first_available is None:
+                first_available = i
+            if available and icon_set["default"]:
+                available_default = i
+            if name == self._requested_icon_set:
+                requested_idx = i
+        target = requested_idx
+        if target is None:
+            target = available_default if available_default is not None else first_available
+        self.icon_set_combo.setCurrentIndex(target if target is not None else -1)
+
+    def _on_adf_results(self, found_media: list, _truncated: bool) -> None:
+        self._recognized_adfs = {media.adf_name for media in found_media}
+        self._populate_icon_set_combo()
+
+    def _on_icon_set_activated(self, index: int) -> None:
+        self._requested_icon_set = self.icon_set_combo.itemData(index)
 
     def get_icon_set(self) -> str:
         """selected icon set name"""
@@ -200,7 +237,8 @@ class KickstartTab(QWidget):
 
     def set_icon_set(self, icon_set_name: str):
         """set the icon set dropdown to a specific value"""
-        select_combo_by_data(self.icon_set_combo, icon_set_name)
+        self._requested_icon_set = icon_set_name
+        self._populate_icon_set_combo()
 
     def shutdown_workers(self, timeout_ms: int = 500) -> bool:
         return self.asset_panel.shutdown_workers(timeout_ms)
@@ -244,5 +282,4 @@ class KickstartTab(QWidget):
             if media_config.directory and media_config.directory != ks_config.rom_directory:
                 dirs.append(media_config.directory)
         self.asset_panel.directories = dirs
-        if dirs:
-            self.asset_panel.scan()
+        self.asset_panel.scan()

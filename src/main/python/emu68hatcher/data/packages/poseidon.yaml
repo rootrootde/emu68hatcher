@@ -10,6 +10,7 @@ versions:
 - '3.9'
 emu68_versions:
 - 1.1.0-alpha.1
+- 1.1.0-beta.1
 # stackattack raises the stack of processes poseidon.library spawns with a
 # hardcoded 8k (PoPo) - its user-startup block runs first via dep ordering
 requires:

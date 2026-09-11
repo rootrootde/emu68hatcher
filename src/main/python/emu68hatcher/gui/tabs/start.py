@@ -1,9 +1,10 @@
 """start tab - welcome screen and required-tool setup"""
 
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
-from PySide6.QtCore import QSize, QStandardPaths, Qt, QUrl, Slot
+from PySide6.QtCore import QSize, QStandardPaths, Qt, QTimer, QUrl, Slot
 from PySide6.QtGui import QDesktopServices, QIcon, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
@@ -15,6 +16,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QStyle,
     QVBoxLayout,
     QWidget,
 )
@@ -61,6 +63,50 @@ _TOOL_ROWS = [
     ("hst-imager", "Disk image creation and manipulation"),
     ("7z", "Archive extraction (p7zip)"),
 ]
+
+_STATUS_ICON_SIZE = QSize(20, 20)
+_STATUS_LABEL_SIZE = QSize(24, 24)
+
+
+def _set_status_icon(
+    label: QLabel,
+    icon: QStyle.StandardPixmap,
+    accessible_name: str,
+) -> None:
+    screen = label.screen() or QApplication.primaryScreen()
+    pixel_ratio = screen.devicePixelRatio() if screen is not None else 1.0
+    label.setPixmap(label.style().standardIcon(icon).pixmap(_STATUS_ICON_SIZE, pixel_ratio))
+    label.setFixedSize(_STATUS_LABEL_SIZE)
+    label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    label.setAccessibleName(accessible_name)
+
+
+def _installer_action(path: Path) -> tuple[str, bool] | None:
+    from emu68hatcher.utils.platform import (
+        OperatingSystem,
+        detect_os,
+        linux_supports_deb_packages,
+    )
+
+    os_name = detect_os()
+    suffix = path.suffix.lower()
+    if os_name == OperatingSystem.MACOS and suffix == ".dmg":
+        return "Open DMG", False
+    if os_name == OperatingSystem.WINDOWS and suffix == ".exe":
+        return "Run Installer and Quit", True
+    if os_name == OperatingSystem.LINUX and suffix == ".deb" and linux_supports_deb_packages():
+        return "Open Package Installer", False
+    return None
+
+
+def _format_manifest_revision(revision: int) -> str:
+    try:
+        revision_date = datetime.fromtimestamp(revision, timezone.utc).date()
+    except (OSError, OverflowError, ValueError):
+        return f"revision {revision}"
+    if revision_date.year < 2000:
+        return f"revision {revision}"
+    return f"{revision_date.isoformat()} (revision {revision})"
 
 
 class StartTab(QWidget):
@@ -141,9 +187,12 @@ class StartTab(QWidget):
             row = QHBoxLayout()
             row.setSpacing(10)
 
-            status_label = QLabel("…")
-            status_label.setFixedWidth(24)
-            status_label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+            status_label = QLabel()
+            _set_status_icon(
+                status_label,
+                QStyle.StandardPixmap.SP_BrowserReload,
+                "Checking",
+            )
 
             text_col = QVBoxLayout()
             text_col.setSpacing(2)
@@ -193,8 +242,12 @@ class StartTab(QWidget):
         updates_layout = QVBoxLayout(updates_group)
         updates_layout.setSpacing(12)
 
-        self.hatcher_update_icon = QLabel("…")
-        self.hatcher_update_icon.setFixedWidth(24)
+        self.hatcher_update_icon = QLabel()
+        _set_status_icon(
+            self.hatcher_update_icon,
+            QStyle.StandardPixmap.SP_BrowserReload,
+            "Checking",
+        )
         self.hatcher_update_label = QLabel("")
         self.hatcher_update_label.setWordWrap(True)
         hatcher_row = QHBoxLayout()
@@ -202,8 +255,12 @@ class StartTab(QWidget):
         hatcher_row.addWidget(self.hatcher_update_label, 1)
         updates_layout.addLayout(hatcher_row)
 
-        self.manifest_update_icon = QLabel("…")
-        self.manifest_update_icon.setFixedWidth(24)
+        self.manifest_update_icon = QLabel()
+        _set_status_icon(
+            self.manifest_update_icon,
+            QStyle.StandardPixmap.SP_BrowserReload,
+            "Checking",
+        )
         self.manifest_update_label = QLabel("")
         self.manifest_update_label.setWordWrap(True)
         manifest_row = QHBoxLayout()
@@ -268,15 +325,27 @@ class StartTab(QWidget):
             path = finders[name]()
             status_label, path_label = self._row_widgets[name]
             if not path:
-                status_label.setText("❌")
+                _set_status_icon(
+                    status_label,
+                    QStyle.StandardPixmap.SP_DialogCancelButton,
+                    "Missing",
+                )
                 path_label.setText("not installed")
                 any_missing = True
             elif tool_needs_download(name):
-                status_label.setText("⚠️")
+                _set_status_icon(
+                    status_label,
+                    QStyle.StandardPixmap.SP_MessageBoxWarning,
+                    "Update available",
+                )
                 path_label.setText(f"{path} (update available)")
                 any_stale = True
             else:
-                status_label.setText("✅")
+                _set_status_icon(
+                    status_label,
+                    QStyle.StandardPixmap.SP_DialogApplyButton,
+                    "Installed",
+                )
                 path_label.setText(str(path))
 
         self.download_btn.setEnabled(any_missing or any_stale)
@@ -290,54 +359,93 @@ class StartTab(QWidget):
     def refresh_update_status(self):
         from emu68hatcher import __version__
         from emu68hatcher.data.update_manifest import get_current_artifact, is_newer_version
+        from emu68hatcher.utils.platform import (
+            OperatingSystem,
+            detect_os,
+            linux_supports_deb_packages,
+        )
 
         selection = self._update_selection
         release = selection.manifest.hatcher
         newer = is_newer_version(__version__, release.version)
         if newer:
-            self.hatcher_update_icon.setText("⚠️")
+            _set_status_icon(
+                self.hatcher_update_icon,
+                QStyle.StandardPixmap.SP_MessageBoxWarning,
+                "Update available",
+            )
             self.hatcher_update_label.setText(
                 f"Emu68 Hatcher {release.version} is available (installed: {__version__})"
             )
         else:
-            self.hatcher_update_icon.setText("✅")
-            self.hatcher_update_label.setText(f"Emu68 Hatcher {__version__} is current")
+            _set_status_icon(
+                self.hatcher_update_icon,
+                QStyle.StandardPixmap.SP_DialogApplyButton,
+                "Current",
+            )
+            self.hatcher_update_label.setText(f"Emu68 Hatcher {__version__} is up to date")
 
         source_label = {
             "bundled": "bundled",
             "cache": "cached",
             "remote": "server",
         }[selection.source]
+        revision_label = _format_manifest_revision(selection.manifest.revision)
         if selection.error:
-            self.manifest_update_icon.setText("⚠️")
+            _set_status_icon(
+                self.manifest_update_icon,
+                QStyle.StandardPixmap.SP_MessageBoxWarning,
+                "Check failed",
+            )
             self.manifest_update_label.setText(
-                f"Package list check failed; using {source_label} revision "
-                f"{selection.manifest.revision}"
+                f"Package list check failed; using {source_label} list: {revision_label}"
             )
             self.manifest_update_label.setToolTip(selection.error)
         elif selection.source == "remote" and selection.changed:
-            self.manifest_update_icon.setText("✅")
+            _set_status_icon(
+                self.manifest_update_icon,
+                QStyle.StandardPixmap.SP_DialogApplyButton,
+                "Updated",
+            )
             self.manifest_update_label.setText(
-                f"Package list updated to server revision {selection.manifest.revision}"
+                f"Package list updated from server: {revision_label}"
             )
             self.manifest_update_label.setToolTip("")
         elif selection.checked:
-            self.manifest_update_icon.setText("✅")
-            self.manifest_update_label.setText(
-                f"Package list revision {selection.manifest.revision} is current"
+            _set_status_icon(
+                self.manifest_update_icon,
+                QStyle.StandardPixmap.SP_DialogApplyButton,
+                "Current",
             )
+            self.manifest_update_label.setText(f"Package list is up to date: {revision_label}")
             self.manifest_update_label.setToolTip("")
         else:
-            self.manifest_update_icon.setText("✅")
+            _set_status_icon(
+                self.manifest_update_icon,
+                QStyle.StandardPixmap.SP_DialogApplyButton,
+                "Available",
+            )
             self.manifest_update_label.setText(
-                f"Using {source_label} package list revision {selection.manifest.revision}"
+                f"Using {source_label} package list: {revision_label}"
             )
             self.manifest_update_label.setToolTip("")
 
+        artifact = get_current_artifact(selection.manifest)
         self.open_release_btn.setEnabled(newer)
-        self.download_update_btn.setEnabled(
-            newer and get_current_artifact(selection.manifest) is not None
-        )
+        self.download_update_btn.setEnabled(newer and artifact is not None)
+        self.download_update_btn.setText("Download Update…")
+        self.download_update_btn.setToolTip("")
+        if (
+            newer
+            and artifact is not None
+            and detect_os() == OperatingSystem.LINUX
+            and artifact.filename.lower().endswith(".deb")
+            and not linux_supports_deb_packages()
+        ):
+            self.download_update_btn.setText("Download .deb…")
+            self.download_update_btn.setToolTip(
+                "This package can only be opened directly on Debian-based systems."
+            )
 
     @Slot()
     def check_for_updates(self):
@@ -346,7 +454,11 @@ class StartTab(QWidget):
         if self._update_worker and self._update_worker.isRunning():
             return
         self.check_updates_btn.setEnabled(False)
-        self.manifest_update_icon.setText("…")
+        _set_status_icon(
+            self.manifest_update_icon,
+            QStyle.StandardPixmap.SP_BrowserReload,
+            "Checking",
+        )
         self.manifest_update_label.setText("Checking package list and application version…")
         self._update_worker = UpdateCheckWorker(self)
         self._update_worker.check_finished.connect(self._on_update_check_finished)
@@ -433,15 +545,55 @@ class StartTab(QWidget):
         if success:
             self.update_download_bar.setValue(100)
             self.update_download_status.setText(f"Downloaded to {detail}")
-            QMessageBox.information(
-                self,
-                "Application Update",
-                f"The verified installer was downloaded to:\n{detail}",
-            )
+            self._show_downloaded_update(Path(detail))
         else:
             self.update_download_bar.setValue(0)
             self.update_download_status.setText("Update download failed")
             QMessageBox.warning(self, "Application Update", detail)
+
+    def _show_downloaded_update(self, path: Path) -> None:
+        box = QMessageBox(self)
+        box.setWindowTitle("Application Update")
+        box.setIcon(QMessageBox.Icon.Information)
+        box.setText(f"{path.name} was downloaded and verified.")
+
+        action = _installer_action(path)
+        launch_btn = None
+        release_btn = None
+        if action is not None:
+            label, quit_after_launch = action
+            launch_btn = box.addButton(label, QMessageBox.ButtonRole.AcceptRole)
+            note = f"Saved to:\n{path}"
+            if quit_after_launch:
+                note += "\n\nEmu68 Hatcher will close after the installer starts."
+            box.setInformativeText(note)
+        else:
+            box.setInformativeText(
+                f"Saved to:\n{path}\n\nThis package cannot be opened automatically on this system."
+            )
+            release_btn = box.addButton("Open Download Page", QMessageBox.ButtonRole.ActionRole)
+
+        folder_btn = box.addButton("Open Downloads Folder", QMessageBox.ButtonRole.ActionRole)
+        later_btn = box.addButton("Later", QMessageBox.ButtonRole.RejectRole)
+        box.setDefaultButton(later_btn)
+        box.setEscapeButton(later_btn)
+        box.exec()
+
+        clicked = box.clickedButton()
+        if clicked is folder_btn:
+            self._open_local_path(path.parent, "Could not open the Downloads folder.")
+        elif release_btn is not None and clicked is release_btn:
+            self.open_release_page()
+        elif launch_btn is not None and clicked is launch_btn:
+            if self._open_local_path(path, "Could not open the downloaded installer."):
+                if action is not None and action[1]:
+                    QTimer.singleShot(0, self.window().close)
+
+    def _open_local_path(self, path: Path, error_message: str) -> bool:
+        if QDesktopServices.openUrl(QUrl.fromLocalFile(str(path))):
+            return True
+        QMessageBox.warning(self, "Application Update", f"{error_message}\n\n{path}")
+        return False
 
     def _app_download_worker_finished(self):
         self._app_download_worker = None

@@ -5,6 +5,13 @@
 !.githooks/
 !.github/
 
+# local working notes and gui drafts
+AGENTS*.md
+agents*.md
+/fix-plan*.md
+/review-findings*.md
+/designer-snapshot/
+
 # python
 __pycache__/
 *.py[cod]

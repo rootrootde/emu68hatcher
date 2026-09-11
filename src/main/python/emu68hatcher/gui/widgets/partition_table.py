@@ -1,6 +1,7 @@
 """Partition table rendering and typed edit signals."""
 
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QBrush, QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -19,7 +20,14 @@ COL_VOLUME = 1
 COL_SIZE = 2
 COL_FS = 3
 COL_BOOTABLE = 4
+COL_EXTRA = 5
 MIN_VISIBLE_ROWS = 2
+
+_EXTRA_COLORS = {
+    "ok": QColor("#17823b"),
+    "warning": QColor("#a66a00"),
+    "error": QColor("#c62828"),
+}
 
 
 class PartitionTable(QTableWidget):
@@ -32,8 +40,10 @@ class PartitionTable(QTableWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._rendering = False
-        self.setColumnCount(5)
-        self.setHorizontalHeaderLabels(["Device", "Volume", "Size (MB)", "Filesystem", "Boot"])
+        self.setColumnCount(6)
+        self.setHorizontalHeaderLabels(
+            ["Device", "Volume", "Size (MB)", "Filesystem", "Boot", "Extra / usable"]
+        )
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(
             COL_BOOTABLE,
@@ -43,7 +53,11 @@ class PartitionTable(QTableWidget):
         self.setSelectionMode(QAbstractItemView.SingleSelection)
         self.cellChanged.connect(self._cell_changed)
 
-    def render(self, partitions: list[AmigaPartition]) -> None:
+    def render(
+        self,
+        partitions: list[AmigaPartition],
+        extra_statuses: list[tuple[str, str | None]] | None = None,
+    ) -> None:
         self._rendering = True
         try:
             self.setRowCount(len(partitions))
@@ -57,9 +71,20 @@ class PartitionTable(QTableWidget):
                 self.setItem(row, COL_SIZE, size_item)
                 self.setCellWidget(row, COL_FS, self._filesystem_combo(row, partition))
                 self.setCellWidget(row, COL_BOOTABLE, self._bootable_widget(row, partition))
+                text, state = extra_statuses[row] if extra_statuses else ("", None)
+                self.set_extra_status(row, text, state)
         finally:
             self._rendering = False
         self._update_minimum_height()
+
+    def set_extra_status(self, row: int, text: str, state: str | None) -> None:
+        item = QTableWidgetItem(text)
+        item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        item.setToolTip(text)
+        color = _EXTRA_COLORS.get(state or "")
+        if color is not None:
+            item.setForeground(QBrush(color))
+        self.setItem(row, COL_EXTRA, item)
 
     def _update_minimum_height(self) -> None:
         row_heights = [self.rowHeight(row) for row in range(min(self.rowCount(), MIN_VISIBLE_ROWS))]

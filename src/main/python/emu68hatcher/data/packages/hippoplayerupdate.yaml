@@ -13,7 +13,7 @@ default: true
 download:
   source: aminet
   path: mus/play/hippoplayerupdate.lha
-  hash: A845E1B7AADCDC67ED461529D75A3662
+  hash: 8D3609208F67515108C269EFD34664A4
   filename: hippoplayerupdate.lha
 install:
 - from: HiP
