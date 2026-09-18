@@ -15,7 +15,7 @@ from emu68hatcher.builder.staging.scripts.injector import (
     write_amiga_script,
 )
 from emu68hatcher.builder.staging.toolsdaemon import patch_toolsdaemon
-from emu68hatcher.config.schema import NetworkStack
+from emu68hatcher.config.schema import KickstartVersion, NetworkStack
 from emu68hatcher.data.package_loader import get_local_packages_dir, get_package_by_name
 
 if TYPE_CHECKING:
@@ -112,6 +112,7 @@ def configure_scripts(
         injection_results = apply_standard_injections(
             staging_dir=boot_staging,
             content_base_path=content_base,
+            use_remlib=workflow.config.kickstart.version != KickstartVersion.V3_9,
         )
         failures = [result.error for result in injection_results if result.error]
         if failures:
