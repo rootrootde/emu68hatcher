@@ -11,9 +11,9 @@ versions:
 default: true
 download:
   source: aminet
-  path: driver/media/cfd.v20260614.lha
-  hash: 794A78EE6CA0DA93E355708B656B9786
-  filename: cfd.v20260614.lha
+  path: driver/media/cfd.v20260911.lha
+  hash: 5D0A4CC2C441AD4D88E54C648E92C4CD
+  filename: cfd.v20260911.lha
 install:
 # small (no debug) / 68020+ tier; the device now needs ptable.library beside it
 - from: cfd/small/68020/devs/compactflash.device

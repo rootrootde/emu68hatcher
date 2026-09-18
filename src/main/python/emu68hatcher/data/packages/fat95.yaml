@@ -11,10 +11,13 @@ versions:
 mandatory: true
 download:
   source: aminet
-  path: disk/misc/fat95.v20260614.lha
-  hash: 0F4475658DF27ED6AD05CBBD1F431457
-  filename: fat95.v20260614.lha
+  path: disk/misc/fat95.v20260911.lha
+  hash: D34B63260874797D23EE827682C8F29F
+  filename: fat95.v20260911.lha
 install:
 # 68020+ cpu tier (Emu68 is 040-class); the handler is now split by cpu
 - from: fat95/l/68020/fat95
   to: L/
+# fat95 4 needs this for partition detection, even without the optional cfd package
+- from: fat95/libs/68020/ptable.library
+  to: Libs/
