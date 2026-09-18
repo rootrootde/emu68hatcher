@@ -24,6 +24,10 @@
 
     [![Software tab with package groups](assets/screenshots/software.png)](assets/screenshots/software.png){ target="_blank" }
 
+    The **Fonts** group has four optional packs: Workbench (Apparent, Dina, Terminus), MagicWB (XEN, XHelvetica, XCourier), Retro, and Scalable (Bitstream Vera, DejaVu, Roboto). Sizes and styles are included with each pack. Installing a pack does not change the active Workbench, system or screen font.
+
+    TrueType packs also install **ttf.library** and register their fonts during the first boot. Font readmes and supplied licenses are copied to **SYS:Emu68-Hatcher/Fonts/**. Downloads come from the original sources, not from CaffeineOS. MagicWB is shareware; its license requires registration after the evaluation period and does not permit separate redistribution of its fonts.
+
 7. **Network tab.** Choose Roadshow, MiamiDX or AmiTCP_NG and enter DHCP, static or wifi settings. Roadshow archives and MiamiDX registration files can be supplied here. Connections start from the Workbench tools.
 
     [![Network tab with Roadshow and static ethernet](assets/screenshots/network.png)](assets/screenshots/network.png){ target="_blank" }

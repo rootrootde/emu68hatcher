@@ -1,0 +1,21 @@
+name: fonts_terminus
+friendly_name: Terminus
+group: Fonts
+description: 'fixed-width bitmap fonts with the supplied ISO-8859 variants'
+bundle: fonts_workbench
+download:
+  source: aminet
+  path: text/bfont/terminus-font.lha
+  hash: d0a89dcddb076364f856e4c9a216b4d1
+  filename: terminus-font.lha
+install:
+- from: terminus-font/Fonts/*
+  to: Fonts/
+- from: terminus-font/OFL.TXT
+  to: Emu68-Hatcher/Fonts/Terminus/
+- from: terminus-font/COPYING
+  to: Emu68-Hatcher/Fonts/Terminus/
+- from: terminus-font/AUTHORS
+  to: Emu68-Hatcher/Fonts/Terminus/
+- from: terminus-font/README
+  to: Emu68-Hatcher/Fonts/Terminus/

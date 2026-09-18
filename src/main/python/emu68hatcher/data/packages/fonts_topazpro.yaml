@@ -1,0 +1,17 @@
+name: fonts_topazpro
+friendly_name: TopazPro
+group: Fonts
+description: 'Topaz redrawn for square pixels, size 16'
+bundle: fonts_retro
+download:
+  source: aminet
+  path: text/bfont/dS-tpro.lha
+  hash: 8f9dd915e3360cd1531c6de36291b433
+  filename: dS-tpro.lha
+install:
+- from: dS!-tpro/TopazPro*
+  to: Fonts/
+- from: dS-tpro.nfo
+  to: Emu68-Hatcher/Fonts/TopazPro/
+- from: FILE_ID.DIZ
+  to: Emu68-Hatcher/Fonts/TopazPro/

@@ -19,3 +19,27 @@ magicmenu:
   group: Commodities
   description: "intuition menu enhancer 3.0"
   default: false
+
+fonts_workbench:
+  display_name: Workbench fonts
+  group: Fonts
+  description: "Apparent, Dina and Terminus bitmap fonts"
+  default: false
+
+fonts_magicwb:
+  display_name: MagicWB fonts
+  group: Fonts
+  description: "XEN, XHelvetica and XCourier (MagicWB shareware)"
+  default: false
+
+fonts_retro:
+  display_name: Retro fonts
+  group: Fonts
+  description: "TopazPro, proptopaz, Topaz/TopazPlus, MicroKnight, P0T-NOoDLE and mOsOul"
+  default: false
+
+fonts_scalable:
+  display_name: Scalable fonts
+  group: Fonts
+  description: "Bitstream Vera, DejaVu and Roboto TrueType families"
+  default: false

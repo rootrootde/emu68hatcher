@@ -1,0 +1,15 @@
+name: fonts_magicwb
+friendly_name: MagicWB fonts
+group: Fonts
+description: 'XEN, XHelvetica and XCourier from MagicWB 2.1p (shareware)'
+bundle: fonts_magicwb
+download:
+  source: aminet
+  path: util/wb/MagicWB21p.lha
+  hash: e425201fbbad65df41b5c683d539d2c1
+  filename: MagicWB21p.lha
+install:
+- from: MagicWB2.1p/Fonts/*
+  to: Fonts/
+- from: MagicWB2.1p/Documents/MagicWB.guide
+  to: Emu68-Hatcher/Fonts/MagicWB/

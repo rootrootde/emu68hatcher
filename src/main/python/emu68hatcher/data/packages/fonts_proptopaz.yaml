@@ -1,0 +1,15 @@
+name: fonts_proptopaz
+friendly_name: proptopaz
+group: Fonts
+description: 'proportional Topaz 1.2/1.3, size 8'
+bundle: fonts_retro
+download:
+  source: aminet
+  path: text/bfont/proptopaz.lha
+  hash: 57041fd97e8f389af94293968ca31e93
+  filename: proptopaz.lha
+install:
+- from: Proptopaz/fonts/*
+  to: Fonts/
+- from: Proptopaz/ReadMe
+  to: Emu68-Hatcher/Fonts/proptopaz/

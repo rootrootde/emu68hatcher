@@ -187,6 +187,7 @@ PACKAGE_GROUPS = [
     "Commodities",
     "Applications",
     "Utilities",
+    "Fonts",
     "Internet",
     "Network",
     "Development",

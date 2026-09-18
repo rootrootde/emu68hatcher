@@ -310,6 +310,7 @@ class MainWindow(QMainWindow):
                 "hdmi_mode": hdmi_mode,
                 "custom": custom,
                 "workbench_mode": disp.get("workbench_mode", "videocore_1280x720"),
+                "workbench_theme": disp.get("workbench_theme", "default"),
                 "picasso96_archive": self.display_tab.get_picasso96_archive(),
             },
             "packages": pkgs,

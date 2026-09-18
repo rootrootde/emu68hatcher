@@ -1,0 +1,21 @@
+name: fonts_vera
+friendly_name: Bitstream Vera
+group: Fonts
+description: 'Vera Sans, Serif and Sans Mono, including supplied styles'
+bundle: fonts_scalable
+requires:
+- ttflib
+download:
+  source: web
+  url: https://download.gnome.org/sources/ttf-bitstream-vera/1.10/ttf-bitstream-vera-1.10.zip
+  hash: ff1b2d3037c1dc369595fb719c296960
+  filename: ttf-bitstream-vera-1.10.zip
+install:
+- from: ttf-bitstream-vera-1.10/*.ttf
+  to: Fonts/TrueType/
+- from: ttf-bitstream-vera-1.10/COPYRIGHT.TXT
+  to: Emu68-Hatcher/Fonts/BitstreamVera/
+- from: ttf-bitstream-vera-1.10/README.TXT
+  to: Emu68-Hatcher/Fonts/BitstreamVera/
+- from: ttf-bitstream-vera-1.10/RELEASENOTES.TXT
+  to: Emu68-Hatcher/Fonts/BitstreamVera/
