@@ -10,8 +10,9 @@ versions:
 - '3.9'
 mandatory: true
 download:
-  source: aminet
-  path: disk/misc/fat95.v20260911.lha
+  source: github
+  repo: pulchart/fat95
+  tag: v20260911
   hash: D34B63260874797D23EE827682C8F29F
   filename: fat95.v20260911.lha
 install:

@@ -301,12 +301,19 @@ HatcherSyncTime:
     call HatcherSaveClock
     return
 
-/* write the synced time to whichever RTC is present - I2C (CM4 IO board)
-   first, clockport battclock as fallback; both absent is fine. */
+/* only PiStorm can use the Pi I2C registers, even if the tool is installed. */
 HatcherSaveClock:
+    hUseI2C = 0
     if exists("C:SetClockI2C") then do
+        "C:Version brcm-emmc.device >NIL:"
+        if rc < 20 then hUseI2C = 1
+        else do
+            "C:Version brcm-sdhc.device >NIL:"
+            if rc < 20 then hUseI2C = 1
+        end
+    end
+    if hUseI2C then do
         "C:SetClockI2C SAVE >NIL:"
-        /* same WARN threshold as the boot-side probe - LOAD and SAVE must agree */
         if rc < 5 then return
     end
     "C:SetClock SAVE >NIL:"

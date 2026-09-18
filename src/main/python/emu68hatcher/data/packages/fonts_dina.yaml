@@ -1,0 +1,17 @@
+name: fonts_dina
+friendly_name: Dina
+group: Fonts
+description: 'fixed-width bitmap fonts, including bold and italic'
+bundle: fonts_workbench
+download:
+  source: aminet
+  path: text/bfont/Dina.lha
+  hash: 5254fb6cf3448c68207d59515c54b850
+  filename: Dina.lha
+install:
+- from: Dina/Dina*
+  to: Fonts/
+- from: Dina/LICENSE
+  to: Emu68-Hatcher/Fonts/Dina/
+- from: Dina/INSTALL.TXT
+  to: Emu68-Hatcher/Fonts/Dina/

@@ -49,9 +49,6 @@ def stage_configure(workflow: BuildWorkflow, image: CreatedImage) -> CreatedImag
     # phase 2: Boot partition setup (40-70%)
     configure_boot_partition(workflow, image)
 
-    if workflow.config.kickstart.version.value == "3.9":
-        _apply_os39_boingbags(workflow, image, boot_staging)
-
     if "whdload" in all_packages:
         stage_whdload_kickstarts(workflow, image, boot_staging)
 
@@ -61,17 +58,6 @@ def stage_configure(workflow: BuildWorkflow, image: CreatedImage) -> CreatedImag
     workflow._update_state(progress=100.0)
     workflow._milestone("System configured")
     return image
-
-
-def _apply_os39_boingbags(
-    workflow: BuildWorkflow,
-    image: CreatedImage,
-    boot_staging,
-) -> None:
-    """apply the 3.9 BoingBag 1 + 2 updates from the downloaded archives"""
-    from emu68hatcher.builder.staging.boingbag import apply_boingbags
-
-    apply_boingbags(image.extracted.extracted_paths, boot_staging)
 
 
 def _collect_enabled_packages(workflow: BuildWorkflow) -> list[str]:

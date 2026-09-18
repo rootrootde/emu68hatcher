@@ -1,0 +1,18 @@
+name: fonts_roboto
+friendly_name: Roboto
+group: Fonts
+description: 'Roboto 2.138 and Roboto Condensed, static TrueType styles'
+bundle: fonts_scalable
+requires:
+- ttflib
+download:
+  source: github
+  repo: googlefonts/roboto-2
+  tag: v2.138
+  hash: 5bf2e05feff2c242a1796557aaec9953
+  filename: roboto-unhinted.zip
+install:
+- from: '*.ttf'
+  to: Fonts/TrueType/
+- from: LICENSE
+  to: Emu68-Hatcher/Fonts/Roboto/

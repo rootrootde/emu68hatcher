@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from emu68hatcher.builder.errors import BuildError
 from emu68hatcher.builder.pipeline.adf_extract import extract_adfs_with_rules
 from emu68hatcher.builder.pipeline.adf_mapping import filter_needed_media
+from emu68hatcher.builder.staging.boingbag import apply_boingbags
 from emu68hatcher.builder.staging.files import FileMapping, stage_files
 from emu68hatcher.builder.state import BuildStage, CreatedImage
 from emu68hatcher.data.install_media import scan_install_media_by_hash
@@ -55,6 +56,16 @@ def stage_install_workbench(
     )
     files_staged = stage_files(mapping, workspace.staging_dir)
     workflow.logger.info(f"Staged {files_staged} Workbench files to {workflow.config.boot_device}")
+
+    # BoingBags include older libraries and tools than the add-on packages.
+    if workflow.config.kickstart.version.value == "3.9":
+        workflow._update_state(progress=90.0)
+        workflow._milestone("Installing AmigaOS 3.9 BoingBag 1 + 2")
+        apply_boingbags(
+            image.extracted.extracted_paths,
+            workspace.staging_dir / workflow.config.boot_device,
+        )
+
     workflow._update_state(progress=100.0)
     workflow._milestone(f"Workbench installed ({files_staged} files)")
     return image

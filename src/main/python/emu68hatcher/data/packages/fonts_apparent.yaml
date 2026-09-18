@@ -1,0 +1,15 @@
+name: fonts_apparent
+friendly_name: Apparent
+group: Fonts
+description: 'bitmap font in sizes 11 and 13'
+bundle: fonts_workbench
+download:
+  source: aminet
+  path: text/bfont/Apparent.lha
+  hash: d6db082095d636497dcff15ffbe18255
+  filename: Apparent.lha
+install:
+- from: Fonts/Apparent*
+  to: Fonts/
+- from: Apparent.readme
+  to: Emu68-Hatcher/Fonts/Apparent/

@@ -1,0 +1,17 @@
+name: fonts_amiga_retro
+friendly_name: Multi Platform Amiga Fonts
+group: Fonts
+description: 'Topaz/TopazPlus, MicroKnight/Plus, P0T-NOoDLE and mOsOul (TrueType)'
+bundle: fonts_retro
+requires:
+- ttflib
+download:
+  source: web
+  url: https://github.com/rewtnull/amigafonts/archive/d42987535d94ebbfb51e64fee76f9974c6ae145a.zip
+  hash: 8650777db2db0f5517e01813b42a5b59
+  filename: amigafonts-d429875.zip
+install:
+- from: amigafonts-d42987535d94ebbfb51e64fee76f9974c6ae145a/ttf/*.ttf
+  to: Fonts/TrueType/
+- from: amigafonts-d42987535d94ebbfb51e64fee76f9974c6ae145a/README
+  to: Emu68-Hatcher/Fonts/AmigaRetro/

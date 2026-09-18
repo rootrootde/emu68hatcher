@@ -1,0 +1,21 @@
+name: fonts_dejavu
+friendly_name: DejaVu
+group: Fonts
+description: 'DejaVu 2.37 TrueType families, including condensed and mono styles'
+bundle: fonts_scalable
+requires:
+- ttflib
+download:
+  source: github
+  repo: dejavu-fonts/dejavu-fonts
+  tag: version_2_37
+  hash: 33e1e61fab06a547851ed308b4ffef42
+  filename: dejavu-fonts-ttf-2.37.zip
+install:
+- from: dejavu-fonts-ttf-2.37/ttf/*.ttf
+  to: Fonts/TrueType/
+- from: dejavu-fonts-ttf-2.37/LICENSE
+  to: Emu68-Hatcher/Fonts/DejaVu/
+- from: dejavu-fonts-ttf-2.37/README.md
+  to: Emu68-Hatcher/Fonts/DejaVu/
+  rename: README

@@ -22,6 +22,7 @@ from emu68hatcher.builder.state import (
     Workspace,
 )
 from emu68hatcher.config.defaults import EMU68_BOOT_PARTITION_NAME
+from emu68hatcher.data.themes import get_workbench_theme
 from emu68hatcher.utils.paths import ensure_dir, make_temp_workdir
 
 if TYPE_CHECKING:
@@ -250,7 +251,7 @@ def _download_packages(
     if workspace.validated.picasso96_archive_path is not None:
         download_names = [name for name in package_names if name != "picasso96"]
     mandatory = set(downloadable_mandatory_names(kickstart_version, emu68_version))
-    mandatory.update(_required_network_packages(workflow, resolution))
+    mandatory.update(_required_selection_packages(workflow, resolution))
     artifacts.required_artifacts.update(mandatory)
     workflow.logger.info(f"Total packages to process: {len(package_names)}")
     if not package_names:
@@ -284,11 +285,15 @@ def _download_packages(
             )
 
 
-def _required_network_packages(
+def _required_selection_packages(
     workflow: BuildWorkflow,
     resolution: Resolution,
 ) -> set[str]:
-    if workflow.config.network_stack is None:
+    theme = get_workbench_theme(workflow.config.display.workbench_theme)
+    required = {name.lower() for name in theme.required_packages} if theme else set()
+    if workflow.config.network_stack is not None:
+        required.add(workflow.config.network_stack.value.lower())
+    if not required:
         return set()
 
     from emu68hatcher.data.package_loader import get_package_by_name
@@ -302,7 +307,6 @@ def _required_network_packages(
         providers[name] = name
         providers.update({token.lower(): name for token in package.provides})
 
-    required = {workflow.config.network_stack.value.lower()}
     pending = list(required)
     while pending:
         name = pending.pop()
@@ -340,7 +344,7 @@ def stage_download(workflow: BuildWorkflow, workspace: Workspace) -> DownloadedA
     required_packages = {
         package.name for package in mandatory_packages if package.name in resolution.selected
     }
-    required_packages.update(_required_network_packages(workflow, resolution))
+    required_packages.update(_required_selection_packages(workflow, resolution))
     artifacts = DownloadedArtifacts(
         workspace=workspace,
         required_packages=required_packages,

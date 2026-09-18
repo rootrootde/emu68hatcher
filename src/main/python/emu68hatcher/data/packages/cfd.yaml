@@ -10,8 +10,9 @@ versions:
 - '3.9'
 default: true
 download:
-  source: aminet
-  path: driver/media/cfd.v20260911.lha
+  source: github
+  repo: pulchart/cfd
+  tag: v20260911
   hash: 5D0A4CC2C441AD4D88E54C648E92C4CD
   filename: cfd.v20260911.lha
 install:

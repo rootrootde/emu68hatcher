@@ -256,7 +256,7 @@ STARTUP_SEQUENCE_INJECTIONS = [
         end_pattern=r"^SYS:System/RexxMast",
         name="Original RexxMast bare line (moved to after BindDrivers)",
     ),
-    # RemLib must run before SetPatch can load the replacement icon.library.
+    # Older SetPatch versions need RemLib before loading the replacement icon.library.
     ScriptInjection(
         target_script="S/Startup-Sequence",
         action=InjectionAction.INJECT_BEFORE,
@@ -307,8 +307,8 @@ STARTUP_SEQUENCE_INJECTIONS = [
     ScriptInjection(
         target_script="S/Startup-Sequence",
         action=InjectionAction.REMOVE,
-        start_pattern=r"^Mount DEVS:DOSDrivers",
-        end_pattern=r"^Mount DEVS:DOSDrivers",
+        start_pattern=r"^\s*(?:C:)?Mount\s+(?:>NIL:\s+)?DEVS:DOSDrivers(?:/|\s|$)",
+        end_pattern=r"^\s*(?:C:)?Mount\s+(?:>NIL:\s+)?DEVS:DOSDrivers(?:/|\s|$)",
         name="Mount redirect",
     ),
     ScriptInjection(
@@ -324,10 +324,15 @@ STARTUP_SEQUENCE_INJECTIONS = [
 def apply_standard_injections(
     staging_dir: Path,
     content_base_path: Path,
+    *,
+    use_remlib: bool = True,
 ) -> list[InjectionResult]:
     """apply the Startup-Sequence surgery injections to staged files"""
     results = []
     for injection in STARTUP_SEQUENCE_INJECTIONS:
+        # OS 3.9 SetPatch replaces icon.library itself; leave the resident list intact.
+        if injection.name == "Iconlib" and not use_remlib:
+            continue
         target = staging_dir / injection.target_script
         results.append(inject_script(target, injection, content_base_path))
     return results

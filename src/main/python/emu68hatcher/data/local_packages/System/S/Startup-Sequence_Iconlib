@@ -1,3 +1,5 @@
-If NOT $KICKVER EQ 47
+; ENV: is not assigned yet, so check the library directly.
+C:Version exec.library VERSION 47 >NIL:
+If WARN
    C:RemLib >NIL: icon.library
 EndIf

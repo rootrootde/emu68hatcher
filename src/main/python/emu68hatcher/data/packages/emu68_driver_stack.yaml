@@ -15,10 +15,12 @@ mandatory: true
 download:
   source: github
   repo: rondoval/emu68-driver-stack
-  tag: v2.0.0
-  filename: emu68-drivers-2.0.0.lha
-  hash: A1298F0178AF7807F8CEE0231733BEA8
+  tag: v2.1.1
+  # rangeops needs custom Emu68 firmware; Hatcher ships official builds
+  filename: emu68-drivers-2.1.1.lha
+  hash: C29D4C3F18A787422D489D73C29FD555
 # selectable Amiga stacks need the SANA-II genet and Poseidon 4.x xhci variants in Storage/
+# bundled lwIP libraries and commands would overwrite the selected TCP/IP stack
 install:
 - from: LIBS/gic400.library
   to: Libs/
