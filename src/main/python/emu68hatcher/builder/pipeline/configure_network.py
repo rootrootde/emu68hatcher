@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 from emu68hatcher.builder.errors import BuildError
 from emu68hatcher.config.schema import NetworkStack
-from emu68hatcher.data.package_loader import get_local_packages_dir
+from emu68hatcher.data.package_loader import get_local_packages_dir, get_package_by_name
 
 if TYPE_CHECKING:
     from emu68hatcher.builder.workflow import BuildWorkflow
@@ -91,10 +91,11 @@ def _configure_amitcp_ng(workflow: BuildWorkflow, boot_staging: Path) -> None:
     if network.dns_servers:
         _write_name_resolution(devs / "Internet" / "name_resolution", network.dns_servers)
 
-    _write_lines(
-        boot_staging / "Libs" / "AmiTCP_NG.version",
-        ["$VER: AmiTCP_NG 4.1.5"],
-    )
+    package = get_package_by_name("amitcp_ng")
+    marker = "$VER: AmiTCP_NG"
+    if package and package.download and package.download.tag:
+        marker += f" {package.download.tag.removeprefix('v')}"
+    _write_lines(boot_staging / "Libs" / "AmiTCP_NG.version", [marker])
     workflow.logger.info(
         f"Configured AmiTCP_NG: ethernet={network.ethernet.mode.value} "
         f"wifi={network.wifi.mode.value} gateway={network.gateway or '-'} "
