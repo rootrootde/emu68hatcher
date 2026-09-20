@@ -28,6 +28,9 @@ _HEADER = """\
 
 Generated from the package definitions used by the app. **always** is required,
 **preselected** is on by default, and **optional** starts off.
+Dependencies are installed when a selected package needs them. The Software
+tab shows the reason. Minimal keeps the OS, RTG and FirstBoot tools;
+see [Usage](usage.md) for its effect on software and networking.
 
 """
 
@@ -41,6 +44,11 @@ def _tier(pkg: dict) -> tuple[int, str]:
 
 
 def _source_cell(pkg: dict) -> str:
+    if pkg.get("archive_package"):
+        source = yaml.safe_load(
+            (_PKG_DIR / f"{pkg['archive_package']}.yaml").read_text(encoding="utf-8")
+        )
+        return _source_cell(source)
     dl = pkg.get("download") or {}
     src = dl.get("source")
     if src == "aminet":

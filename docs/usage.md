@@ -20,7 +20,13 @@
 
     [![Display tab with HDMI, Workbench and Framethrower settings](assets/screenshots/display.png)](assets/screenshots/display.png){ target="_blank" }
 
-6. **Software tab.** Select optional software and a MUI version. The list is filtered for the chosen Workbench and Emu68 versions. See [Packages](packages.md) for all packages.
+6. **Software tab.** Select optional software and hardware drivers. The list is filtered for the chosen Workbench and Emu68 versions. Required dependencies show which package needs them; libraries are grouped in a collapsed section. MUI is optional unless an application needs it. See [Packages](packages.md) for all packages.
+
+    **Minimal** clears optional software and drivers and sets the Network tab to None. The OS, RTG, filesystem and FirstBoot helpers remain installed, including fat95 for access to the boot partition. ROM, display mode, partitions, icons and install media stay unchanged. Extra content is still copied, so those folders can add software to a minimal image.
+
+    **Select None** clears only software choices; a selected network stack can still require drivers and libraries. **Defaults** restores the standard software selection without changing the Network tab. Save Config stores your choices separately from automatically required packages.
+
+    Emu68 tools and drivers can be selected separately: Ethernet, WiFi, USB, NVMe, I2C clock support and diagnostic tools. A selected network stack includes both Ethernet and WiFi support. USB and NVMe components are offered only for compatible Emu68 versions. The Minimal selection retains RTG support; it is not a native-only installation.
 
     [![Software tab with package groups](assets/screenshots/software.png)](assets/screenshots/software.png){ target="_blank" }
 

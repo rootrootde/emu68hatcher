@@ -85,6 +85,20 @@ class MainWindow(QMainWindow):
         self.network_tab = NetworkTab()
         self.tabs.addTab(self.network_tab, "Network")
 
+        self.packages_tab.minimal_requested.connect(self._select_minimal)
+        self.packages_tab.selection_changed.connect(self._refresh_boot_files_preview)
+        for radio in (
+            self.network_tab.radio_none,
+            self.network_tab.radio_roadshow,
+            self.network_tab.radio_amitcp_ng,
+            self.network_tab.radio_miamidx,
+        ):
+            radio.toggled.connect(self._refresh_package_context)
+        self.display_tab.workbench_theme_combo.currentIndexChanged.connect(
+            self._refresh_package_context
+        )
+        self._refresh_package_context()
+
         self.kickstart_tab.version_changed.connect(self.packages_tab.set_kickstart_version)
         self.emu68_tab.emu68_version_changed.connect(self.packages_tab.set_emu68_version)
         self.emu68_tab.settings_changed.connect(self._refresh_boot_files_preview)
@@ -328,6 +342,21 @@ class MainWindow(QMainWindow):
         config = BuildConfig.model_validate(data)
         self.config = config
         return config
+
+    def _refresh_package_context(self):
+        self.packages_tab.set_context(
+            self.network_tab.get_network_stack(),
+            self.display_tab.workbench_theme_combo.currentData(),
+        )
+
+    def _select_minimal(self):
+        self.network_tab.set_network_stack(None)
+        self.display_tab.workbench_theme_combo.setCurrentIndex(0)
+        self.packages_tab.select_none()
+        self._refresh_package_context()
+        self.statusBar().showMessage(
+            "Minimal selected. Partition extra content and install media are unchanged."
+        )
 
     def build_image(self):
         if self.output_tab.needs_disk_target():
