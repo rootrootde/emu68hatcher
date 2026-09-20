@@ -376,6 +376,8 @@ def _configure_toolsdaemon(
     extracted_paths: dict[str, Path],
 ) -> None:
     """configure custom menus and native Tools entries."""
+    if "toolsdaemon" not in all_packages:
+        return
     workflow._milestone("Installing ToolsDaemon 2.2 menus")
     patched = patch_toolsdaemon(boot_staging, extracted_paths)
     workflow.logger.info(f"Patched ToolsDaemon 2.2 files: {', '.join(patched)}")

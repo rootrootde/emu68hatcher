@@ -19,6 +19,9 @@ class Resolution:
     install_order: list[str] = field(default_factory=list)  # dep-before-dependent
     dropped: dict[str, str] = field(default_factory=dict)  # name -> reason (lost conflict / orphan)
     unsatisfiable: dict[str, list[str]] = field(default_factory=dict)  # token -> requirers
+    required_by: dict[str, list[str]] = field(default_factory=dict)
+    recommended_by: dict[str, list[str]] = field(default_factory=dict)
+    selection_reasons: dict[str, str] = field(default_factory=dict)
 
 
 def _provides_of(pkg: Package) -> set[str]:
@@ -91,7 +94,10 @@ class _ResolverContext:
                 continue
             selected.add(name)
             package = self.by_name[name]
-            for requirement in package.requires:
+            requirements = package.requires + (
+                [package.archive_package] if package.archive_package else []
+            )
+            for requirement in requirements:
                 token = requirement.lower()
                 provider = self.pick_provider(token, selected, excluded)
                 if provider is None:
@@ -224,11 +230,22 @@ def resolve(
 
     install_order = _topological_order(selected, context.by_name, requirers, order_hint)
 
+    recommended_by: dict[str, list[str]] = {}
+    for name in sorted(selected):
+        for token in context.by_name[name].recommends:
+            if token in deselected:
+                continue
+            provider = context.pick_provider(token, selected, excluded | deselected)
+            if provider in selected:
+                recommended_by.setdefault(provider, []).append(name)
+
     return Resolution(
         selected=selected,
         install_order=install_order,
         dropped=dropped,
         unsatisfiable={key: sorted(set(value)) for key, value in unsatisfiable.items()},
+        required_by={key: sorted(value) for key, value in requirers.items()},
+        recommended_by=recommended_by,
     )
 
 

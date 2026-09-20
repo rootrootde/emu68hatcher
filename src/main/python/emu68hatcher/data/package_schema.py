@@ -128,6 +128,8 @@ class Package(BaseModel):
     # download configuration (None for local-only packages)
     download: DownloadInfo | None = None
 
+    archive_package: str | None = Field(default=None, pattern=_IDENTIFIER_PATTERN)
+
     # installation rules
     install: list[InstallRule] = Field(default_factory=list)
 

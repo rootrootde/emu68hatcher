@@ -2,6 +2,24 @@
 # members declare membership via `bundle: <id>` in their own YAML.
 # bundle-level default wins over member `default:` flags.
 
+toolsdaemon:
+  display_name: ToolsDaemon 2.2
+  group: Commodities
+  description: Custom Workbench menus and preferences editor
+  default: true
+
+whdload:
+  display_name: WHDLoad
+  group: Games
+  description: WHDLoad with the Emu68 wrapper and RTB files
+  default: true
+
+image_datatypes:
+  display_name: Image datatypes
+  group: Datatypes
+  description: akGIF, akJFIF (JPEG), akPNG and akTIFF image datatypes
+  default: true
+
 hippoplayer:
   display_name: HippoPlayer
   group: Applications

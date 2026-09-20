@@ -105,7 +105,20 @@ def _validate_dependency_graph(packages: list[Package]) -> None:
         tokens.update(t.lower() for t in p.provides)
 
     errors: list[str] = []
+    by_name = {p.name: p for p in packages}
     for p in packages:
+        seen = {p.name}
+        source = p
+        while source.archive_package:
+            name = source.archive_package
+            if name in seen or name not in by_name:
+                errors.append(f"{p.name}: invalid or cyclic archive source {name!r}")
+                break
+            seen.add(name)
+            source = by_name[name]
+        else:
+            if p.archive_package and (p.download or not source.download):
+                errors.append(f"{p.name}: archive source needs one download definition")
         for t in p.requires + p.recommends:
             if t.lower() not in tokens:
                 errors.append(

@@ -66,7 +66,9 @@ def configure_preferences(
             f"Configured Workbench for VideoCore {mode.width}x{mode.height}, 32-bit BGRA"
         )
 
-    if workflow.config.wifi:
+    from emu68hatcher.builder.pipeline._selection import get_resolution
+
+    if workflow.config.wifi and "emu68_wifi" in get_resolution(workflow).selected:
         workflow._update_state(progress=80.0)
         workflow._milestone("Configuring WiFi")
         sys_dir = ensure_dir(env_archive / "Sys")

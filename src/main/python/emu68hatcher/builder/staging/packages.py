@@ -87,12 +87,15 @@ class PackageInstaller:
     def has_package_source(self, package_name: str) -> bool:
         """Return whether a package with install rules has a usable source tree."""
         pkg = get_package_by_name(package_name)
-        if not pkg or not pkg.download or not pkg.install:
+        if not pkg or not (pkg.download or pkg.archive_package) or not pkg.install:
             return True
         return self._get_source_dir(pkg) is not None
 
     def _get_source_dir(self, pkg: Package) -> Path | None:
         """get the source directory for package files"""
+        if pkg.archive_package:
+            source = get_package_by_name(pkg.archive_package)
+            return self._get_source_dir(source) if source else None
         if not pkg.download:
             return None
 
