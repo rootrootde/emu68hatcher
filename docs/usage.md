@@ -16,7 +16,7 @@
 
     [![Emu68 tab with release selection and generated boot files](assets/screenshots/emu68.png)](assets/screenshots/emu68.png){ target="_blank" }
 
-5. **Display tab.** Set HDMI and Workbench modes, Picasso96, Framethrower and Unicam. Use **Browse...** for your own full **Picasso96.lha**.
+5. **Display tab.** Set HDMI and Workbench modes, Picasso96 and native-video capture. Select **Framethrower** or **C790 (HDMI to CSI)** as the capture device. C790 requires Emu68 1.1 or later and a VideoCore Workbench mode. Use **Browse...** for your own full **Picasso96.lha**.
 
     [![Display tab with HDMI, Workbench and Framethrower settings](assets/screenshots/display.png)](assets/screenshots/display.png){ target="_blank" }
 

@@ -781,7 +781,7 @@ class Emu68Tab(QWidget):
             "diagnostic (buptest, bupiter, bupsize, membench, membase, memsize), "
             "unicam (boot, smooth, integer, full_width, full_height, width, height, bpp, "
             "mode, x, y, b, c, scaler, phase, lanes, aspect, order, type, ftmode). "
-            "Turn off Framethrower in Display before adding a complete unicam overlay."
+            "Turn off native-video capture in Display before adding a complete unicam overlay."
         )
         self.extra_config_edit.setMaximumHeight(100)
         self._add_form_row(

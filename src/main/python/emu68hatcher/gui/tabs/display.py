@@ -1,4 +1,4 @@
-"""Display output, Picasso96, and Framethrower settings."""
+"""Display output, Picasso96, and native-video capture settings."""
 
 from pathlib import Path
 
@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from emu68hatcher.config.boot_models import Emu68BootSettings
+from emu68hatcher.config.boot_models import Emu68BootSettings, UnicamDevice
 from emu68hatcher.config.display_models import (
     WORKBENCH_RTG_MODES,
     WorkbenchScreenMode,
@@ -301,16 +301,26 @@ class DisplayTab(QWidget):
         form.addRow(label, field)
 
     def _create_framethrower_group(self) -> QGroupBox:
-        group = QGroupBox("Framethrower / Unicam")
+        group = QGroupBox("Framethrower / C790 (Unicam)")
         form = self._form_layout(group)
 
-        self.framethrower_check = QCheckBox("Enable Framethrower / Unicam")
+        self.framethrower_check = QCheckBox("Enable native-video capture")
         self.framethrower_check.toggled.connect(self._update_framethrower_fields)
         self._add_form_row(
             form,
             "Configuration:",
             self.framethrower_check,
             "Captures native Amiga video through Unicam for VideoCore output.",
+        )
+
+        self.unicam_device_combo = QComboBox()
+        self.unicam_device_combo.addItem("Framethrower", UnicamDevice.FRAMETHROWER.value)
+        self.unicam_device_combo.addItem("C790 (HDMI to CSI)", UnicamDevice.C790.value)
+        self._add_form_row(
+            form,
+            "Capture device:",
+            self.unicam_device_combo,
+            "Select the connected capture board. C790 requires Emu68 1.1 or later.",
         )
 
         self.framethrower_boot_check = QCheckBox("Start on boot")
@@ -358,7 +368,8 @@ class DisplayTab(QWidget):
         )
 
         self.framethrower_note = QLabel(
-            "Framethrower requires a VideoCore Workbench mode. "
+            "Native-video capture requires a VideoCore Workbench mode. "
+            "C790 requires Emu68 1.1 or later. "
             "For PAL, use a fixed 50 Hz HDMI mode."
         )
         self.framethrower_note.setWordWrap(True)
@@ -451,6 +462,7 @@ class DisplayTab(QWidget):
             self.framethrower_check.setChecked(False)
         self.framethrower_check.setEnabled(rtg_enabled)
         framethrower = rtg_enabled and self.framethrower_check.isChecked()
+        self.unicam_device_combo.setEnabled(framethrower)
         self.framethrower_boot_check.setEnabled(framethrower)
         self.framethrower_scaling_combo.setEnabled(framethrower)
         smooth = self.framethrower_scaling_combo.currentData() == "smooth"
@@ -462,6 +474,7 @@ class DisplayTab(QWidget):
         return {
             "force_hdmi": self.force_hdmi_check.isChecked(),
             "framethrower": self.framethrower_check.isChecked(),
+            "unicam_device": self.unicam_device_combo.currentData(),
             "framethrower_start_on_boot": self.framethrower_boot_check.isChecked(),
             "framethrower_scaling": self.framethrower_scaling_combo.currentData(),
             "framethrower_b": self.framethrower_b_spin.value(),
@@ -471,6 +484,7 @@ class DisplayTab(QWidget):
     def set_emu68_boot_settings(self, settings: Emu68BootSettings):
         config = settings.config_txt
         self.force_hdmi_check.setChecked(config.force_hdmi)
+        select_combo_by_data(self.unicam_device_combo, config.unicam_device.value)
         self.framethrower_check.setChecked(config.framethrower)
         self.framethrower_boot_check.setChecked(config.framethrower_start_on_boot)
         select_combo_by_data(self.framethrower_scaling_combo, config.framethrower_scaling.value)

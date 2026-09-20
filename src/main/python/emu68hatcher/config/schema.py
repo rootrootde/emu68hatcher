@@ -15,6 +15,7 @@ from emu68hatcher.config.boot_models import (
     FloppySwap,
     FramethrowerScaling,
     ReleaseToggle,
+    UnicamDevice,
     Unit0Mode,
 )
 from emu68hatcher.config.display_models import (
@@ -63,6 +64,7 @@ __all__ = [
     "PackageConfig",
     "PartitionConfig",
     "ReleaseToggle",
+    "UnicamDevice",
     "Unit0Mode",
     "WifiConfig",
     "WorkbenchScreenMode",
@@ -326,9 +328,15 @@ class BuildConfig(_ConfigModel):
     def _check_framethrower_screen_mode(self):
         if (
             self.emu68_boot.config_txt.framethrower
+            and self.emu68_boot.config_txt.unicam_device == UnicamDevice.C790
+            and self.emu68_version == Emu68Version.V1_0_7
+        ):
+            raise ValueError("C790 requires Emu68 1.1 or later")
+        if (
+            self.emu68_boot.config_txt.framethrower
             and self.display.workbench_mode == WorkbenchScreenMode.NATIVE
         ):
-            raise ValueError("Framethrower requires a VideoCore Workbench screen mode")
+            raise ValueError("Native-video capture requires a VideoCore Workbench screen mode")
         return self
 
     model_config = ConfigDict(
