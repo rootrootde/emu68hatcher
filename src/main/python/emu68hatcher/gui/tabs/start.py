@@ -4,7 +4,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from PySide6.QtCore import QSize, QStandardPaths, Qt, QTimer, QUrl, Slot
+from PySide6.QtCore import QSize, QStandardPaths, Qt, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QIcon, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
@@ -112,8 +112,12 @@ def _format_manifest_revision(revision: int) -> str:
 class StartTab(QWidget):
     """welcome screen with tool-status table and download button"""
 
+    catalog_changed = Signal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._catalog_build_active = False
+        self._pending_catalog_selection = None
         self._worker = None
         self._update_worker = None
         self._app_download_worker = None
@@ -390,7 +394,9 @@ class StartTab(QWidget):
             "cache": "cached",
             "remote": "server",
         }[selection.source]
-        revision_label = _format_manifest_revision(selection.manifest.revision)
+        revision_label = _format_manifest_revision(
+            selection.catalog.revision if selection.catalog else selection.manifest.revision
+        )
         if selection.error:
             _set_status_icon(
                 self.manifest_update_icon,
@@ -401,6 +407,14 @@ class StartTab(QWidget):
                 f"Package list check failed; using {source_label} list: {revision_label}"
             )
             self.manifest_update_label.setToolTip(selection.error)
+        elif selection.catalog_notice:
+            self.manifest_update_label.setText(selection.catalog_notice)
+            self.manifest_update_label.setToolTip("")
+            _set_status_icon(
+                self.manifest_update_icon,
+                QStyle.StandardPixmap.SP_MessageBoxInformation,
+                "Previous list active",
+            )
         elif selection.source == "remote" and selection.changed:
             _set_status_icon(
                 self.manifest_update_icon,
@@ -465,15 +479,34 @@ class StartTab(QWidget):
         self._update_worker.finished.connect(self._update_worker_finished)
         self._update_worker.start()
 
+    def set_catalog_build_active(self, active: bool):
+        self._catalog_build_active = active
+        if not active and self._pending_catalog_selection is not None:
+            selection = self._pending_catalog_selection
+            self._pending_catalog_selection = None
+            self._on_update_check_finished(selection)
+
     @Slot(object)
     def _on_update_check_finished(self, selection):
+        if self._catalog_build_active and not selection.error:
+            from dataclasses import replace
+
+            self._pending_catalog_selection = selection
+            self._update_selection = replace(
+                selection, catalog_notice="Package list will update after this build."
+            )
+            self.check_updates_btn.setEnabled(True)
+            self.refresh_update_status()
+            return
         if not selection.error:
-            from emu68hatcher.data.package_loader import clear_package_caches
+            from emu68hatcher.data.catalog import get_catalog_snapshot
             from emu68hatcher.data.update_manifest import activate_manifest
 
             try:
-                activate_manifest(selection)
-                clear_package_caches()
+                previous = get_catalog_snapshot()
+                selection = activate_manifest(selection)
+                if selection.catalog != previous:
+                    self.catalog_changed.emit()
             except Exception as error:
                 from emu68hatcher.data.update_manifest import (
                     ManifestSelection,
@@ -484,6 +517,7 @@ class StartTab(QWidget):
                 selection = ManifestSelection(
                     active.manifest,
                     active.source,
+                    catalog=active.catalog,
                     error=str(error) or type(error).__name__,
                     checked=True,
                 )
@@ -635,6 +669,7 @@ class StartTab(QWidget):
         self.progress_group.setVisible(False)
         self._update_selection = initialize_manifest()
         clear_package_caches()
+        self.catalog_changed.emit()
         self.refresh_status()
         self.refresh_update_status()
         if failures:

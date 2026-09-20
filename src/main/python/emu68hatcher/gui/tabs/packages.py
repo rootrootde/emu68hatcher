@@ -18,6 +18,7 @@ from emu68hatcher.data.package_loader import (
     get_bundle_members,
     get_bundles_for_version,
     get_packages_for_version,
+    load_all_packages,
 )
 from emu68hatcher.data.package_selection import resolve_choices, software_defaults
 
@@ -65,6 +66,9 @@ class PackagesTab(QWidget):
         self.tree.setAlternatingRowColors(True)
         self.tree.itemChanged.connect(self._on_item_changed)
         layout.addWidget(self.tree, 1)
+        self.catalog_notice = QLabel()
+        self.catalog_notice.setWordWrap(True)
+        layout.addWidget(self.catalog_notice)
         self.status = QLabel()
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
@@ -244,8 +248,30 @@ class PackagesTab(QWidget):
     def get_config(self) -> list[dict]:
         return [{"name": name, "enabled": enabled} for name, enabled in self._requests.items()]
 
+    def refresh_catalog(self):
+        defaults = software_defaults()
+        known = {p.name for p in load_all_packages()}
+        removed = sorted(
+            name for name, enabled in self._requests.items() if enabled and name not in known
+        )
+        self._requests = {
+            name: self._requests.get(name, enabled) for name, enabled in defaults.items()
+        }
+        self.catalog_notice.setText(
+            "Previously selected packages are no longer available: " + ", ".join(removed)
+            if removed
+            else ""
+        )
+        self.refresh_packages()
+        self.selection_changed.emit()
+
     def set_config(self, packages: list[PackageConfig]):
         self._requests = software_defaults()
+        known = {p.name for p in load_all_packages()}
+        unknown = sorted(p.name for p in packages if p.enabled and p.name not in known)
+        self.catalog_notice.setText(
+            "Saved packages are no longer available: " + ", ".join(unknown) if unknown else ""
+        )
         self._requests.update({p.name: p.enabled for p in packages if p.name in self._requests})
         if self._requests.get("mui5"):
             self._requests["mui38"] = False

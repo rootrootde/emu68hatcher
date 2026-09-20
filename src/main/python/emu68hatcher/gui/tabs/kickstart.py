@@ -41,6 +41,7 @@ class KickstartTab(QWidget):
         self._recognized_adfs: set[str] = set()
         self._requested_icon_set: str | None = None
         self._locale_checks: dict[str, QCheckBox] = {}
+        self._emu68_version = None
         self.setup_ui()
 
     def setup_ui(self):
@@ -134,7 +135,9 @@ class KickstartTab(QWidget):
                 item.widget().deleteLater()
 
         locales = [
-            p for p in get_packages_for_version(self.get_selected_version()) if p.group == "Locale"
+            p
+            for p in get_packages_for_version(self.get_selected_version(), self._emu68_version)
+            if p.group == "Locale"
         ]
         for i, p in enumerate(sorted(locales, key=lambda p: p.friendly_name or p.name)):
             # "German (DE) Locale Files" -> "German (DE)"; the 3.1 bundle stays "Locale Files"
@@ -144,6 +147,22 @@ class KickstartTab(QWidget):
             self._lang_grid.addWidget(cb, i // columns, i % columns)
             self._locale_checks[p.name] = cb
         self._lang_group.setVisible(bool(locales))
+
+    def set_emu68_version(self, version):
+        self._emu68_version = version
+        self.refresh_catalog()
+
+    def refresh_catalog(self):
+        previous = {name: checkbox.isChecked() for name, checkbox in self._locale_checks.items()}
+        self._build_language_grid()
+        for name, checkbox in self._locale_checks.items():
+            if name in previous:
+                checkbox.setChecked(previous[name])
+        return sorted(
+            name
+            for name, enabled in previous.items()
+            if enabled and name not in self._locale_checks
+        )
 
     def get_locale_entries(self) -> list[dict]:
         """selected locale packages as flat {name, enabled} entries for config.packages"""

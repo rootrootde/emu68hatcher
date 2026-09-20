@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 
-from emu68hatcher.data.package_loader import get_mandatory_packages, get_packages_for_version
+from emu68hatcher.data.package_loader import get_packages_for_version
 from emu68hatcher.data.package_schema import Package, _group_rank
 
 logger = logging.getLogger(__name__)
@@ -45,11 +45,11 @@ class _ResolverContext:
         disabled: set[str],
         kickstart_version: str,
         emu68_version: str | None,
+        packages: list[Package] | None = None,
     ) -> _ResolverContext:
-        packages = get_packages_for_version(kickstart_version, emu68_version)
-        mandatory = {
-            pkg.name.lower() for pkg in get_mandatory_packages(kickstart_version, emu68_version)
-        }
+        if packages is None:
+            packages = get_packages_for_version(kickstart_version, emu68_version)
+        mandatory = {pkg.name for pkg in packages if pkg.mandatory}
         by_name = {pkg.name.lower(): pkg for pkg in packages}
         providers: dict[str, list[str]] = {}
         for pkg in packages:
@@ -202,6 +202,7 @@ def resolve(
     emu68_version: str | None = None,
     *,
     order_hint: list[str] | None = None,
+    packages: list[Package] | None = None,
 ) -> Resolution:
     """resolve a user selection into a complete, conflict-free, ordered install set."""
     requested = {n.lower() for n in requested}
@@ -211,6 +212,7 @@ def resolve(
         deselected,
         kickstart_version,
         emu68_version,
+        packages,
     )
     excluded: set[str] = set()
     dropped: dict[str, str] = {}

@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
+from emu68hatcher.builder.staging.files import resolve_staging_path
+
 logger = logging.getLogger(__name__)
 
 
@@ -362,7 +364,7 @@ def apply_package_scripts(
                 content=mod.content,
                 name=mod.name,
             )
-            result = inject_script(staging_dir / mod.target, injection)
+            result = inject_script(resolve_staging_path(staging_dir, mod.target), injection)
             if result.error:
                 logger.warning("Package script %s failed: %s", mod.name, result.error)
             if result.changed:

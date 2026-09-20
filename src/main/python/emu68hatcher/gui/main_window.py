@@ -85,6 +85,7 @@ class MainWindow(QMainWindow):
         self.network_tab = NetworkTab()
         self.tabs.addTab(self.network_tab, "Network")
 
+        self.start_tab.catalog_changed.connect(self._refresh_catalog)
         self.packages_tab.minimal_requested.connect(self._select_minimal)
         self.packages_tab.selection_changed.connect(self._refresh_boot_files_preview)
         for radio in (
@@ -101,6 +102,8 @@ class MainWindow(QMainWindow):
 
         self.kickstart_tab.version_changed.connect(self.packages_tab.set_kickstart_version)
         self.emu68_tab.emu68_version_changed.connect(self.packages_tab.set_emu68_version)
+        self.emu68_tab.emu68_version_changed.connect(self.kickstart_tab.set_emu68_version)
+        self.kickstart_tab.set_emu68_version(self.emu68_tab.get_emu68_version())
         self.emu68_tab.settings_changed.connect(self._refresh_boot_files_preview)
         self.display_tab.settings_changed.connect(self._refresh_boot_files_preview)
 
@@ -343,6 +346,19 @@ class MainWindow(QMainWindow):
         self.config = config
         return config
 
+    def _refresh_catalog(self):
+        self.packages_tab.refresh_catalog()
+        removed_locales = self.kickstart_tab.refresh_catalog()
+        if removed_locales:
+            self.packages_tab.catalog_notice.setText(
+                self.packages_tab.catalog_notice.text()
+                + "\nPreviously selected locales are no longer available: "
+                + ", ".join(removed_locales)
+            )
+        self.network_tab._refresh_roadshow_status()
+        self._refresh_package_context()
+        self._refresh_boot_files_preview()
+
     def _refresh_package_context(self):
         self.packages_tab.set_context(
             self.network_tab.get_network_stack(),
@@ -470,11 +486,13 @@ class MainWindow(QMainWindow):
 
         # launch build dialog; lock the button so a double-click cannot spawn a second worker
         self.build_btn.setEnabled(False)
+        self.start_tab.set_catalog_build_active(True)
         try:
             dialog = BuildProgressDialog(self.config, self)
             dialog.start_build()
             dialog.exec()
         finally:
+            self.start_tab.set_catalog_build_active(False)
             self.build_btn.setEnabled(True)
 
         self.statusBar().showMessage(

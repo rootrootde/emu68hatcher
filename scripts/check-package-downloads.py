@@ -17,12 +17,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 
-import yaml
-
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src" / "main" / "python"))
 
-from emu68hatcher.data.package_schema import DownloadInfo, Package, SourceType  # noqa: E402
+from emu68hatcher.data.catalog import load_catalog_source  # noqa: E402
+from emu68hatcher.data.package_schema import DownloadInfo, SourceType  # noqa: E402
 
 _GITHUB_REPO_RE = re.compile(r"^[\w][\w.-]*/[\w][\w.-]*$")
 _MAX_DOWNLOAD_BYTES = 512 * 1024 * 1024
@@ -46,36 +45,13 @@ class CheckResult:
         return self.status == "current"
 
 
-def _load_manifest_overrides(path: Path) -> dict[str, dict]:
-    raw = json.loads(path.read_text(encoding="utf-8"))
-    payload = raw.get("payload", raw)
-    packages = payload.get("packages", {})
-    if not isinstance(packages, dict):
-        raise ValueError("manifest packages must be an object")
-    return packages
-
-
-def _load_specs(packages_dir: Path, manifest_source: Path) -> list[PackageSpec]:
-    overrides = _load_manifest_overrides(manifest_source)
-    specs = []
-    known_names = set()
-    for path in sorted(packages_dir.glob("*.yaml")):
-        package = Package.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
-        if package.name in known_names:
-            raise ValueError(f"duplicate package name: {package.name}")
-        known_names.add(package.name)
-        if package.download is None:
-            continue
-        download_data = package.download.model_dump(mode="json")
-        if package.name in overrides:
-            download_data.update(overrides[package.name])
-        download = DownloadInfo.model_validate(download_data)
-        if download.source != SourceType.LOCAL:
-            specs.append(PackageSpec(package.name, download))
-    unknown = overrides.keys() - known_names
-    if unknown:
-        raise ValueError(f"manifest references unknown packages: {', '.join(sorted(unknown))}")
-    return specs
+def _load_specs(packages_dir: Path) -> list[PackageSpec]:
+    catalog = load_catalog_source(packages_dir)
+    return [
+        PackageSpec(p.name, p.download)
+        for p in catalog.packages.values()
+        if p.download and p.download.source != SourceType.LOCAL
+    ]
 
 
 def _request(url: str, timeout: float, *, github_api: bool = False):
@@ -236,11 +212,6 @@ def main() -> int:
         type=Path,
         default=ROOT / "src" / "main" / "python" / "emu68hatcher" / "data" / "packages",
     )
-    parser.add_argument(
-        "--manifest-source",
-        type=Path,
-        default=ROOT / "updates" / "manifest-source.json",
-    )
     parser.add_argument("--report", type=Path)
     parser.add_argument("--package", action="append", default=[])
     parser.add_argument("--workers", type=int, default=8)
@@ -248,7 +219,7 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        specs = _load_specs(args.packages_dir, args.manifest_source)
+        specs = _load_specs(args.packages_dir)
         if args.package:
             selected = set(args.package)
             unknown = selected - {spec.name for spec in specs}
