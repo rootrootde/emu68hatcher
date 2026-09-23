@@ -1,125 +1,125 @@
 {
   "payload": {
-    "schema_version": 1,
-    "revision": 1789778604,
     "hatcher": {
-      "version": "1.0.3",
-      "release_url": "https://github.com/rootrootde/emu68hatcher/releases/tag/v1.0.3",
       "artifacts": {
         "linux-arm64": {
-          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.3/emu68hatcher-1.0.3-linux-arm64.deb",
           "filename": "emu68hatcher-1.0.3-linux-arm64.deb",
           "sha256": "80eb8371fc01a77da0964d187e0311022118de6ce1b2bfb0da7f18611b0172b2",
-          "size": 70964164
+          "size": 70964164,
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.3/emu68hatcher-1.0.3-linux-arm64.deb"
         },
         "linux-x64": {
-          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.3/emu68hatcher-1.0.3-linux-x64.deb",
           "filename": "emu68hatcher-1.0.3-linux-x64.deb",
           "sha256": "d65d91c3ac60870cde877c900aa86e9d5f50fb8bfba6c3c627de04fb74864655",
-          "size": 75108776
+          "size": 75108776,
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.3/emu68hatcher-1.0.3-linux-x64.deb"
         },
         "macos-arm64": {
-          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.3/emu68hatcher-1.0.3-macos-arm64.dmg",
           "filename": "emu68hatcher-1.0.3-macos-arm64.dmg",
           "sha256": "9dc0b524a9d6ed234284b6f362fb36a0a85314b36bd005c2c2bf9864b9a09cdf",
-          "size": 36570811
+          "size": 36570811,
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.3/emu68hatcher-1.0.3-macos-arm64.dmg"
         },
         "macos-x64": {
-          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.3/emu68hatcher-1.0.3-macos-x64.dmg",
           "filename": "emu68hatcher-1.0.3-macos-x64.dmg",
           "sha256": "ebcf996dec7eaf037a69580a44f70c93a6527ed06b772aff9d7ad1b0f988e304",
-          "size": 38557752
+          "size": 38557752,
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.3/emu68hatcher-1.0.3-macos-x64.dmg"
         },
         "windows-arm64": {
-          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.3/emu68hatcher-1.0.3-windows-arm64.exe",
           "filename": "emu68hatcher-1.0.3-windows-arm64.exe",
           "sha256": "4b5cbede6c51a1a362df2b4a478ef256d4b754d0b421ff45b72178d1a9e01eac",
-          "size": 40763771
+          "size": 40763771,
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.3/emu68hatcher-1.0.3-windows-arm64.exe"
         },
         "windows-x64": {
-          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.3/emu68hatcher-1.0.3-windows-x64.exe",
           "filename": "emu68hatcher-1.0.3-windows-x64.exe",
           "sha256": "5bff7b2b623dc5c7c171efbf9eff1f01499ffeb87ff73e5c70de5283eb04d107",
-          "size": 51451688
+          "size": 51451688,
+          "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.0.3/emu68hatcher-1.0.3-windows-x64.exe"
         }
-      }
+      },
+      "release_url": "https://github.com/rootrootde/emu68hatcher/releases/tag/v1.0.3",
+      "version": "1.0.3"
     },
     "packages": {
       "amelinium": {
-        "source": "web",
-        "path": null,
-        "url": "http://juen.in/latest/amelinium/Amelinium.lha",
         "backup_url": null,
-        "repo": null,
-        "tag": null,
+        "filename": "Amelinium.lha",
         "hash": "5965717C9344C46AD46C48E946FE4B7E",
-        "filename": "Amelinium.lha"
+        "path": null,
+        "repo": null,
+        "source": "web",
+        "tag": null,
+        "url": "http://juen.in/latest/amelinium/Amelinium.lha"
       },
       "amigaamp": {
-        "source": "aminet",
-        "path": "mus/play/AmigaAMP3-68k.lha",
-        "url": null,
         "backup_url": null,
-        "repo": null,
-        "tag": null,
+        "filename": "AmigaAMP3-68k.lha",
         "hash": "B73250E69D852CC12DFC12846B480030",
-        "filename": "AmigaAMP3-68k.lha"
+        "path": "mus/play/AmigaAMP3-68k.lha",
+        "repo": null,
+        "source": "aminet",
+        "tag": null,
+        "url": null
       },
       "amitcp_ng": {
-        "source": "github",
-        "path": null,
-        "url": null,
         "backup_url": null,
-        "repo": "MW0MWZ/AmiTCP_NG",
-        "tag": "v4.1.7",
+        "filename": "AmiTCP_NG-v4.1.7.lha",
         "hash": "E2666383B99F5BACA1C8BED964254647",
-        "filename": "AmiTCP_NG-v4.1.7.lha"
+        "path": null,
+        "repo": "MW0MWZ/AmiTCP_NG",
+        "source": "github",
+        "tag": "v4.1.7",
+        "url": null
       },
       "emu68_tools": {
-        "source": "github",
-        "path": null,
-        "url": null,
         "backup_url": null,
-        "repo": "michalsc/Emu68-tools",
-        "tag": "v1.1",
+        "filename": "Emu68-tools.zip",
         "hash": "505C72151D67988E415B330AA6E19A8C",
-        "filename": "Emu68-tools.zip"
+        "path": null,
+        "repo": "michalsc/Emu68-tools",
+        "source": "github",
+        "tag": "v1.1",
+        "url": null
       },
       "genet_device_legacy": {
-        "source": "github",
-        "path": null,
-        "url": null,
         "backup_url": null,
-        "repo": "rondoval/emu68-genet-driver",
-        "tag": "v1.3",
+        "filename": "genet.device",
         "hash": "263F49B359C8E8D65A7EF59C14A2E943",
-        "filename": "genet.device"
+        "path": null,
+        "repo": "rondoval/emu68-genet-driver",
+        "source": "github",
+        "tag": "v1.3",
+        "url": null
       },
       "hippoplayerupdate": {
-        "source": "aminet",
-        "path": "mus/play/hippoplayerupdate.lha",
-        "url": null,
         "backup_url": null,
-        "repo": null,
-        "tag": null,
+        "filename": "hippoplayerupdate.lha",
         "hash": "8D3609208F67515108C269EFD34664A4",
-        "filename": "hippoplayerupdate.lha"
+        "path": "mus/play/hippoplayerupdate.lha",
+        "repo": null,
+        "source": "aminet",
+        "tag": null,
+        "url": null
       },
       "magicmenu": {
-        "source": "github",
-        "path": null,
-        "url": null,
         "backup_url": null,
-        "repo": "AmiKit/MagicMenu",
-        "tag": "v3.1",
+        "filename": "MagicMenu_3.1.lha",
         "hash": "4539081FCE7789F11374B07F99915AE1",
-        "filename": "MagicMenu_3.1.lha"
+        "path": null,
+        "repo": "AmiKit/MagicMenu",
+        "source": "github",
+        "tag": "v3.1",
+        "url": null
       }
-    }
+    },
+    "revision": 1790171700,
+    "schema_version": 1
   },
   "signature": {
     "algorithm": "ed25519",
     "key_id": "updates-2026",
-    "value": "QJ/G/mAjKP+Wb0+D7ow1UODAHbKWO4QTo0xhbt2LZ1qVKzdzlrLhlkwKzfn/WJ4liyh68uzofJUts0GkT+39DA=="
+    "value": "NkzK8w6BqpP/8jxpWF+Hg/9VYUNlUSjUDttv5acQgwv/8urTgK7C6iMkowo1+sQhKxNI3z6h5AYU1ys++x9oBw=="
   }
 }
