@@ -12188,8 +12188,8 @@
             ]
           }
         },
-        "revision": 1,
-        "source_commit": "79e886debbe83d3d8ff6ffcfc2d68bd2df78b175"
+        "revision": 2,
+        "source_commit": "a8c2fbf8c5782e67445384e52a00ce13b61714fe"
       }
     ],
     "hatcher": {
@@ -12234,12 +12234,12 @@
       "release_url": "https://github.com/rootrootde/emu68hatcher/releases/tag/v1.0.3",
       "version": "1.0.3"
     },
-    "revision": 1790171700,
+    "revision": 1790179098,
     "schema_version": 2
   },
   "signature": {
     "algorithm": "ed25519",
     "key_id": "updates-2026",
-    "value": "p33FNt+vpEjc+67DeivsuaU6eOJRfx6srwgXUB9EQHMfbpKYMTketeDuyVKYQT3/N98WdxJR/qtIPl2wmxGECA=="
+    "value": "YHkc+ZY+EMdx+FuQ3gwOf+OlE1EQnznoqF+D8F/xglWYBgy9wPtupulWaoRL/AjqyTxJdNIK6y+w58e5zoIFBw=="
   }
 }
