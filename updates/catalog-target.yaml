@@ -4,3 +4,5 @@ target:
   max_hatcher_version_exclusive: null
   catalog_schema_version: 1
 close_ranges: {}
+legacy_hash_updates:
+  - amelinium

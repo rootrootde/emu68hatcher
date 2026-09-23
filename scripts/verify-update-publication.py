@@ -21,12 +21,16 @@ def main():
         raise ValueError("publication endpoints have incorrect schemas")
     if legacy.hatcher != manifest.hatcher or legacy.revision != manifest.revision:
         raise ValueError("publication release metadata differs")
-    target = read_catalog_yaml(args.target)["target"]
+    target_config = read_catalog_yaml(args.target)
+    target = target_config["target"]
     catalog = next(c for c in manifest.catalogs if c.id == target["id"])
     if catalog.source_commit != args.source_commit:
         raise ValueError("published catalog comes from a different commit")
     if catalog.data() != load_catalog_source():
         raise ValueError("published catalog differs from source YAML")
+    for name in target_config.get("legacy_hash_updates", []):
+        if legacy.packages[name].hash != catalog.packages[name]["download"]["hash"]:
+            raise ValueError(f"legacy download hash differs from source YAML: {name}")
     validate_client_catalog(catalog.snapshot())
     print(f"verified {catalog.id}, revision {catalog.revision}, source {catalog.source_commit}")
 

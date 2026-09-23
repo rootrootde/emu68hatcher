@@ -85,6 +85,21 @@ class PublishTarget(BaseModel):
     model_config = ConfigDict(extra="forbid")
     target: CatalogTarget
     close_ranges: dict[str, str] = Field(default_factory=dict)
+    legacy_hash_updates: list[str] = Field(default_factory=list)
+
+
+def refresh_legacy_hashes(legacy: UpdateManifestV1, catalog, names: list[str]) -> UpdateManifestV1:
+    fields = legacy.model_dump(mode="json", exclude_none=True)
+    for name in names:
+        old = fields["packages"].get(name)
+        package = catalog.packages.get(name)
+        if old is None or package is None or package.download is None:
+            raise ValueError(f"unknown legacy download override: {name}")
+        current = package.download.model_dump(mode="json", exclude_none=True)
+        if any(current.get(key) != value for key, value in old.items() if key != "hash"):
+            raise ValueError(f"legacy download source changed: {name}")
+        old["hash"] = current["hash"]
+    return UpdateManifestV1.model_validate(fields)
 
 
 def build_catalog_manifest(
@@ -198,14 +213,21 @@ def main() -> int:
         raise ValueError("legacy publication revision must increase")
     release = _release_payload(_release_from_json(args.release_json), args.asset_dir)
     source_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    target_config = read_catalog_yaml(args.target)
     manifest = build_catalog_manifest(
-        read_catalog_yaml(args.target),
+        target_config,
         previous,
         revision=revision,
         source_commit=source_commit,
         release=release,
         packages_dir=args.packages_dir,
         reference_dir=args.reference_dir,
+    )
+    target = PublishTarget.model_validate(target_config)
+    legacy = refresh_legacy_hashes(
+        legacy,
+        load_catalog_source(args.packages_dir, args.reference_dir),
+        target.legacy_hash_updates,
     )
     legacy_fields = legacy.model_dump(mode="json")
     legacy_fields.update(revision=revision, hatcher=release)

@@ -10,7 +10,7 @@ Change a download hash and any affected installation paths together.
 
 | Endpoint on the updates branch | Clients | Contents |
 | --- | --- | --- |
-| manifest.json | Existing schema 1 clients | Frozen download overrides and current app release metadata |
+| manifest.json | Existing schema 1 clients | Reviewed download overrides and current app release metadata |
 | manifest-v2.json | Full catalog clients starting at 1.1.0 | Complete catalogs for explicit app version ranges and current app release metadata |
 
 Both files use the existing Ed25519 signature envelope and the **updates-2026** key
@@ -18,10 +18,12 @@ identifier. The private key stays in the **UPDATE_MANIFEST_PRIVATE_KEY** reposit
 secret. Neither file is edited by hand.
 
 **legacy-manifest-source.json** is the migration fallback for schema 1. If an older
-publication exists, its verified overrides are preserved instead. This file is
-frozen; new package maintenance belongs in YAML. Old clients still have their own
-installation rules, so new download hashes alone can break them. A frozen hash
-cannot restore an archive that an upstream server has overwritten.
+publication exists, its verified overrides are preserved instead. For a changed
+archive that retains the files required by older clients, add its package name to
+**catalog-target.yaml** under **legacy_hash_updates**. The generator copies only
+the new hash from YAML and rejects changes to the old download source. Check the
+older installation rules against the archive first. An upstream server can replace
+the archive again, so the checksum must be checked before publication.
 
 ## Compatibility ranges
 
