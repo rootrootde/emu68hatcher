@@ -397,6 +397,36 @@ def test_invalid_cache_does_not_send_conditional_headers(tmp_path, signing_key, 
     assert result.manifest.revision == 2
 
 
+@pytest.mark.parametrize("changed", [False, True])
+def test_package_status_uses_publication_date(monkeypatch, changed):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+
+    from emu68hatcher.gui.tabs import start
+
+    payload = _payload(1790179098)
+    payload["catalogs"][0]["revision"] = 2
+    manifest = UpdateManifestV2.model_validate(payload)
+    selection = ManifestSelection(
+        manifest, "remote", changed=changed, checked=True, catalog=manifest.catalogs[0].snapshot()
+    )
+    tab = SimpleNamespace(
+        _update_selection=selection,
+        hatcher_update_icon=Mock(),
+        hatcher_update_label=Mock(),
+        manifest_update_icon=Mock(),
+        manifest_update_label=Mock(),
+        open_release_btn=Mock(),
+        download_update_btn=Mock(),
+    )
+    monkeypatch.setattr(start, "_set_status_icon", Mock())
+    start.StartTab.refresh_update_status(tab)
+    prefix = "Package list updated from server" if changed else "Package list is up to date"
+    tab.manifest_update_label.setText.assert_called_once_with(
+        f"{prefix}: 2026-09-23 (revision 1790179098)"
+    )
+
+
 def test_reset_app_data_refreshes_catalog_consumers(tmp_path, monkeypatch):
     from types import SimpleNamespace
     from unittest.mock import Mock

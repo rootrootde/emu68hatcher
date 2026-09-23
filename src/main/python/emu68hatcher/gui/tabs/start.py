@@ -394,9 +394,7 @@ class StartTab(QWidget):
             "cache": "cached",
             "remote": "server",
         }[selection.source]
-        revision_label = _format_manifest_revision(
-            selection.catalog.revision if selection.catalog else selection.manifest.revision
-        )
+        revision_label = _format_manifest_revision(selection.manifest.revision)
         if selection.error:
             _set_status_icon(
                 self.manifest_update_icon,
