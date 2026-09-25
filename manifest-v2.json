@@ -4107,7 +4107,7 @@
               "backup_url": null,
               "check_latest_release": true,
               "filename": "Amelinium.lha",
-              "hash": "BD2CEE3E3EEA532E2D6E42CF9ECA4439",
+              "hash": "FD80D121A5724E06D764C4B4400240B6",
               "path": null,
               "repo": null,
               "source": "web",
@@ -4866,7 +4866,7 @@
               "backup_url": null,
               "check_latest_release": true,
               "filename": "CLICon.lha",
-              "hash": "22FCBEC5C3ADDFE7FC55DF1F1513D881",
+              "hash": "99ED66A6D2CA952EA3D564341B267DD3",
               "path": "util/wb/CLICon.lha",
               "repo": null,
               "source": "aminet",
@@ -12188,58 +12188,58 @@
             ]
           }
         },
-        "revision": 3,
-        "source_commit": "cb37701566fe376c4354085a99e6becce2ca25d7"
+        "revision": 4,
+        "source_commit": "055970aed7203ed8bfcbca1df3390307c72c2f5f"
       }
     ],
     "hatcher": {
       "artifacts": {
         "linux-arm64": {
           "filename": "emu68hatcher-1.1.0-linux-arm64.deb",
-          "sha256": "11de1cec98945f36b6b324ec52e238bc4be86c029d3af077bf3c89aafe87808e",
-          "size": 70986384,
+          "sha256": "185f73bd5002563272861689f86041eda1d47318d0435a9252d19a8dd16f3cca",
+          "size": 70982816,
           "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.1.0/emu68hatcher-1.1.0-linux-arm64.deb"
         },
         "linux-x64": {
           "filename": "emu68hatcher-1.1.0-linux-x64.deb",
-          "sha256": "32e9226e3850242479626a47c21a635cf4b0067f0f66726d930b01983e83fa26",
-          "size": 75127672,
+          "sha256": "7bc6e9dc0fc6eae2e43d60af19faa0f4fe65c22c0aa3341809778d1bf267cc70",
+          "size": 75129772,
           "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.1.0/emu68hatcher-1.1.0-linux-x64.deb"
         },
         "macos-arm64": {
           "filename": "emu68hatcher-1.1.0-macos-arm64.dmg",
-          "sha256": "f7016a84af3710f557a940d0c0f011275f6d8219e216faa7a810d2f8929b0074",
-          "size": 36581526,
+          "sha256": "98fe547bae522f2cd5018c021811324929178997c9eb001c205fd55cb66b0802",
+          "size": 36583166,
           "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.1.0/emu68hatcher-1.1.0-macos-arm64.dmg"
         },
         "macos-x64": {
           "filename": "emu68hatcher-1.1.0-macos-x64.dmg",
-          "sha256": "17ef3f7d01eb48548771105baedda3996f8496a2a44a9ce5eef488549d85ef5d",
-          "size": 38606624,
+          "sha256": "1ec2687cb18d5d96cd4006ca0d7344a41e5f0d7e51afa37a5e40162d47efa790",
+          "size": 38605202,
           "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.1.0/emu68hatcher-1.1.0-macos-x64.dmg"
         },
         "windows-arm64": {
           "filename": "emu68hatcher-1.1.0-windows-arm64.exe",
-          "sha256": "5ced56b74a3d9e6f5f2033de6b83ffab4ad0e163b418f227dfefc8d52b5de2eb",
-          "size": 40786845,
+          "sha256": "b8ba5fc7b2811edc437d0122ecc236eddd4d158e92f32b6d916ed41e8b95f8aa",
+          "size": 40787699,
           "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.1.0/emu68hatcher-1.1.0-windows-arm64.exe"
         },
         "windows-x64": {
           "filename": "emu68hatcher-1.1.0-windows-x64.exe",
-          "sha256": "b85ac06867727e4ae41c7e3484125f7511c555c0e0bd499454423db6e8fdbb05",
-          "size": 51467991,
+          "sha256": "41dd7547eecc5b467f1962ec79273af807f176d36248b16a00710ef599b2dafd",
+          "size": 51467861,
           "url": "https://github.com/rootrootde/emu68hatcher/releases/download/v1.1.0/emu68hatcher-1.1.0-windows-x64.exe"
         }
       },
       "release_url": "https://github.com/rootrootde/emu68hatcher/releases/tag/v1.1.0",
       "version": "1.1.0"
     },
-    "revision": 1790196119,
+    "revision": 1790342306,
     "schema_version": 2
   },
   "signature": {
     "algorithm": "ed25519",
     "key_id": "updates-2026",
-    "value": "VvVFNQik7BRzk5S83NwwbpM6odbB+N42UYEc1jHsFf3f6E3ygNvAuZn1lMznhb7v51sdsa7Q8XNIgJ27SN4uDw=="
+    "value": "wG1aQ3+QMUnLwz8ADyrF9ziVOsxl+3VAIDTcZKjqATXxlIGkeH1mQho7o+cLTw/Db3N88TPbA0mihT+V2wUsBw=="
   }
 }
